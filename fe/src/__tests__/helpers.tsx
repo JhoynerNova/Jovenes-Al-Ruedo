@@ -8,6 +8,7 @@
 
 import { render, type RenderOptions } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { vi } from "vitest";
 import { AuthContext } from "@/context/authContextDef";
 import type { AuthContextType, UserResponse } from "@/types/auth";
 import type { ReactNode } from "react";

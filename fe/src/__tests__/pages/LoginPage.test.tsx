@@ -8,6 +8,7 @@
 
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { LoginPage } from "@/pages/LoginPage";
 import { renderWithProviders } from "../helpers";
 
