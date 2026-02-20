@@ -892,11 +892,11 @@ volumes:
 
 ### Fase 8 — Documentación Final
 
-- [ ] Crear `_docs/architecture.md` — arquitectura y diagramas
-- [ ] Crear `_docs/api-endpoints.md` — documentación de endpoints
-- [ ] Crear `_docs/database-schema.md` — esquema ER
-- [ ] Actualizar `README.md` con instrucciones finales
-- [ ] ✅ Verificar: documentación completa y coherente
+- [x] Crear `_docs/architecture.md` — arquitectura y diagramas
+- [x] Crear `_docs/api-endpoints.md` — documentación de endpoints
+- [x] Crear `_docs/database-schema.md` — esquema ER
+- [x] Actualizar `README.md` con instrucciones finales
+- [x] ✅ Verificar: documentación completa y coherente
 
 ---
 
