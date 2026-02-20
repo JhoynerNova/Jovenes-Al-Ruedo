@@ -36,55 +36,65 @@ export function DashboardPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           Información del perfil
         </h2>
+<dl className="space-y-4">
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Nombre
+    </dt>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.full_name}</dd>
+  </div>
 
-        <dl className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:gap-4">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
-              Nombre
-            </dt>
-            <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.full_name}</dd>
-          </div>
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Correo
+    </dt>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.email}</dd>
+  </div>
 
-          <div className="flex flex-col sm:flex-row sm:gap-4">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
-              Correo
-            </dt>
-            <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.email}</dd>
-          </div>
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Edad
+    </dt>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.age} años</dd>
+  </div>
 
-          <div className="flex flex-col sm:flex-row sm:gap-4">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
-              Estado
-            </dt>
-            <dd>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  user?.is_active
-                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                    : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                }`}
-              >
-                {user?.is_active ? "Activo" : "Inactivo"}
-              </span>
-            </dd>
-          </div>
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Área artística
+    </dt>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.artistic_area}</dd>
+  </div>
 
-          <div className="flex flex-col sm:flex-row sm:gap-4">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
-              Miembro desde
-            </dt>
-            <dd className="text-sm text-gray-900 dark:text-gray-100">
-              {user?.created_at
-                ? new Date(user.created_at).toLocaleDateString("es-CO", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : "—"}
-            </dd>
-          </div>
-        </dl>
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Estado
+    </dt>
+    <dd>
+      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        user?.is_active
+          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+      }`}>
+        {user?.is_active ? "Activo" : "Inactivo"}
+      </span>
+    </dd>
+  </div>
 
+  <div className="flex flex-col sm:flex-row sm:gap-4">
+    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
+      Miembro desde
+    </dt>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">
+      {user?.created_at
+        ? new Date(user.created_at).toLocaleDateString("es-CO", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : "—"}
+    </dd>
+  </div>
+</dl>
         {/* ¿Qué? Botón de cambiar contraseña alineado a la derecha. */}
         {/* ¿Para qué? Acceder rápidamente a la funcionalidad de cambio de contraseña. */}
         {/* ¿Impacto? Botones de acción siempre a la derecha (regla de diseño del proyecto). */}

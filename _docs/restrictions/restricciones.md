@@ -1,4 +1,4 @@
-# Restricciones del Proyecto — NN Auth System
+# Restricciones del Proyecto — Jóvenes al Ruedo
 
 <!--
   ¿Qué? Documento que define las restricciones técnicas, organizacionales y de diseño del proyecto.

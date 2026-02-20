@@ -26,6 +26,8 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
+    age: "",
+    artistic_area: "",
     password: "",
     confirmPassword: "",
   });
@@ -50,6 +52,14 @@ export function RegisterPage() {
 
     if (!formData.email) {
       newErrors.email = "El correo es obligatorio";
+    }
+
+    if (!formData.age || parseInt(formData.age) < 18) {
+      newErrors.age = "Debes ser mayor de 18 años";
+    }
+
+    if (!formData.artistic_area || formData.artistic_area.trim().length < 2) {
+      newErrors.artistic_area = "El área artística es obligatoria";
     }
 
     if (!formData.full_name || formData.full_name.trim().length < 2) {
@@ -85,6 +95,8 @@ export function RegisterPage() {
       await register({
         email: formData.email,
         full_name: formData.full_name.trim(),
+        age: parseInt(formData.age),
+        artistic_area: formData.artistic_area.trim(),
         password: formData.password,
       });
       navigate("/dashboard", { replace: true });
@@ -126,6 +138,28 @@ export function RegisterPage() {
           autoComplete="email"
           icon={<Mail className="h-5 w-5" />}
           error={errors.email}
+          onChange={handleChange}
+        />
+
+        <InputField
+          label="Edad"
+          name="age"
+          type="number"
+          value={formData.age}
+          placeholder="18"
+          icon={<User className="h-5 w-5" />}
+          error={errors.age}
+          onChange={handleChange}
+        />
+
+        <InputField
+          label="Área artística"
+          name="artistic_area"
+          type="text"
+          value={formData.artistic_area}
+          placeholder="Música, Danza, Teatro, Pintura..."
+          icon={<User className="h-5 w-5" />}
+          error={errors.artistic_area}
           onChange={handleChange}
         />
 

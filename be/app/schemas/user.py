@@ -24,10 +24,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 class UserCreate(BaseModel):
     """Schema para el registro de un nuevo usuario.
 
-    ¿Qué? Define los campos requeridos para crear una cuenta: email, nombre y contraseña.
+    ¿Qué? Define los campos requeridos para crear una cuenta: email, nombre, edad,
+          área artística y contraseña.
     ¿Para qué? Validar que el cliente envíe datos correctos antes de procesarlos.
-    ¿Impacto? El validador de password garantiza fortaleza mínima — sin él, los usuarios
-              podrían registrarse con contraseñas débiles como "123".
+    ¿Impacto? Los validadores garantizan fortaleza mínima de contraseña y restricción
+              de edad mínima de 18 años.
     """
 
     # ¿Qué? Email del usuario — Pydantic valida formato automáticamente con EmailStr.
@@ -39,6 +40,16 @@ class UserCreate(BaseModel):
     # ¿Para qué? Personalización de la experiencia en el frontend.
     # ¿Impacto? Campo requerido — el frontend lo usa para saludar al usuario.
     full_name: str
+
+    # ¿Qué? Edad del joven artista.
+    # ¿Para qué? Validar que sea mayor de 18 años al registrarse.
+    # ¿Impacto? Sin esta validación, menores de edad podrían registrarse.
+    age: int
+
+    # ¿Qué? Área artística del joven.
+    # ¿Para qué? Categorizar al artista dentro de la plataforma.
+    # ¿Impacto? Permite conectar artistas por disciplina.
+    artistic_area: str
 
     # ¿Qué? Contraseña en texto plano (solo viaja en el request, NUNCA se almacena así).
     # ¿Para qué? El backend la hashea con bcrypt antes de guardarla en la BD.
@@ -73,6 +84,30 @@ class UserCreate(BaseModel):
             raise ValueError("La contraseña debe contener al menos un número")
         return v
 
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, v: int) -> int:
+        """Valida que el usuario sea mayor de 18 años.
+
+        ¿Qué? Verifica que la edad ingresada sea 18 o más.
+        ¿Para qué? Cumplir la restricción de edad mínima del sistema.
+        ¿Impacto? Sin esto, menores de edad podrían acceder a la plataforma.
+
+        Args:
+            v: Valor de la edad a validar.
+
+        Returns:
+            La edad si pasa todas las validaciones.
+
+        Raises:
+            ValueError: Si la edad es menor de 18 o mayor de 100.
+        """
+        if v < 18:
+            raise ValueError("Debes ser mayor de 18 años para registrarte")
+        if v > 100:
+            raise ValueError("Ingresa una edad válida")
+        return v
+
     @field_validator("full_name")
     @classmethod
     def validate_full_name(cls, v: str) -> str:
@@ -87,6 +122,20 @@ class UserCreate(BaseModel):
             raise ValueError("El nombre debe tener al menos 2 caracteres")
         if len(v) > 255:
             raise ValueError("El nombre no puede exceder 255 caracteres")
+        return v
+
+    @field_validator("artistic_area")
+    @classmethod
+    def validate_artistic_area(cls, v: str) -> str:
+        """Valida que el área artística no esté vacía.
+
+        ¿Qué? Verifica que el área artística tenga contenido real.
+        ¿Para qué? Evitar registros sin área artística definida.
+        ¿Impacto? Sin esto, un artista podría registrarse sin categoría.
+        """
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("El área artística debe tener al menos 2 caracteres")
         return v
 
 
@@ -200,6 +249,8 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
+    age: int
+    artistic_area: str
     is_active: bool
     created_at: datetime
     updated_at: datetime

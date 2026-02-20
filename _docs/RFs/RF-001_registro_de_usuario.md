@@ -23,7 +23,7 @@
 
 ## Descripción
 
-El sistema debe permitir que un usuario nuevo cree una cuenta proporcionando su nombre completo, correo electrónico y contraseña. Una vez registrado, el usuario podrá iniciar sesión con las credenciales creadas.
+El sistema debe permitir que un joven artista cree una cuenta proporcionando su nombre completo, correo electrónico y contraseña. Una vez registrado, el usuario podrá iniciar sesión con las credenciales creadas.
 
 ---
 

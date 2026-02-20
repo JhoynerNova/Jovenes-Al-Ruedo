@@ -19,9 +19,10 @@
 export interface RegisterRequest {
   email: string;
   full_name: string;
+  age: number;
+  artistic_area: string;
   password: string;
 }
-
 /**
  * ¿Qué? Credenciales para iniciar sesión.
  * ¿Para qué? Tipado del body enviado a POST /api/v1/auth/login.
@@ -83,6 +84,8 @@ export interface UserResponse {
   id: string;
   email: string;
   full_name: string;
+  age: number;
+  artistic_area: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

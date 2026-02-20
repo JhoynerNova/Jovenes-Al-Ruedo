@@ -70,10 +70,12 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     # ¿Impacto? hash_password usa bcrypt, que es deliberadamente lento para dificultar
     #           ataques de fuerza bruta contra hashes filtrados.
     new_user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        hashed_password=hash_password(user_data.password),
-    )
+    email=user_data.email,
+    full_name=user_data.full_name,
+    age=user_data.age,
+    artistic_area=user_data.artistic_area,
+    hashed_password=hash_password(user_data.password),
+)
 
     db.add(new_user)
     db.commit()

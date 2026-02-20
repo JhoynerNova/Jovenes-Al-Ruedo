@@ -1,7 +1,7 @@
 # HU-001 — Registro de cuenta
 
 <!--
-  ¿Qué? Historia de usuario que describe el registro de un nuevo usuario en el sistema.
+  ¿Qué? Historia de usuario que describe el registro de un joven artista en el sistema.
   ¿Para qué? Formalizar la necesidad del usuario de crear una cuenta para acceder al sistema.
   ¿Impacto? Es la puerta de entrada al sistema — sin registro, no hay usuarios.
 -->
@@ -23,7 +23,7 @@
 
 ## Historia
 
-**Como** usuario nuevo,
+**Como** joven artista,
 **quiero** crear una cuenta proporcionando mi nombre, correo electrónico y contraseña,
 **para** poder acceder a las funcionalidades del sistema NN Auth.
 

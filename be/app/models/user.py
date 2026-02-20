@@ -68,6 +68,21 @@ class User(Base):
         nullable=False,
     )
 
+    # ¿Qué? Edad del joven artista.
+    # ¿Para qué? Validar que el usuario sea mayor de 18 años al registrarse.
+    # ¿Impacto? Permite cumplir la restricción de edad mínima del sistema.
+    age: Mapped[int] = mapped_column(
+        nullable=False,
+    )
+
+    # ¿Qué? Área artística en la que se desenvuelve el joven artista.
+    # ¿Para qué? Categorizar al artista dentro de la plataforma.
+    # ¿Impacto? Permite filtrar y conectar artistas por disciplina artística.
+    artistic_area: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
     # ¿Qué? Hash bcrypt de la contraseña del usuario.
     # ¿Para qué? Almacenar la contraseña de forma segura — el hash es irreversible,
     #            por lo que incluso si la BD es comprometida, las contraseñas no se exponen.
