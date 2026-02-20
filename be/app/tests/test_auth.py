@@ -43,6 +43,8 @@ class TestRegister:
             json={
                 "email": "new@nn-company.com",
                 "full_name": "New User",
+                "age": 20,
+                "artistic_area": "Danza",
                 "password": "NewPass123",
             },
         )
@@ -75,9 +77,12 @@ class TestRegister:
             json={
                 "email": TEST_USER_EMAIL,
                 "full_name": "Duplicate User",
+                "age": 20,
+                "artistic_area": "Teatro",
                 "password": "TestPass123",
             },
         )
+        
 
         assert response.status_code == 400
         assert "ya está registrado" in response.json()["detail"]
