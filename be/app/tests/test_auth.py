@@ -748,4 +748,4 @@ class TestHealthCheck:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["project"] == "NN Auth System"
+        assert data["project"] == "Jóvenes al Ruedo"
