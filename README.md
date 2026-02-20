@@ -1,69 +1,135 @@
-# 🔐 NN Auth System
+# 🎨 Jóvenes al Ruedo
 
-<!--
-  ¿Qué? Documentación principal del proyecto NN Auth System.
-  ¿Para qué? Guiar a cualquier desarrollador o aprendiz para entender, configurar y ejecutar el proyecto.
-  ¿Impacto? Sin este README, los nuevos colaboradores no sabrían cómo levantar el proyecto
-  ni entenderían su propósito, arquitectura o convenciones.
--->
+**Proyecto educativo — SENA, Ficha 3171599 | Febrero 2026**
 
-> **Proyecto educativo** — SENA, Ficha 3171599 | Febrero 2026
-
-Sistema de autenticación completo para una empresa genérica **"NN"**, diseñado como ejercicio formativo.
-Incluye registro de usuarios, login, cambio de contraseña y recuperación por email.
+Sistema de autenticación y gestión de perfiles para la plataforma **Jóvenes al Ruedo** — una plataforma que conecta jóvenes artistas con empresas y oportunidades en el sector cultural y creativo.
 
 ---
 
 ## 📋 Tabla de Contenidos
 
-- [Stack Tecnológico](#-stack-tecnológico)
-- [Prerrequisitos](#-prerrequisitos)
-- [Instalación y Setup](#-instalación-y-setup)
-- [Ejecución](#-ejecución)
-- [Testing](#-testing)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Convenciones](#-convenciones)
-- [Documentación Adicional](#-documentación-adicional)
+- [Descripción del Proyecto](#descripción-del-proyecto)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)
+- [Prerrequisitos](#prerrequisitos)
+- [Instalación y Setup](#instalación-y-setup)
+- [Ejecución](#ejecución)
+- [Testing](#testing)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Endpoints de la API](#endpoints-de-la-api)
+- [Convenciones](#convenciones)
+- [Autores](#autores)
+
+---
+
+## 📖 Descripción del Proyecto
+
+**Jóvenes al Ruedo** es una plataforma digital diseñada para empoderar a jóvenes artistas, permitiéndoles:
+
+- 🎭 Registrarse con su perfil artístico (nombre, edad, área artística)
+- 🗂️ Crear y gestionar su portafolio de proyectos y habilidades
+- 🏢 Conectar con empresas del sector cultural
+- 💼 Postularse a ofertas laborales y retos creativos
+- 💬 Comunicarse directamente con empresas mediante mensajes y comentarios
+
+Este repositorio contiene el sistema de autenticación base (registro, login, cambio y recuperación de contraseña), construido sobre el proyecto educativo del instructor.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-| Capa        | Tecnologías                                         |
-| ----------- | --------------------------------------------------- |
-| **Backend** | Python 3.12+, FastAPI, SQLAlchemy 2.0, Alembic, JWT |
-| **Frontend**| React 18+, Vite, TypeScript, TailwindCSS 4+         |
-| **Base de datos** | PostgreSQL 17+ (Docker Compose)                |
-| **Testing** | pytest + httpx (BE), Vitest + Testing Library (FE)  |
-| **Linting** | ruff (Python), ESLint + Prettier (TypeScript)       |
+### Backend (`be/`)
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| Python | 3.12+ | Lenguaje principal |
+| FastAPI | 0.115+ | Framework web async |
+| SQLAlchemy | 2.0+ | ORM para PostgreSQL |
+| Alembic | latest | Migraciones de BD |
+| Pydantic | 2.0+ | Validación de datos |
+| python-jose | latest | Tokens JWT |
+| passlib[bcrypt] | latest | Hashing de contraseñas |
+| pytest | latest | Testing |
+| uvicorn | latest | Servidor ASGI |
+
+### Frontend (`fe/`)
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| React | 18+ | Interfaz de usuario |
+| TypeScript | 5.0+ | Tipado estático |
+| Vite | 6+ | Bundler y dev server |
+| TailwindCSS | 4+ | Estilos utility-first |
+| React Router | 7+ | Enrutamiento |
+| Axios | latest | Cliente HTTP |
+| Vitest | latest | Testing frontend |
+
+### Base de Datos
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| PostgreSQL | 17+ | Base de datos relacional |
+| Docker Compose | latest | Contenedor de la BD |
+
+---
+
+## 🗄️ Estructura de la Base de Datos
+
+La plataforma cuenta con las siguientes entidades principales:
+
+### Entidades principales
+
+| Tabla | Descripción |
+|---|---|
+| `Usuarios` | Jóvenes artistas registrados en la plataforma |
+| `Empresa` | Organizaciones y empresas del sector cultural |
+| `Portafolio` | Portafolios de proyectos de cada artista |
+| `Habilidad` | Tipos de arte y habilidades artísticas |
+| `Portafolio_Habilidad` | Relación entre portafolios y habilidades |
+| `Oferta` | Oportunidades laborales publicadas por empresas |
+| `Postulacion` | Postulaciones de artistas a ofertas |
+| `Reto` | Retos creativos propuestos por empresas |
+| `Participa` | Participación de artistas en retos |
+| `Rol` | Roles de los usuarios en el sistema |
+| `Mensaje` | Mensajes entre artistas y empresas |
+| `Comentario` | Comentarios en perfiles y portafolios |
+
+### Tabla `Usuarios`
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `id_usuario` | INTEGER (PK) | Identificador único |
+| `Nombre` | VARCHAR(50) | Nombre completo |
+| `Edad` | INTEGER | Edad del artista (mínimo 18) |
+| `Telefono` | VARCHAR(50) | Teléfono de contacto |
+| `Direccion` | VARCHAR(50) | Dirección |
+| `Correo` | VARCHAR(50) | Correo electrónico |
+
+### Tabla `Empresa`
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `id_empresa` | INTEGER (PK) | Identificador único |
+| `Nombre` | VARCHAR(50) | Nombre de la empresa |
+| `Sector_empresa` | TEXT(50) | Sector artístico/cultural |
+| `Correo` | VARCHAR(50) | Correo de contacto |
+| `Numero_NIT` | INTEGER | NIT de la empresa |
+| `Telefono` | VARCHAR(10) | Teléfono |
 
 ---
 
 ## ✅ Prerrequisitos
 
-Antes de comenzar, asegúrate de tener instalado:
+| Herramienta | Versión mínima | Verificar con |
+|---|---|---|
+| Python | 3.12+ | `python --version` |
+| Node.js | 20 LTS+ | `node --version` |
+| pnpm | 9+ | `pnpm --version` |
+| Docker | 24+ | `docker --version` |
+| Docker Compose | 2.20+ | `docker compose version` |
+| Git | 2.40+ | `git --version` |
 
-| Herramienta     | Versión mínima | Verificar con              |
-| --------------- | -------------- | -------------------------- |
-| **Python**      | 3.12+          | `python3 --version`        |
-| **Node.js**     | 20 LTS+        | `node --version`           |
-| **pnpm**        | 9+             | `pnpm --version`           |
-| **Docker**      | 24+            | `docker --version`         |
-| **Docker Compose** | 2.20+       | `docker compose version`   |
-| **Git**         | 2.40+          | `git --version`            |
-
-> ⚠️ **Importante**: Usar **pnpm** como gestor de paquetes de Node.js. **Nunca usar npm ni yarn.**
-
-### Instalar pnpm (si no lo tienes)
-
-```bash
-# Opción recomendada — vía corepack (incluido con Node.js 16+)
-corepack enable
-corepack prepare pnpm@latest --activate
-
-# Alternativa — instalación independiente
-curl -fsSL https://get.pnpm.io/install.sh | sh -
-```
+> ⚠️ **Importante:** Usar `pnpm` como gestor de paquetes de Node.js. **Nunca usar npm ni yarn.**
 
 ---
 
@@ -72,19 +138,16 @@ curl -fsSL https://get.pnpm.io/install.sh | sh -
 ### 1. Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
-cd proyecto
+git clone https://github.com/JhoynerNova/Jovenes-Al-Ruedo.git
+cd Jovenes-Al-Ruedo
 ```
 
 ### 2. Levantar la base de datos
 
 ```bash
-# Inicia PostgreSQL 17 en un contenedor Docker
 docker compose up -d
-
-# Verificar que está corriendo
 docker compose ps
-# Deberías ver nn_auth_db con estado "healthy"
+# Debe mostrar nn_auth_db con estado "healthy"
 ```
 
 ### 3. Configurar el Backend
@@ -92,21 +155,20 @@ docker compose ps
 ```bash
 cd be
 
-# Crear entorno virtual de Python
-python3 -m venv .venv
+# Crear entorno virtual
+python -m venv .venv
 
-# Activar el entorno virtual
-source .venv/bin/activate    # Linux/macOS
-# .venv\Scripts\activate     # Windows
+# Activar entorno virtual
+source .venv/Scripts/activate    # Windows (Git Bash)
+source .venv/bin/activate        # Linux/macOS
 
 # Instalar dependencias
 pip install -r requirements.txt
 
-# Copiar y configurar variables de entorno
+# Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus valores si es necesario
 
-# Ejecutar migraciones de base de datos
+# Ejecutar migraciones
 alembic upgrade head
 ```
 
@@ -114,11 +176,7 @@ alembic upgrade head
 
 ```bash
 cd fe
-
-# Instalar dependencias con pnpm (¡NUNCA con npm!)
 pnpm install
-
-# Copiar y configurar variables de entorno
 cp .env.example .env
 ```
 
@@ -126,21 +184,19 @@ cp .env.example .env
 
 ## ▶️ Ejecución
 
-### Levantar todo el sistema (3 terminales)
-
 ```bash
-# Terminal 1 — Base de datos (si no está corriendo)
+# Terminal 1 — Base de datos
 docker compose up -d
 
 # Terminal 2 — Backend (FastAPI)
-cd be && source .venv/bin/activate
+cd be && source .venv/Scripts/activate
 uvicorn app.main:app --reload
-# → API disponible en http://localhost:8000
+# → API en http://localhost:8000
 # → Swagger UI en http://localhost:8000/docs
 
-# Terminal 3 — Frontend (React + Vite)
+# Terminal 3 — Frontend (React)
 cd fe && pnpm dev
-# → App disponible en http://localhost:5173
+# → App en http://localhost:5173
 ```
 
 ---
@@ -150,121 +206,144 @@ cd fe && pnpm dev
 ### Backend
 
 ```bash
-cd be && source .venv/bin/activate
+cd be && source .venv/Scripts/activate
 
-# Ejecutar todos los tests
+# Todos los tests
 pytest -v
 
-# Ejecutar con cobertura
+# Con cobertura
 pytest --cov=app --cov-report=term-missing
-
-# Ejecutar un test específico
-pytest app/tests/test_auth.py -v
 ```
+
+**Resultado:** ✅ 32/32 tests pasando
 
 ### Frontend
 
 ```bash
 cd fe
 
-# Ejecutar todos los tests
+# Todos los tests
 pnpm test
 
-# Ejecutar en modo watch
-pnpm test:watch
-
-# Ejecutar con cobertura
+# Con cobertura
 pnpm test:coverage
 ```
 
-### Linting
-
-```bash
-# Backend
-cd be && ruff check app/ && ruff format app/
-
-# Frontend
-cd fe && pnpm lint && pnpm format
-```
+**Resultado:** ✅ 82/82 tests pasando
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-proyecto/
-├── .github/copilot-instructions.md   # Reglas y convenciones del proyecto
-├── .gitignore                        # Archivos ignorados por git
-├── docker-compose.yml                # PostgreSQL 17 para desarrollo
-├── README.md                         # ← Este archivo
-├── _docs/                            # Documentación técnica
-├── _assets/                          # Recursos estáticos
-├── be/                               # Backend — FastAPI + Python
-│   ├── app/                          # Código fuente
-│   │   ├── main.py                   # Punto de entrada FastAPI
-│   │   ├── config.py                 # Configuración (Pydantic Settings)
-│   │   ├── database.py               # Conexión a PostgreSQL
-│   │   ├── models/                   # Modelos ORM (User, PasswordResetToken)
-│   │   ├── schemas/                  # Schemas Pydantic (request/response)
-│   │   ├── routers/                  # Endpoints (auth, users)
-│   │   ├── services/                 # Lógica de negocio
-│   │   ├── utils/                    # Utilidades (security, email)
-│   │   └── tests/                    # Tests con pytest
-│   ├── alembic/                      # Migraciones de BD
-│   └── requirements.txt              # Dependencias Python
-└── fe/                               # Frontend — React + Vite + TypeScript
-    ├── src/
-    │   ├── api/                      # Clientes HTTP
-    │   ├── components/               # Componentes reutilizables
-    │   ├── pages/                    # Páginas/vistas
-    │   ├── hooks/                    # Custom hooks
-    │   ├── context/                  # Context providers
-    │   └── types/                    # Tipos TypeScript
-    ├── package.json                  # Dependencias (pnpm)
-    └── vite.config.ts                # Configuración de Vite
+Jovenes-Al-Ruedo/
+├── .github/
+│   └── copilot-instructions.md    # Reglas y convenciones del proyecto
+├── _docs/                         # Documentación técnica
+│   ├── HUs/                       # Historias de Usuario
+│   ├── RFs/                       # Requerimientos Funcionales
+│   ├── RNFs/                      # Requerimientos No Funcionales
+│   └── restrictions/              # Restricciones del sistema
+├── be/                            # Backend — FastAPI + Python
+│   ├── app/
+│   │   ├── main.py                # Punto de entrada FastAPI
+│   │   ├── config.py              # Configuración (Pydantic Settings)
+│   │   ├── database.py            # Conexión a PostgreSQL
+│   │   ├── models/                # Modelos ORM
+│   │   │   ├── user.py            # Modelo User (con age y artistic_area)
+│   │   │   └── password_reset_token.py
+│   │   ├── schemas/               # Schemas Pydantic
+│   │   ├── routers/               # Endpoints (auth, users)
+│   │   ├── services/              # Lógica de negocio
+│   │   ├── utils/                 # Seguridad y email
+│   │   └── tests/                 # Tests con pytest
+│   ├── alembic/                   # Migraciones de BD
+│   └── requirements.txt
+├── fe/                            # Frontend — React + Vite + TypeScript
+│   └── src/
+│       ├── api/                   # Clientes HTTP
+│       ├── components/            # Componentes reutilizables
+│       ├── pages/                 # Páginas/vistas
+│       ├── hooks/                 # Custom hooks
+│       ├── context/               # Context providers
+│       └── types/                 # Tipos TypeScript
+├── docker-compose.yml             # PostgreSQL 17
+└── README.md
 ```
+
+---
+
+## 🔌 Endpoints de la API
+
+Base URL: `http://localhost:8000/api/v1`
+
+### Autenticación (`/auth`)
+
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Registrar joven artista | No |
+| POST | `/auth/login` | Iniciar sesión | No |
+| POST | `/auth/refresh` | Renovar access token | No |
+| POST | `/auth/change-password` | Cambiar contraseña | Sí |
+| POST | `/auth/forgot-password` | Solicitar recuperación | No |
+| POST | `/auth/reset-password` | Restablecer contraseña | No |
+
+### Usuario (`/users`)
+
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| GET | `/users/me` | Obtener perfil del artista | Sí |
+
+### Campos de registro
+
+```json
+{
+  "email": "artista@ejemplo.com",
+  "full_name": "Nombre Completo",
+  "age": 20,
+  "artistic_area": "Música",
+  "password": "Contraseña123"
+}
+```
+
+> 📖 Documentación interactiva completa en: **http://localhost:8000/docs**
 
 ---
 
 ## 📏 Convenciones
 
-| Aspecto                | Regla                                              |
-| ---------------------- | -------------------------------------------------- |
-| Nomenclatura técnica   | Inglés (variables, funciones, clases, endpoints)   |
-| Comentarios/docs       | Español (con ¿Qué? ¿Para qué? ¿Impacto?)         |
-| Commits                | Conventional Commits en inglés + What/For/Impact   |
-| Python                 | PEP 8 + type hints obligatorios + ruff             |
-| TypeScript             | strict mode + ESLint + Prettier                    |
-| Gestor de paquetes     | `venv` (Python), `pnpm` (Node.js)                  |
-| Testing                | Código generado = código probado                   |
-
-Para las reglas completas, ver [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
+| Aspecto | Regla |
+|---|---|
+| Nomenclatura técnica | Inglés (variables, funciones, endpoints) |
+| Comentarios y docs | Español (¿Qué? ¿Para qué? ¿Impacto?) |
+| Commits | Conventional Commits en inglés |
+| Python | PEP 8 + type hints + ruff |
+| TypeScript | strict mode + ESLint + Prettier |
+| Gestor paquetes | venv (Python), pnpm (Node.js) |
 
 ---
 
-## 📚 Documentación Adicional
+## 🔐 Seguridad
 
-| Documento                        | Descripción                              |
-| -------------------------------- | ---------------------------------------- |
-| `_docs/architecture.md`         | Arquitectura general y diagramas          |
-| `_docs/api-endpoints.md`        | Documentación detallada de la API         |
-| `_docs/database-schema.md`      | Esquema de base de datos y diagrama ER    |
-| `.github/copilot-instructions.md`| Reglas y convenciones del proyecto       |
-
----
-
-## 🎓 Propósito Educativo
-
-Este proyecto está diseñado para **aprender haciendo**. Cada archivo, función y componente incluye comentarios pedagógicos que explican:
-
-- **¿Qué?** — Qué hace este código
-- **¿Para qué?** — Por qué existe y cuál es su propósito
-- **¿Impacto?** — Qué pasa si no existiera o si se implementa mal
-
-> *"La calidad no es una opción, es una obligación."*
+- Contraseñas hasheadas con **bcrypt** — nunca en texto plano
+- Autenticación con **JWT** (Access Token 15 min + Refresh Token 7 días)
+- Validación de edad mínima: **18 años**
+- Validación de contraseña: mínimo 8 caracteres, mayúscula, minúscula y número
+- CORS configurado solo para `http://localhost:5173`
 
 ---
 
-## 📄 Licencia
+## 👥 Autores
 
-Proyecto educativo — SENA, Ficha 3171599. Uso exclusivamente académico.
+| Nombre | Rol |
+|---|---|
+| **Franky Almario** | Desarrollador |
+| **Jhoyner Nova** | Desarrollador |
+
+**Instructor:** ergrato-dev  
+**Programa:** SENA — Ficha 3171599  
+**Fecha:** Febrero 2026
+
+---
+
+> *"La calidad no es una opción, es una obligación. Cada línea de código es una oportunidad de aprender y enseñar."*
