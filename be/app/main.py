@@ -66,11 +66,9 @@ app = FastAPI(
 #           allow_credentials=True permite enviar cookies/headers de autenticación.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.FRONTEND_URL,  # Frontend de desarrollo (http://localhost:5173)
-    ],
+    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, etc.)
+    allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
     allow_headers=["*"],  # Permitir todos los headers (incluyendo Authorization)
 )
 
@@ -112,4 +110,18 @@ async def health_check() -> dict[str, str]:
         "status": "healthy",
         "project": "Jóvenes al Ruedo",
         "version": "0.1.0",
+    }
+
+
+@app.get(
+    "/api/v1/debug/config",
+    tags=["debug"],
+    summary="Debug: Mostrar configuración actual",
+)
+async def debug_config() -> dict:
+    """Endpoint de debug para verificar la configuración actual."""
+    return {
+        "FRONTEND_URL": settings.FRONTEND_URL,
+        "DATABASE_URL": settings.DATABASE_URL[:20] + "***",  # Ocultar contraseña
+        "CORS_enabled": True,
     }

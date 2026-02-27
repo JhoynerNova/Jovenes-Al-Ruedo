@@ -43,7 +43,7 @@ class TestRegister:
             json={
                 "email": "new@nn-company.com",
                 "full_name": "New User",
-                "age": 20,
+                "birth_date": "2003-01-01",
                 "artistic_area": "Danza",
                 "password": "NewPass123",
             },
@@ -77,7 +77,7 @@ class TestRegister:
             json={
                 "email": TEST_USER_EMAIL,
                 "full_name": "Duplicate User",
-                "age": 20,
+                "birth_date": "2003-01-01",
                 "artistic_area": "Teatro",
                 "password": "TestPass123",
             },

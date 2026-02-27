@@ -392,7 +392,9 @@ docker compose up -d
 docker compose ps
 
 # 2. Levantar backend (Terminal 1)
-cd be && source .venv/bin/activate && uvicorn app.main:app --reload
+cd be && source .venv/Scripts/activate
+
+ && uvicorn app.main:app --reload
 # → http://localhost:8000
 # → Swagger UI: http://localhost:8000/docs
 
@@ -401,7 +403,9 @@ cd fe && pnpm dev
 # → http://localhost:5173
 
 # 4. Ejecutar tests (Terminal 3)
-cd be && source .venv/bin/activate && pytest -v --cov=app
+cd be && source .venv/Scripts/activate
+
+ && pytest -v --cov=app
 cd fe && pnpm test
 
 # 5. Flujo manual completo:

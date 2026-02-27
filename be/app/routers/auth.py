@@ -36,6 +36,20 @@ router = APIRouter(
 )
 
 
+# ¿Qué? Handler OPTIONS para preflight CORS.
+# ¿Para qué? Explícitamente permitir peticiones OPTIONS del navegador (preflight).
+# ¿Impacto? Sin esto, los navegadores rechazan peticiones POST por CORS.
+@router.options("/register")
+@router.options("/login")
+@router.options("/refresh")
+@router.options("/change-password")
+@router.options("/forgot-password")
+@router.options("/reset-password")
+async def options_handler():
+    """Maneja peticiones OPTIONS para preflight CORS."""
+    return {}
+
+
 @router.post(
     "/register",
     response_model=UserResponse,

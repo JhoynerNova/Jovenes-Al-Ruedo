@@ -53,9 +53,17 @@ export function DashboardPage() {
 
   <div className="flex flex-col sm:flex-row sm:gap-4">
     <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-40">
-      Edad
+      Fecha de nacimiento
     </dt>
-    <dd className="text-sm text-gray-900 dark:text-gray-100">{user?.age} años</dd>
+    <dd className="text-sm text-gray-900 dark:text-gray-100">
+      {user?.birth_date
+        ? new Date(user.birth_date).toLocaleDateString("es-CO", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : "—"}
+    </dd>
   </div>
 
   <div className="flex flex-col sm:flex-row sm:gap-4">

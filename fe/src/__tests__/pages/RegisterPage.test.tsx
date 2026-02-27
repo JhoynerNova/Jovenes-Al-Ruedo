@@ -19,6 +19,8 @@ describe("RegisterPage", () => {
     expect(screen.getByRole("heading", { name: "Crear cuenta" })).toBeInTheDocument();
     expect(screen.getByLabelText("Nombre completo")).toBeInTheDocument();
     expect(screen.getByLabelText("Correo electrónico")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fecha de nacimiento")).toBeInTheDocument();
+    expect(screen.getByLabelText("Área artística")).toBeInTheDocument();
     expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirmar contraseña")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Crear cuenta" })).toBeInTheDocument();
@@ -37,6 +39,8 @@ describe("RegisterPage", () => {
 
     await user.type(screen.getByLabelText("Nombre completo"), "A");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
+    await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
+    await user.type(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
@@ -51,6 +55,8 @@ describe("RegisterPage", () => {
 
     await user.type(screen.getByLabelText("Nombre completo"), "Test User");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
+    await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
+    await user.type(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Ab1");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "Ab1");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
@@ -65,6 +71,8 @@ describe("RegisterPage", () => {
 
     await user.type(screen.getByLabelText("Nombre completo"), "Test User");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
+    await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
+    await user.type(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "Password2");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
@@ -84,6 +92,8 @@ describe("RegisterPage", () => {
 
     await user.type(screen.getByLabelText("Nombre completo"), "Juan Pérez");
     await user.type(screen.getByLabelText("Correo electrónico"), "juan@nn.com");
+    await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
+    await user.type(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
@@ -91,6 +101,8 @@ describe("RegisterPage", () => {
     expect(registerMock).toHaveBeenCalledWith({
       email: "juan@nn.com",
       full_name: "Juan Pérez",
+      birth_date: "2000-01-01",
+      artistic_area: "Música",
       password: "Password1",
     });
   });
@@ -107,6 +119,8 @@ describe("RegisterPage", () => {
 
     await user.type(screen.getByLabelText("Nombre completo"), "Test User");
     await user.type(screen.getByLabelText("Correo electrónico"), "dup@nn.com");
+    await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
+    await user.type(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));

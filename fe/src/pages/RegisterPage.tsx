@@ -26,7 +26,7 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
-    age: "",
+    birth_date: "",
     artistic_area: "",
     password: "",
     confirmPassword: "",
@@ -54,8 +54,21 @@ export function RegisterPage() {
       newErrors.email = "El correo es obligatorio";
     }
 
-    if (!formData.age || parseInt(formData.age) < 18) {
-      newErrors.age = "Debes ser mayor de 18 años";
+    if (!formData.birth_date) {
+      newErrors.birth_date = "La fecha de nacimiento es obligatoria";
+    } else {
+      const birth = new Date(formData.birth_date);
+      if (isNaN(birth.getTime())) {
+        newErrors.birth_date = "Fecha inválida";
+      } else {
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        if (age < 18) newErrors.birth_date = "Debes ser mayor de 18 años";
+      }
     }
 
     if (!formData.artistic_area || formData.artistic_area.trim().length < 2) {
@@ -95,7 +108,7 @@ export function RegisterPage() {
       await register({
         email: formData.email,
         full_name: formData.full_name.trim(),
-        age: parseInt(formData.age),
+        birth_date: formData.birth_date,
         artistic_area: formData.artistic_area.trim(),
         password: formData.password,
       });
@@ -142,13 +155,13 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Edad"
-          name="age"
-          type="number"
-          value={formData.age}
-          placeholder="18"
+          label="Fecha de nacimiento"
+          name="birth_date"
+          type="date"
+          value={formData.birth_date}
+          placeholder="2000-01-01"
           icon={<User className="h-5 w-5" />}
-          error={errors.age}
+          error={errors.birth_date}
           onChange={handleChange}
         />
 

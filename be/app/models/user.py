@@ -8,9 +8,9 @@ Descripción: Modelo ORM que representa la tabla `users` en PostgreSQL.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, Date, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -68,10 +68,11 @@ class User(Base):
         nullable=False,
     )
 
-    # ¿Qué? Edad del joven artista.
+    # ¿Qué? Fecha de nacimiento del joven artista.
     # ¿Para qué? Validar que el usuario sea mayor de 18 años al registrarse.
-    # ¿Impacto? Permite cumplir la restricción de edad mínima del sistema.
-    age: Mapped[int] = mapped_column(
+    # ¿Impacto? Guarda la fecha de nacimiento en vez de la edad estimada.
+    birth_date: Mapped[date] = mapped_column(
+        Date,
         nullable=False,
     )
 

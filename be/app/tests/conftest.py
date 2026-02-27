@@ -143,7 +143,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 TEST_USER_EMAIL = "test@nn-company.com"
 TEST_USER_FULL_NAME = "Test User"
 TEST_USER_PASSWORD = "TestPass123"
-TEST_USER_AGE = 20
+TEST_USER_BIRTH_DATE = "2003-01-01"
 TEST_USER_ARTISTIC_AREA = "Música"
 
 @pytest.fixture()
@@ -159,7 +159,7 @@ def test_user(db: Session) -> User:
     user = User(
         email=TEST_USER_EMAIL,
         full_name=TEST_USER_FULL_NAME,
-        age=TEST_USER_AGE,
+        birth_date=TEST_USER_BIRTH_DATE,
         artistic_area=TEST_USER_ARTISTIC_AREA,
         hashed_password=hash_password(TEST_USER_PASSWORD),
     )

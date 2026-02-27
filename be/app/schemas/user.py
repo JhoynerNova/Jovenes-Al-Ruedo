@@ -11,7 +11,7 @@ Descripción: Schemas Pydantic para validación de datos de entrada (request) y 
 
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
@@ -44,7 +44,7 @@ class UserCreate(BaseModel):
     # ¿Qué? Edad del joven artista.
     # ¿Para qué? Validar que sea mayor de 18 años al registrarse.
     # ¿Impacto? Sin esta validación, menores de edad podrían registrarse.
-    age: int
+    birth_date: date
 
     # ¿Qué? Área artística del joven.
     # ¿Para qué? Categorizar al artista dentro de la plataforma.
@@ -84,28 +84,17 @@ class UserCreate(BaseModel):
             raise ValueError("La contraseña debe contener al menos un número")
         return v
 
-    @field_validator("age")
+    @field_validator("birth_date")
     @classmethod
-    def validate_age(cls, v: int) -> int:
-        """Valida que el usuario sea mayor de 18 años.
+    def validate_birth_date(cls, v: date) -> date:
+        """Valida que el usuario tenga al menos 18 años.
 
-        ¿Qué? Verifica que la edad ingresada sea 18 o más.
-        ¿Para qué? Cumplir la restricción de edad mínima del sistema.
-        ¿Impacto? Sin esto, menores de edad podrían acceder a la plataforma.
-
-        Args:
-            v: Valor de la edad a validar.
-
-        Returns:
-            La edad si pasa todas las validaciones.
-
-        Raises:
-            ValueError: Si la edad es menor de 18 o mayor de 100.
+        Calcula la edad en base a la fecha de nacimiento y exige >= 18.
         """
-        if v < 18:
+        today = datetime.utcnow().date()
+        years = (today - v).days / 365.25
+        if years < 18:
             raise ValueError("Debes ser mayor de 18 años para registrarte")
-        if v > 100:
-            raise ValueError("Ingresa una edad válida")
         return v
 
     @field_validator("full_name")
@@ -249,7 +238,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
-    age: int
+    birth_date: date
     artistic_area: str
     is_active: bool
     created_at: datetime
