@@ -1,0 +1,114 @@
+# ¿Qué? Lista de archivos y carpetas que Docker EXCLUYE del contexto de build del frontend.
+
+# ¿Para qué? Evitar enviar archivos innecesarios al daemon de Docker al ejecutar `docker build`.
+
+# ¿Impacto? Sin este archivo, Docker intentaría copiar node_modules (~500MB de dependencias
+
+# instaladas localmente) al contexto de build — las cuales se volverían a instalar
+
+# dentro del contenedor de todas formas. Resultado: builds lentos sin ningún beneficio.
+
+# Con .dockerignore, el contexto pasa de ~500MB a ~5MB.
+
+# ────────────────────────────
+
+# Dependencias de Node.js
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el directorio de módulos instalados localmente.
+
+# ¿Para qué? Las dependencias se instalan DENTRO del contenedor con `pnpm install`,
+
+# no se copian desde el host.
+
+# ¿Impacto? node_modules del host puede ser incompatible con el contenedor (binarios
+
+# compilados para el SO del host). Sin esta exclusión, el build tarda minutos
+
+# extra y puede fallar por incompatibilidades de plataforma.
+
+node_modules/
+
+# ────────────────────────────
+
+# Output del build anterior
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el directorio con la compilación anterior de Vite.
+
+# ¿Para qué? El build se genera de nuevo DENTRO del contenedor con `pnpm build`.
+
+# ¿Impacto? Si se copiara dist/ del host, el contenedor usaría un build potencialmente
+
+# desactualizado o incompatible (generado con otras variables de entorno).
+
+dist/
+
+# ────────────────────────────
+
+# Variables de entorno reales
+
+# ────────────────────────────
+
+# ¿Qué? Excluye archivos de variables de entorno locales.
+
+# ¿Para qué? Las variables se pasan al build como ARGs en docker-compose.yml.
+
+# ¿Impacto? VITE\_\* son variables públicas (visibles en el bundle), pero por
+
+# consistencia y para evitar que variables locales sobreescriban las
+
+# del compose, es mejor excluirlas del contexto de build.
+
+.env
+.env.local
+.env.production
+.env.development
+
+# ────────────────────────────
+
+# Testing y cobertura
+
+# ────────────────────────────
+
+# ¿Qué? Excluye reportes de cobertura y caché de tests.
+
+# ¿Para qué? No son necesarios en la imagen de producción.
+
+# ¿Impacto? Solo incluir lo estrictamente necesario para el build.
+
+coverage/
+
+# ────────────────────────────
+
+# Archivos del sistema / editor
+
+# ────────────────────────────
+
+# ¿Qué? Excluye archivos generados por macOS, Windows y editores de código.
+
+# ¿Para qué? No tienen relevancia dentro del contenedor.
+
+# ¿Impacto? Mantienen el contexto de build limpio y evitan contaminación de la imagen.
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ────────────────────────────
+
+# Git
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el historial y configuración de git.
+
+# ¿Para qué? No son necesarios para compilar ni servir la aplicación.
+
+# ¿Impacto? El directorio .git puede pesar varios MB y no aporta nada al build.
+
+.git/
+.gitignore

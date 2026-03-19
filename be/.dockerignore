@@ -1,0 +1,127 @@
+# ¿Qué? Lista de archivos y carpetas que Docker EXCLUYE del contexto de build del backend.
+
+# ¿Para qué? Evitar enviar archivos innecesarios (o peligrosos) al daemon de Docker
+
+# cuando ejecuta el comando `docker build`.
+
+# ¿Impacto? Sin este archivo, Docker enviaría al daemon:
+
+# - .venv/ (~300MB de paquetes Python instalados localmente)
+
+# - **pycache**/ (bytecode generado en el host, incompatible con el contenedor)
+
+# - .env (credenciales reales de la BD, JWT secret, contraseñas de email)
+
+# Resultado: builds lentos, imágenes grandes y FUGA DE CREDENCIALES en la imagen.
+
+# ────────────────────────────
+
+# Entorno virtual de Python
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el directorio del entorno virtual local.
+
+# ¿Para qué? Las dependencias se instalan DENTRO del contenedor con pip, no se copian.
+
+# ¿Impacto? .venv puede pesar +300MB. Sin esta exclusión, el contexto de build se
+
+# infla enormemente y se copiarían binarios del host que podrían ser incompatibles
+
+# con la arquitectura del contenedor (ej: compiled wheels para Linux vs macOS).
+
+.venv/
+venv/
+
+# ────────────────────────────
+
+# Caché de Python
+
+# ────────────────────────────
+
+# ¿Qué? Excluye los directorios y archivos de bytecode de Python.
+
+# ¿Para qué? Son archivos temporales específicos del entorno del host.
+
+# ¿Impacto? El bytecode es incompatible con el contenedor. Se regenera automáticamente.
+
+**pycache**/
+_.pyc
+_.pyo
+\*.pyd
+.Python
+
+# ────────────────────────────
+
+# Variables de entorno reales
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el archivo .env con las credenciales reales.
+
+# ¿Para qué? NUNCA incluir credenciales dentro de una imagen Docker.
+
+# ¿Impacto? Si .env se incluyera en la imagen, cualquiera que descargue la imagen
+
+# podría extraer la SECRET_KEY del JWT, la contraseña de la BD y del email
+
+# con un simple `docker run --rm imagen cat /app/.env`.
+
+# Las variables se pasan al contenedor en runtime vía docker-compose.yml.
+
+.env
+.env.local
+.env.production
+
+# ────────────────────────────
+
+# Testing y cobertura
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el caché de pytest y los reportes de cobertura.
+
+# ¿Para qué? No son necesarios en el contenedor de producción.
+
+# ¿Impacto? Reducen el tamaño del contexto y evitan ensuciar la imagen.
+
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+
+# ────────────────────────────
+
+# Archivos del sistema / editor
+
+# ────────────────────────────
+
+# ¿Qué? Excluye archivos generados por macOS, Windows y editores.
+
+# ¿Para qué? No tienen relevancia dentro del contenedor.
+
+# ¿Impacto? Reducen el contexto de build. Los archivos .DS_Store y .swp
+
+# son específicos del host y no deben contaminar la imagen.
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+_.swp
+_.swo
+
+# ────────────────────────────
+
+# Git
+
+# ────────────────────────────
+
+# ¿Qué? Excluye el historial y configuración de git.
+
+# ¿Para qué? No son necesarios para ejecutar la aplicación.
+
+# ¿Impacto? El directorio .git puede pesar varios MB y no aporta nada al runtime.
+
+.git/
+.gitignore

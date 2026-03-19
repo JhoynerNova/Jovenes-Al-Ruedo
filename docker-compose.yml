@@ -1,7 +1,15 @@
-# ¿Qué? Archivo de Docker Compose para orquestar servicios de desarrollo.
-# ¿Para qué? Levantar PostgreSQL 17 con un solo comando, sin instalación local.
-# ¿Impacto? Garantiza que todos los desarrolladores usen la misma versión de BD
-#           con la misma configuración, eliminando el clásico "en mi máquina funciona".
+# ¿Qué? Archivo de Docker Compose para orquestar TODOS los servicios del stack.
+# ¿Para qué? Levantar PostgreSQL, el backend FastAPI y el frontend React con UN solo comando:
+#            `docker compose up --build`
+# ¿Impacto? Sin este archivo, cada servicio habría que arrancarlo manualmente por separado,
+#           configurando redes, variables de entorno y dependencias de forma manual.
+#           Con Docker Compose, el entorno completo se levanta con un solo comando y
+#           elimina el clásico "en mi máquina funciona" — funciona igual en todas partes.
+#
+# PUERTOS EXPUESTOS AL HOST:
+#   - http://localhost      → Frontend (React + Nginx)
+#   - http://localhost:8000 → Backend API (FastAPI + Uvicorn)  [también: /docs y /redoc]
+#   - localhost:5432        → PostgreSQL (acceso directo para clientes como DBeaver)
 
 services:
   # ────────────────────────────
@@ -34,6 +42,9 @@ services:
       # ¿Impacto? Sin volumen, cada `docker compose down` borraría todos los datos.
       - nn_auth_data:/var/lib/postgresql/data
 
+    networks:
+      - nn_auth_network
+
     healthcheck:
       # ¿Qué? Comando que Docker ejecuta periódicamente para verificar que PostgreSQL responde.
       # ¿Para qué? Saber si la BD está lista para aceptar conexiones antes de que el backend intente conectarse.
@@ -43,6 +54,103 @@ services:
       timeout: 5s
       retries: 5
 
+  # ────────────────────────────
+  # 🐍 Backend — FastAPI + Uvicorn
+  # ────────────────────────────
+  backend:
+    # ¿Qué? Construye la imagen del backend usando be/Dockerfile.
+    # ¿Para qué? Crear el contenedor con Python, las dependencias y el código de la API.
+    # ¿Impacto? `context: ./be` indica que el contexto de build es la carpeta be/.
+    #           Docker solo verá los archivos de be/ (filtrados por be/.dockerignore).
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+    container_name: nn_auth_backend
+    restart: unless-stopped
+
+    # ¿Qué? Define la dependencia de orden de arranque con el servicio db.
+    # ¿Para qué? Garantizar que PostgreSQL esté listo ANTES de que el backend intente conectarse.
+    # ¿Impacto? `condition: service_healthy` espera a que el healthcheck de db pase
+    #           (pg_isready responda OK) antes de arrancar el backend. Sin esto,
+    #           el backend podría arrancar antes de que PostgreSQL acepte conexiones.
+    #           Nota: el entrypoint.sh tiene su propia espera como segunda capa de seguridad.
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # ¿Qué? Variables de entorno inyectadas al contenedor del backend en runtime.
+    # ¿Para qué? Configurar la aplicación sin hardcodear valores en el código.
+    # ¿Impacto? DIFERENCIA CRÍTICA con el desarrollo local:
+    #           DATABASE_URL usa "db" (nombre del servicio Docker) en vez de "localhost".
+    #           Dentro de la red Docker, los contenedores se comunican por nombre de servicio.
+    #           Cambiar "db" por "localhost" aquí haría que el backend no encuentre a PostgreSQL.
+    environment:
+      # Conexión a la BD — "db" es el nombre del servicio PostgreSQL en esta misma red
+      DATABASE_URL: postgresql://nn_user:nn_password@db:5432/nn_auth_db
+      # Clave secreta JWT — CAMBIAR por una clave real y segura en producción
+      # Generar: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      SECRET_KEY: dev-secret-key-change-in-production-must-be-32-chars-min
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      # Configuración de email — reemplazar con credenciales reales para recuperación de contraseña
+      MAIL_SERVER: smtp.example.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: noreply@nn-company.com
+      MAIL_PASSWORD: dev-mail-password
+      MAIL_FROM: noreply@nn-company.com
+      MAIL_FROM_NAME: Jovenes al Ruedo
+      # URL del frontend — usada en los emails de recuperación y en la configuración de CORS
+      # En Docker, el frontend corre en el puerto 80 del host
+      FRONTEND_URL: http://localhost
+
+    ports:
+      # ¿Qué? Mapea el puerto 8000 del contenedor al 8000 del host.
+      # ¿Para qué? Permitir que el navegador acceda a la API en http://localhost:8000.
+      # ¿Impacto? También expone Swagger UI en http://localhost:8000/docs — útil para probar
+      #           los endpoints directamente sin necesidad del frontend.
+      - "8000:8000"
+
+    networks:
+      - nn_auth_network
+
+  # ────────────────────────────
+  # ⚛️ Frontend — React + Nginx
+  # ────────────────────────────
+  frontend:
+    # ¿Qué? Construye la imagen del frontend usando fe/Dockerfile (multi-stage).
+    # ¿Para qué? Compilar la app React con Vite y servirla con Nginx.
+    # ¿Impacto? `args` pasa la URL del backend como argumento de build a Vite.
+    #           VITE_API_URL se "hornea" en el JavaScript compilado — no es configurable
+    #           en runtime. Debe ser la URL que el NAVEGADOR usa para llegar al backend
+    #           (no el nombre del servicio interno Docker).
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+
+    container_name: nn_auth_frontend
+    restart: unless-stopped
+
+    # ¿Qué? El frontend depende del backend para que la API esté disponible.
+    # ¿Para qué? Asegurar que el backend arranque antes que el frontend.
+    # ¿Impacto? El frontend (archivos estáticos) puede servirse sin el backend,
+    #           pero el usuario no podría hacer login hasta que el backend esté listo.
+    #           Esta dependencia garantiza el orden correcto de arranque.
+    depends_on:
+      - backend
+
+    ports:
+      # ¿Qué? Mapea el puerto 80 del contenedor (Nginx) al puerto 80 del host.
+      # ¿Para qué? Servir el frontend en http://localhost (sin número de puerto).
+      # ¿Impacto? El puerto 80 es el estándar HTTP — el navegador lo usa por defecto
+      #           cuando no se especifica puerto en la URL.
+      - "80:80"
+
+    networks:
+      - nn_auth_network
+
 # ────────────────────────────
 # 📦 Volúmenes nombrados
 # ────────────────────────────
@@ -51,3 +159,16 @@ volumes:
   # ¿Para qué? Almacenar datos de la BD de forma durable entre reinicios del contenedor.
   # ¿Impacto? Para borrar TODOS los datos: `docker compose down -v` (¡cuidado en producción!).
   nn_auth_data:
+
+# ────────────────────────────
+# 🔌 Red interna
+# ────────────────────────────
+# ¿Qué? Red Docker personalizada que conecta todos los servicios.
+# ¿Para qué? Permitir que backend y db se comuniquen por nombre de servicio (ej: "db")
+#            sin exponer puertos internos al host innecesariamente.
+# ¿Impacto? Sin una red compartida, los contenedores no pueden comunicarse entre sí.
+#           Docker Compose crea una red por defecto, pero definirla explícitamente
+#           da más control y claridad sobre la topología de red del sistema.
+networks:
+  nn_auth_network:
+    driver: bridge
