@@ -7,12 +7,21 @@ Descripción: Paquete de modelos ORM — exporta todos los modelos para facilita
           generadas estarían vacías (uno de los errores más comunes al configurar Alembic).
 """
 
-# ¿Qué? Importaciones explícitas de todos los modelos ORM del proyecto.
-# ¿Para qué? Al importar este paquete, Python ejecuta estos imports y SQLAlchemy
-#            registra los modelos en Base.metadata (el registro central de tablas).
-# ¿Impacto? Si se agrega un nuevo modelo y NO se importa aquí, Alembic no lo verá
-#           y no generará la migración correspondiente.
 from app.models.user import User
 from app.models.password_reset_token import PasswordResetToken
+from app.models.habilidad import Habilidad
+from app.models.rel_usr_hab import RelUsrHab
+from app.models.portafolio import Portafolio, DetPortafolio
+from app.models.conv import Conv, DetConv, Inscripcion
 
-__all__ = ["User", "PasswordResetToken"]
+__all__ = [
+    "User",
+    "PasswordResetToken",
+    "Habilidad",
+    "RelUsrHab",
+    "Portafolio",
+    "DetPortafolio",
+    "Conv",
+    "DetConv",
+    "Inscripcion",
+]
