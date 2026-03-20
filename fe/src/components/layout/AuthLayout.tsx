@@ -7,6 +7,7 @@
  */
 
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 /**
  * ¿Qué? Props del AuthLayout — título, subtítulo y children.
@@ -25,7 +26,7 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-brand-dark">
       {/* ¿Qué? Header mínimo con toggle de tema en la esquina superior derecha. */}
       <div className="flex justify-end p-4">
         <ThemeToggle />
@@ -35,8 +36,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex flex-1 items-center justify-center px-4 pb-12">
         <div className="w-full max-w-md">
           {/* ¿Qué? Logo y título de la app centrados. */}
-          <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <div className="mb-8 flex flex-col items-center gap-3">
+            <img src={logo} alt="Jóvenes al Ruedo" className="h-24 w-24 rounded-full object-cover" />
+            <h1 className="text-2xl font-bold tracking-tight text-brand-purple dark:text-brand-teal">
               Jóvenes al Ruedo
             </h1>
           </div>
@@ -44,7 +46,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           {/* ¿Qué? Card con fondo blanco, borde sutil y sombra suave. */}
           {/* ¿Para qué? Contener el formulario en una caja visual definida. */}
           {/* ¿Impacto? Diseño limpio, sin degradados, bordes sutiles. */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-brand-purple/30 dark:bg-gray-900 sm:p-8">
             {/* ¿Qué? Título y subtítulo del formulario. */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>

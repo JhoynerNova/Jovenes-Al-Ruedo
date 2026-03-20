@@ -13,6 +13,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 // ¿Qué? Imports de todas las páginas de la aplicación.
 // ¿Para qué? Cada página se renderiza según la ruta activa.
 // ¿Impacto? Al agregar una nueva página, se importa aquí y se agrega una <Route>.
+import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -55,10 +56,10 @@ function App() {
             <Route path="/change-password" element={<ChangePasswordPage />} />
           </Route>
 
-          {/* ¿Qué? Ruta raíz redirige al login. */}
-          {/* ¿Para qué? Si el usuario accede a "/", lo enviamos al login. */}
-          {/* ¿Impacto? Evita una página en blanco en la ruta raíz. */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* ¿Qué? Ruta raíz muestra la landing page. */}
+          {/* ¿Para qué? El visitante nuevo ve la presentación del producto antes del login. */}
+          {/* ¿Impacto? Mejora la conversión al dar contexto antes de pedir el registro. */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* ¿Qué? Ruta catch-all para URLs no existentes. */}
           {/* ¿Para qué? Redirigir al login cualquier ruta desconocida. */}
