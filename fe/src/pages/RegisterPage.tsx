@@ -200,6 +200,26 @@ export function RegisterPage() {
           onChange={handleChange}
         />
 
+        {/* ¿Qué? Checkbox de consentimiento obligatorio. */}
+        {/* ¿Para qué? Cumplir con la Ley 1581 de 2012 — el usuario debe aceptar antes de registrarse. */}
+        {/* ¿Impacto? Sin este consentimiento, el tratamiento de datos personales sería ilegal en Colombia. */}
+        <div className="mb-4 flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="privacy-consent"
+            required
+            className="mt-1 h-4 w-4 accent-brand-purple"
+          />
+          <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
+            He leído y acepto la{" "}
+            <Link to="/privacy-policy" className="text-brand-blue hover:underline" target="_blank">
+              Política de Privacidad
+            </Link>{" "}
+            y el uso de cookies conforme a la{" "}
+            <strong>Ley 1581 de 2012</strong>
+          </label>
+        </div>
+
         <div className="mt-2 flex justify-end">
           <Button type="submit" fullWidth isLoading={isLoading}>
             Crear cuenta

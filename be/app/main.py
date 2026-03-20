@@ -1,21 +1,34 @@
 """
 Módulo: main.py
 Descripción: Punto de entrada de la aplicación FastAPI — configura y arranca el servidor.
-¿Para qué? Crear la instancia principal de FastAPI, configurar CORS, incluir routers
-           y definir el ciclo de vida de la aplicación.
+¿Para qué? Crear la instancia principal de FastAPI, configurar CORS, middlewares de seguridad,
+           incluir routers y definir el ciclo de vida de la aplicación.
 ¿Impacto? Este es el archivo que Uvicorn ejecuta. Sin él, no hay servidor.
           Todo endpoint, middleware y configuración se conecta aquí.
 """
 
+import logging
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
+
+# ¿Qué? Configuración básica del sistema de logging de Python.
+# ¿Para qué? Registrar eventos importantes (logins, errores, arranque) con timestamps.
+# ¿Impacto? Sin logging configurado, los mensajes no se muestran en consola ni en archivos.
+#           Nivel INFO registra eventos normales; WARNING y ERROR capturan problemas.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 # ¿Qué? Función de ciclo de vida (lifespan) que se ejecuta al iniciar y al cerrar la app.
@@ -33,11 +46,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
               El código después de `yield` se ejecuta al CERRAR.
     """
     # --- Startup ---
-    print("🚀 Jóvenes al Ruedo — Backend iniciando...")
-    print(f"📡 CORS habilitado para: {settings.FRONTEND_URL}")
+    logger.info("Jóvenes al Ruedo — Backend iniciando...")
+    logger.info(f"CORS habilitado para: {settings.FRONTEND_URL}")
     yield
     # --- Shutdown ---
-    print("🛑 Jóvenes al Ruedo — Backend cerrando...")
+    logger.info("Jóvenes al Ruedo — Backend cerrando...")
 
 
 # ¿Qué? Instancia principal de la aplicación FastAPI.
@@ -48,7 +61,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="Jóvenes al Ruedo",
     description=(
-        "🎨 Sistema de autenticación para la plataforma Jóvenes al Ruedo. "
+        "Sistema de autenticación para la plataforma Jóvenes al Ruedo. "
         "Incluye registro, login, cambio y recuperación de contraseña. "
         "Proyecto educativo — SENA, Ficha 3171599."
     ),
@@ -56,6 +69,14 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+)
+
+# ¿Qué? Middleware que valida el header Host de las peticiones entrantes.
+# ¿Para qué? Prevenir ataques de Host Header Injection.
+# ¿Impacto? OWASP A05 — solo acepta peticiones con hosts conocidos y seguros.
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "*.jovenes-al-ruedo.com", "*"],
 )
 
 # ¿Qué? Middleware CORS (Cross-Origin Resource Sharing).
@@ -73,8 +94,35 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Middleware que agrega headers de seguridad a todas las respuestas HTTP.
+
+    # ¿Qué? Intercepta cada respuesta y agrega headers de seguridad estándar.
+    # ¿Para qué? Proteger contra vulnerabilidades comunes de navegadores.
+    # ¿Impacto? Mitiga: OWASP A05 (Mala Configuración de Seguridad).
+    #   X-Content-Type-Options: Previene MIME sniffing (el navegador respeta el Content-Type).
+    #   X-Frame-Options: Previene clickjacking (la página no puede cargarse en un iframe).
+    #   X-XSS-Protection: Activa filtro XSS del navegador (legacy, complementa CSP).
+    #   Strict-Transport-Security: Fuerza HTTPS por 1 año (HSTS).
+    #   Content-Security-Policy: Restringe las fuentes de contenido permitidas.
+    """
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+        "img-src 'self' data: fastapi.tiangolo.com;"
+    )
+    return response
+
+
 # ────────────────────────────
-# 📍 Incluir routers
+# Incluir routers
 # ────────────────────────────
 
 # ¿Qué? Registro de los routers de autenticación y usuarios en la app.
@@ -87,7 +135,7 @@ app.include_router(users_router)
 
 
 # ────────────────────────────
-# 📍 Endpoint de salud (health check)
+# Endpoint de salud (health check)
 # ────────────────────────────
 @app.get(
     "/api/v1/health",

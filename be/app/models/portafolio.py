@@ -19,6 +19,11 @@ class Portafolio(Base):
 
     archivos: Mapped[List["DetPortafolio"]] = relationship(back_populates="portafolio", cascade="all, delete-orphan")
 
+    # ¿Qué? Relación hacia el usuario dueño del portafolio.
+    # ¿Para qué? Acceder al perfil del artista desde el portafolio con portafolio.usuario.
+    # ¿Impacto? Permite navegar desde un portafolio hasta el perfil completo del artista.
+    usuario: Mapped["User"] = relationship(back_populates="portafolios")
+
     def __repr__(self) -> str:
         return f"Portafolio(id={self.id_port}, nombre={self.nombre})"
 
