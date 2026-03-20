@@ -19,7 +19,20 @@ from alembic import context
 # ¿Impacto? El import de app.models ejecuta models/__init__.py, que a su vez importa
 #           User y PasswordResetToken. Sin estos imports, autogenerate no detecta nada.
 from app.database import Base
-from app.models import User, PasswordResetToken  # noqa: F401 — necesarios para autogenerate
+# ¿Qué? Importación de TODOS los modelos del proyecto.
+# ¿Para qué? Alembic necesita conocer todos los modelos para detectar cambios y generar migraciones.
+# ¿Impacto? Si falta un modelo aquí, Alembic no detectará sus cambios y la migración estará incompleta.
+from app.models import (  # noqa: F401 — todos necesarios para autogenerate
+    User,
+    PasswordResetToken,
+    Habilidad,
+    RelUsrHab,
+    Portafolio,
+    DetPortafolio,
+    Conv,
+    DetConv,
+    Inscripcion,
+)
 from app.config import settings
 
 # ¿Qué? Objeto de configuración de Alembic que lee alembic.ini.

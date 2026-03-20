@@ -20,15 +20,15 @@ services:
     # ¿Para qué? Proveer la base de datos relacional del sistema de autenticación.
     # ¿Impacto? Sin este servicio, el backend no puede persistir datos de usuarios ni tokens.
     image: postgres:17-alpine
-    container_name: nn_auth_db
+    container_name: jovenes_al_ruedo_db
     restart: unless-stopped
 
     environment:
       # Variables que PostgreSQL usa al inicializar por primera vez el contenedor.
       # Estos valores son SOLO para desarrollo local — en producción se usan secrets.
-      POSTGRES_USER: nn_user
-      POSTGRES_PASSWORD: nn_password
-      POSTGRES_DB: nn_auth_db
+      POSTGRES_USER: jar_user
+      POSTGRES_PASSWORD: jar_password
+      POSTGRES_DB: jovenes_al_ruedo
 
     ports:
       # ¿Qué? Mapea el puerto 5432 del contenedor al 5432 del host.
@@ -40,16 +40,16 @@ services:
       # ¿Qué? Volumen nombrado que persiste los datos de PostgreSQL.
       # ¿Para qué? Que los datos sobrevivan al reinicio o recreación del contenedor.
       # ¿Impacto? Sin volumen, cada `docker compose down` borraría todos los datos.
-      - nn_auth_data:/var/lib/postgresql/data
+      - jovenes_al_ruedo_data:/var/lib/postgresql/data
 
     networks:
-      - nn_auth_network
+      - jovenes_al_ruedo_network
 
     healthcheck:
       # ¿Qué? Comando que Docker ejecuta periódicamente para verificar que PostgreSQL responde.
       # ¿Para qué? Saber si la BD está lista para aceptar conexiones antes de que el backend intente conectarse.
       # ¿Impacto? Sin healthcheck, el backend podría intentar conectarse antes de que la BD esté lista.
-      test: ["CMD-SHELL", "pg_isready -U nn_user -d nn_auth_db"]
+      test: ["CMD-SHELL", "pg_isready -U jar_user -d jovenes_al_ruedo"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,7 +65,7 @@ services:
     build:
       context: ./be
       dockerfile: Dockerfile
-    container_name: nn_auth_backend
+    container_name: jovenes_al_ruedo_backend
     restart: unless-stopped
 
     # ¿Qué? Define la dependencia de orden de arranque con el servicio db.
@@ -86,7 +86,7 @@ services:
     #           Cambiar "db" por "localhost" aquí haría que el backend no encuentre a PostgreSQL.
     environment:
       # Conexión a la BD — "db" es el nombre del servicio PostgreSQL en esta misma red
-      DATABASE_URL: postgresql://nn_user:nn_password@db:5432/nn_auth_db
+      DATABASE_URL: postgresql://jar_user:jar_password@db:5432/jovenes_al_ruedo
       # Clave secreta JWT — CAMBIAR por una clave real y segura en producción
       # Generar: python -c "import secrets; print(secrets.token_urlsafe(32))"
       SECRET_KEY: dev-secret-key-change-in-production-must-be-32-chars-min
@@ -96,9 +96,9 @@ services:
       # Configuración de email — reemplazar con credenciales reales para recuperación de contraseña
       MAIL_SERVER: smtp.example.com
       MAIL_PORT: 587
-      MAIL_USERNAME: noreply@nn-company.com
+      MAIL_USERNAME: noreply@jovenes-al-ruedo.com
       MAIL_PASSWORD: dev-mail-password
-      MAIL_FROM: noreply@nn-company.com
+      MAIL_FROM: noreply@jovenes-al-ruedo.com
       MAIL_FROM_NAME: Jovenes al Ruedo
       # URL del frontend — usada en los emails de recuperación y en la configuración de CORS
       # En Docker, el frontend corre en el puerto 80 del host
@@ -112,7 +112,7 @@ services:
       - "8000:8000"
 
     networks:
-      - nn_auth_network
+      - jovenes_al_ruedo_network
 
   # ────────────────────────────
   # ⚛️ Frontend — React + Nginx
@@ -130,7 +130,7 @@ services:
       args:
         VITE_API_URL: http://localhost:8000
 
-    container_name: nn_auth_frontend
+    container_name: jovenes_al_ruedo_frontend
     restart: unless-stopped
 
     # ¿Qué? El frontend depende del backend para que la API esté disponible.
@@ -149,7 +149,7 @@ services:
       - "80:80"
 
     networks:
-      - nn_auth_network
+      - jovenes_al_ruedo_network
 
 # ────────────────────────────
 # 📦 Volúmenes nombrados
@@ -158,7 +158,7 @@ volumes:
   # ¿Qué? Volumen Docker nombrado para persistencia de datos de PostgreSQL.
   # ¿Para qué? Almacenar datos de la BD de forma durable entre reinicios del contenedor.
   # ¿Impacto? Para borrar TODOS los datos: `docker compose down -v` (¡cuidado en producción!).
-  nn_auth_data:
+  jovenes_al_ruedo_data:
 
 # ────────────────────────────
 # 🔌 Red interna
@@ -170,5 +170,5 @@ volumes:
 #           Docker Compose crea una red por defecto, pero definirla explícitamente
 #           da más control y claridad sobre la topología de red del sistema.
 networks:
-  nn_auth_network:
+  jovenes_al_ruedo_network:
     driver: bridge

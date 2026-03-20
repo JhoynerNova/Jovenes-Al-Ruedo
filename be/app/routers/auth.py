@@ -9,9 +9,12 @@ Descripción: Endpoints de autenticación — registro, login, refresh, cambio y
           la lógica de negocio al auth_service.
 """
 
-from fastapi import APIRouter, Depends, status
+import logging
+
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.user import (
@@ -26,6 +29,11 @@ from app.schemas.user import (
     UserResponse,
 )
 from app.services import auth_service
+
+# ¿Qué? Logger del módulo de autenticación.
+# ¿Para qué? Registrar intentos de login (exitosos y fallidos) para auditoría.
+# ¿Impacto? Sin logging, no hay trazabilidad de accesos — requisito de Ley 1581/2012.
+logger = logging.getLogger(__name__)
 
 # ¿Qué? Router de FastAPI que agrupa todos los endpoints de autenticación.
 # ¿Para qué? Organizar endpoints por dominio — todos los de auth van bajo /api/v1/auth.
@@ -42,6 +50,7 @@ router = APIRouter(
 @router.options("/register")
 @router.options("/login")
 @router.options("/refresh")
+@router.options("/logout")
 @router.options("/change-password")
 @router.options("/forgot-password")
 @router.options("/reset-password")
@@ -63,7 +72,7 @@ def register(
     """Registra un nuevo usuario en el sistema.
 
     ¿Qué? Endpoint que recibe email, nombre y contraseña, y crea una nueva cuenta.
-    ¿Para qué? Permitir que nuevos usuarios se registren en NN Auth System.
+    ¿Para qué? Permitir que nuevos usuarios se registren en Jóvenes al Ruedo.
     ¿Impacto? status_code=201 indica "recurso creado". response_model=UserResponse
               garantiza que NUNCA se retorne el hash de la contraseña.
 
@@ -78,31 +87,21 @@ def register(
     return UserResponse.model_validate(user)
 
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-    summary="Iniciar sesión",
-)
+@router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
 def login(
     login_data: UserLogin,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Autentica un usuario y retorna tokens JWT.
-
-    ¿Qué? Endpoint que recibe email y contraseña, valida credenciales y retorna tokens.
-    ¿Para qué? Permitir al usuario iniciar sesión y obtener tokens para acceder a la API.
-    ¿Impacto? Retorna access_token (15 min) + refresh_token (7 días).
-              El frontend debe almacenar estos tokens y enviar el access_token
-              en el header Authorization de cada petición protegida.
-
-    Args:
-        login_data: Credenciales del usuario (email + password).
-        db: Sesión de BD (inyectada por FastAPI).
-
-    Returns:
-        Par de tokens (access + refresh) y tipo "bearer".
-    """
-    return auth_service.login_user(db=db, login_data=login_data)
+    # ¿Qué? Autentica al usuario y establece cookies HTTPOnly con los tokens.
+    # ¿Para qué? Permitir inicio de sesión seguro con cookies en lugar de localStorage.
+    # ¿Impacto? OWASP A07 — cookies HTTPOnly previenen robo de tokens por XSS.
+    #           Se registra en logs el intento de login (exitoso o fallido).
+    logger.info(f"Intento de login para: {login_data.email}")
+    result = auth_service.login_user(db=db, login_data=login_data)
+    set_auth_cookies(response, result.access_token, result.refresh_token)
+    logger.info(f"Login exitoso para: {login_data.email}")
+    return result
 
 
 @router.post(
@@ -112,6 +111,7 @@ def login(
 )
 def refresh_token(
     token_data: RefreshTokenRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
     """Genera nuevos tokens usando un refresh token válido.
@@ -125,15 +125,30 @@ def refresh_token(
 
     Args:
         token_data: Contiene el refresh_token a validar.
+        response: Objeto Response para establecer nuevas cookies.
         db: Sesión de BD (inyectada por FastAPI).
 
     Returns:
         Nuevos tokens (access + refresh).
     """
-    return auth_service.refresh_access_token(
+    result = auth_service.refresh_access_token(
         db=db,
         refresh_token=token_data.refresh_token,
     )
+    set_auth_cookies(response, result.access_token, result.refresh_token)
+    return result
+
+
+@router.post("/logout", response_model=MessageResponse, summary="Cerrar sesión")
+def logout(response: Response) -> MessageResponse:
+    # ¿Qué? Cierra la sesión del usuario eliminando las cookies de autenticación.
+    # ¿Para qué? Proporcionar un mecanismo seguro de logout que invalide las cookies HTTPOnly.
+    # ¿Impacto? Sin este endpoint, el frontend no podría borrar cookies HTTPOnly
+    #           (JavaScript no tiene acceso a ellas por diseño de seguridad).
+    #           Ley 1581/2012: el usuario tiene derecho a terminar su sesión de forma segura.
+    clear_auth_cookies(response)
+    logger.info("Sesión cerrada correctamente")
+    return MessageResponse(message="Sesión cerrada correctamente")
 
 
 @router.post(

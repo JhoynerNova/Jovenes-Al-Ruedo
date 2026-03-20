@@ -11,7 +11,7 @@ Descripción: Schemas Pydantic para validación de datos de entrada (request) y 
 
 import re
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date  # datetime usado en UserResponse
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
@@ -87,14 +87,18 @@ class UserCreate(BaseModel):
     @field_validator("birth_date")
     @classmethod
     def validate_birth_date(cls, v: date) -> date:
-        """Valida que el usuario tenga al menos 18 años.
-
-        Calcula la edad en base a la fecha de nacimiento y exige >= 18.
         """
-        today = datetime.utcnow().date()
+        # ¿Qué? Valida que el usuario tenga entre 18 y 28 años exactos.
+        # ¿Para qué? La plataforma es exclusiva para jóvenes artistas de 18 a 28 años.
+        # ¿Impacto? Sin este rango, menores de edad o adultos mayores podrían registrarse,
+        #           desvirtuando el propósito de la plataforma.
+        """
+        today = date.today()
         years = (today - v).days / 365.25
         if years < 18:
-            raise ValueError("Debes ser mayor de 18 años para registrarte")
+            raise ValueError("Debes tener al menos 18 años para registrarte en la plataforma")
+        if years > 28:
+            raise ValueError("Esta plataforma es exclusiva para jóvenes entre 18 y 28 años")
         return v
 
     @field_validator("full_name")
@@ -116,15 +120,16 @@ class UserCreate(BaseModel):
     @field_validator("artistic_area")
     @classmethod
     def validate_artistic_area(cls, v: str) -> str:
-        """Valida que el área artística no esté vacía.
-
-        ¿Qué? Verifica que el área artística tenga contenido real.
-        ¿Para qué? Evitar registros sin área artística definida.
-        ¿Impacto? Sin esto, un artista podría registrarse sin categoría.
+        """
+        # ¿Qué? Valida que el área artística tenga contenido significativo.
+        # ¿Para qué? Evitar registros con áreas artísticas vacías o demasiado cortas.
+        # ¿Impacto? Mínimo 3 caracteres garantiza que el campo tenga un valor real.
         """
         v = v.strip()
-        if len(v) < 2:
-            raise ValueError("El área artística debe tener al menos 2 caracteres")
+        if len(v) < 3:
+            raise ValueError("El área artística debe tener al menos 3 caracteres")
+        if len(v) > 100:
+            raise ValueError("El área artística no puede exceder 100 caracteres")
         return v
 
 

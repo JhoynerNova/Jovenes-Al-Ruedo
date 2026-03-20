@@ -19,5 +19,10 @@ class RelUsrHab(Base):
 
     habilidad: Mapped["Habilidad"] = relationship(back_populates="usuarios")
 
+    # ¿Qué? Relación hacia el usuario que tiene esta habilidad.
+    # ¿Para qué? Acceder al perfil del artista desde la relación usuario-habilidad.
+    # ¿Impacto? Permite navegar desde una habilidad hasta el artista que la posee.
+    usuario: Mapped["User"] = relationship(back_populates="habilidades")
+
     def __repr__(self) -> str:
         return f"RelUsrHab(usr={self.id_usr}, hab={self.id_hab})"

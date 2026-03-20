@@ -9,10 +9,11 @@ Descripción: Modelo ORM que representa la tabla `users` en PostgreSQL.
 
 import uuid
 from datetime import datetime, date
+from typing import List
 
 from sqlalchemy import Boolean, Date, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -124,6 +125,45 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    # ════════════════════════════════════════
+    # Relaciones ORM
+    # ════════════════════════════════════════
+
+    # ¿Qué? Relación uno-a-muchos: un usuario puede tener muchas habilidades.
+    # ¿Para qué? Acceder a las habilidades de un usuario con user.habilidades.
+    # ¿Impacto? cascade="all, delete-orphan" borra automáticamente las habilidades si se borra el usuario.
+    habilidades: Mapped[List["RelUsrHab"]] = relationship(
+        back_populates="usuario", cascade="all, delete-orphan"
+    )
+
+    # ¿Qué? Relación uno-a-muchos: un usuario puede tener muchos portafolios.
+    # ¿Para qué? Acceder a los portafolios de un artista con user.portafolios.
+    # ¿Impacto? Al borrar un usuario se borran automáticamente todos sus portafolios.
+    portafolios: Mapped[List["Portafolio"]] = relationship(
+        back_populates="usuario", cascade="all, delete-orphan"
+    )
+
+    # ¿Qué? Relación uno-a-muchos: un usuario (empresa) puede crear muchas convocatorias.
+    # ¿Para qué? Acceder a las convocatorias publicadas por una empresa con user.convocatorias.
+    # ¿Impacto? Al borrar la empresa se borran automáticamente todas sus convocatorias.
+    convocatorias: Mapped[List["Conv"]] = relationship(
+        foreign_keys="Conv.id_usr", back_populates="empresa", cascade="all, delete-orphan"
+    )
+
+    # ¿Qué? Relación uno-a-muchos: un artista puede inscribirse a muchas convocatorias.
+    # ¿Para qué? Ver a qué convocatorias se ha postulado un artista con user.inscripciones.
+    # ¿Impacto? Al borrar el usuario se borran sus postulaciones (historial).
+    inscripciones: Mapped[List["Inscripcion"]] = relationship(
+        foreign_keys="Inscripcion.id_usr", back_populates="usuario", cascade="all, delete-orphan"
+    )
+
+    # ¿Qué? Relación uno-a-muchos: un usuario puede tener muchas evaluaciones.
+    # ¿Para qué? Ver las evaluaciones recibidas por un artista en convocatorias.
+    # ¿Impacto? Al borrar el usuario se borran sus evaluaciones.
+    evaluaciones: Mapped[List["DetConv"]] = relationship(
+        foreign_keys="DetConv.id_usr", back_populates="usuario", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
