@@ -87,13 +87,13 @@ services:
     environment:
       # Conexión a la BD — "db" es el nombre del servicio PostgreSQL en esta misma red
       DATABASE_URL: postgresql://jar_user:jar_password@db:5432/jovenes_al_ruedo
-      # Clave secreta JWT — CAMBIAR por una clave real y segura en producción
+     
       # Generar: python -c "import secrets; print(secrets.token_urlsafe(32))"
       SECRET_KEY: dev-secret-key-change-in-production-must-be-32-chars-min
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 15
       REFRESH_TOKEN_EXPIRE_DAYS: 7
-      # Configuración de email — reemplazar con credenciales reales para recuperación de contraseña
+    
       MAIL_SERVER: smtp.example.com
       MAIL_PORT: 587
       MAIL_USERNAME: noreply@jovenes-al-ruedo.com
