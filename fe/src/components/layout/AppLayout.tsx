@@ -15,7 +15,7 @@ import { Navbar } from "./Navbar";
  */
 export function AppLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-brand-dark">
       <Navbar />
       {/* ¿Qué? Contenedor del contenido principal con max-width y padding. */}
       {/* ¿Para qué? Centrar el contenido y darle espaciado responsivo. */}
