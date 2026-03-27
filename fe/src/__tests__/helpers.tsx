@@ -20,6 +20,8 @@ export const mockUser: UserResponse = {
   id: "550e8400-e29b-41d4-a716-446655440000",
   email: "test@nn-company.com",
   full_name: "Test User",
+  role: "artista",
+  sector: null,
   birth_date: "2000-01-01",
   artistic_area: "Music",
   is_active: true,

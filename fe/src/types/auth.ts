@@ -19,8 +19,10 @@
 export interface RegisterRequest {
   email: string;
   full_name: string;
-  birth_date: string;
-  artistic_area: string;
+  role?: string;
+  sector?: string;
+  birth_date?: string;
+  artistic_area?: string;
   password: string;
 }
 /**
@@ -84,11 +86,21 @@ export interface UserResponse {
   id: string;
   email: string;
   full_name: string;
-  birth_date: string;
-  artistic_area: string;
+  role: string;
+  sector: string | null;
+  birth_date: string | null;
+  artistic_area: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface PaginatedUsersResponse {
+  items: UserResponse[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
 }
 
 /**

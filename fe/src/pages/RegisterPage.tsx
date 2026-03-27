@@ -24,10 +24,12 @@ export function RegisterPage() {
   const { register } = useAuth();
 
   const [formData, setFormData] = useState({
+    role: "artista",
     email: "",
     full_name: "",
     birth_date: "",
     artistic_area: "",
+    sector: "",
     password: "",
     confirmPassword: "",
   });
@@ -54,29 +56,35 @@ export function RegisterPage() {
       newErrors.email = "El correo es obligatorio";
     }
 
-    if (!formData.birth_date) {
-      newErrors.birth_date = "La fecha de nacimiento es obligatoria";
-    } else {
-      const birth = new Date(formData.birth_date);
-      if (isNaN(birth.getTime())) {
-        newErrors.birth_date = "Fecha inválida";
-      } else {
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-          age--;
-        }
-        if (age < 18) newErrors.birth_date = "Debes ser mayor de 18 años";
-      }
-    }
-
-    if (!formData.artistic_area || formData.artistic_area.trim().length < 2) {
-      newErrors.artistic_area = "El área artística es obligatoria";
-    }
-
     if (!formData.full_name || formData.full_name.trim().length < 2) {
       newErrors.full_name = "El nombre debe tener al menos 2 caracteres";
+    }
+
+    if (formData.role === "artista") {
+      if (!formData.birth_date) {
+        newErrors.birth_date = "La fecha de nacimiento es obligatoria";
+      } else {
+        const birth = new Date(formData.birth_date);
+        if (isNaN(birth.getTime())) {
+          newErrors.birth_date = "Fecha inválida";
+        } else {
+          const today = new Date();
+          let age = today.getFullYear() - birth.getFullYear();
+          const m = today.getMonth() - birth.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+          }
+          if (age < 18) newErrors.birth_date = "Debes ser mayor de 18 años";
+        }
+      }
+
+      if (!formData.artistic_area || formData.artistic_area.trim().length < 2) {
+        newErrors.artistic_area = "El área artística es obligatoria";
+      }
+    } else if (formData.role === "empresa") {
+      if (!formData.sector || formData.sector.trim().length < 2) {
+        newErrors.sector = "El sector es obligatorio para empresas o fundaciones";
+      }
     }
 
     if (formData.password.length < 8) {
@@ -105,13 +113,21 @@ export function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await register({
+      const payload: any = {
+        role: formData.role,
         email: formData.email,
         full_name: formData.full_name.trim(),
-        birth_date: formData.birth_date,
-        artistic_area: formData.artistic_area.trim(),
         password: formData.password,
-      });
+      };
+
+      if (formData.role === "artista") {
+        payload.birth_date = formData.birth_date;
+        payload.artistic_area = formData.artistic_area.trim();
+      } else {
+        payload.sector = formData.sector.trim();
+      }
+
+      await register(payload);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
@@ -130,12 +146,38 @@ export function RegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} noValidate>
+        {/* Selector de Rol */}
+        <div className="mb-6 flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="role"
+              value="artista"
+              checked={formData.role === "artista"}
+              onChange={handleChange}
+              className="accent-brand-purple"
+            />
+            <span className="text-gray-700 dark:text-gray-300">Soy Artista</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="role"
+              value="empresa"
+              checked={formData.role === "empresa"}
+              onChange={handleChange}
+              className="accent-brand-purple"
+            />
+            <span className="text-gray-700 dark:text-gray-300">Soy Empresa / Fundación</span>
+          </label>
+        </div>
+
         <InputField
-          label="Nombre completo"
+          label={formData.role === "artista" ? "Nombre completo" : "Nombre de la empresa / fundación"}
           name="full_name"
           type="text"
           value={formData.full_name}
-          placeholder="Juan Pérez"
+          placeholder={formData.role === "artista" ? "Juan Pérez" : "Fundación Cultural..."}
           autoComplete="name"
           icon={<User className="h-5 w-5" />}
           error={errors.full_name}
@@ -154,27 +196,42 @@ export function RegisterPage() {
           onChange={handleChange}
         />
 
-        <InputField
-          label="Fecha de nacimiento"
-          name="birth_date"
-          type="date"
-          value={formData.birth_date}
-          placeholder="2000-01-01"
-          icon={<User className="h-5 w-5" />}
-          error={errors.birth_date}
-          onChange={handleChange}
-        />
-
-        <InputField
-          label="Área artística"
-          name="artistic_area"
-          type="text"
-          value={formData.artistic_area}
-          placeholder="Música, Danza, Teatro, Pintura..."
-          icon={<User className="h-5 w-5" />}
-          error={errors.artistic_area}
-          onChange={handleChange}
-        />
+        {formData.role === "artista" ? (
+          <>
+            <InputField
+              label="Fecha de nacimiento"
+              name="birth_date"
+              type="date"
+              value={formData.birth_date}
+              placeholder="2000-01-01"
+              icon={<User className="h-5 w-5" />}
+              error={errors.birth_date}
+              onChange={handleChange}
+            />
+    
+            <InputField
+              label="Área artística"
+              name="artistic_area"
+              type="text"
+              value={formData.artistic_area}
+              placeholder="Música, Danza, Teatro, Pintura..."
+              icon={<User className="h-5 w-5" />}
+              error={errors.artistic_area}
+              onChange={handleChange}
+            />
+          </>
+        ) : (
+          <InputField
+            label="Sector de la industria"
+            name="sector"
+            type="text"
+            value={formData.sector}
+            placeholder="Audiovisual, Entretenimiento, Educación..."
+            icon={<User className="h-5 w-5" />}
+            error={errors.sector}
+            onChange={handleChange}
+          />
+        )}
 
         <InputField
           label="Contraseña"

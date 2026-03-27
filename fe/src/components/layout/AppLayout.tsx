@@ -7,6 +7,7 @@
 
 import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
+import { Footer } from "./Footer";
 
 /**
  * ¿Qué? Layout con barra de navegación y slot para el contenido de la página.
@@ -22,6 +23,7 @@ export function AppLayout() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 }

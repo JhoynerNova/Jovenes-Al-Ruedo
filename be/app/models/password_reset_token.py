@@ -30,9 +30,9 @@ class PasswordResetToken(Base):
 
     __tablename__ = "password_reset_tokens"
 
-    # ────────────────────────────
-    # 📌 Columnas
-    # ────────────────────────────
+    # 
+    #  Columnas
+    # 
 
     # ¿Qué? Identificador único del registro de token.
     # ¿Para qué? Clave primaria de la tabla.
@@ -96,7 +96,7 @@ class PasswordResetToken(Base):
     )
 
     # ────────────────────────────
-    # 🔗 Relaciones
+    # Relaciones
     # ────────────────────────────
 
     # ¿Qué? Relación ORM que vincula el token con su usuario propietario.

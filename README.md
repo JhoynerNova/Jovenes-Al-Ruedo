@@ -189,6 +189,12 @@ cp .env.example .env
 # Terminal 1 — Base de datos
 docker compose up -d
 
+docker exec -it jovenes_al_ruedo_db psql -U jar_user -d jovenes_al_ruedo
+
+\dt → ver tablas
+SELECT * FROM users; → ver todos los usuarios
+\q → salir
+
 # Terminal 2 — Backend (FastAPI)
 cd be && source .venv/Scripts/activate
 uvicorn app.main:app --reload

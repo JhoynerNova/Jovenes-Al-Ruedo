@@ -119,3 +119,19 @@ def get_current_user(
         )
 
     return user
+
+def require_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Verifica que el usuario autenticado tenga el rol de administrador.
+
+    ¿Qué? Dependencia adicional que se ejecuta después de get_current_user.
+    ¿Para qué? Proteger endpoints que son exclusivos para administradores.
+    ¿Impacto? Asegura un control de acceso basado en roles (RBAC) básico.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador para realizar esta acción",
+        )
+    return current_user

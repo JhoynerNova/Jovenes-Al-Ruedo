@@ -45,10 +45,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          {/* ¿Qué? Ruta pública para la Política de Privacidad. */}
-          {/* ¿Para qué? Cumplir con la Ley 1581 de 2012 — el usuario debe poder leerla antes de registrarse. */}
-          {/* ¿Impacto? Se abre en nueva pestaña desde el checkbox de consentimiento en el registro. */}
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          {/* Las rutas de política y landing están agrupadas abajo */}
 
           {/* ════════════════════════════════════════ */}
           {/* 🔒 Rutas protegidas (requieren sesión activa) */}
@@ -68,6 +65,7 @@ function App() {
           {/* ¿Para qué? El visitante nuevo ve la presentación del producto antes del login. */}
           {/* ¿Impacto? Mejora la conversión al dar contexto antes de pedir el registro. */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
           {/* ¿Qué? Ruta catch-all para URLs no existentes. */}
           {/* ¿Para qué? Redirigir al login cualquier ruta desconocida. */}

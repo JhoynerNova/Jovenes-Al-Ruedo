@@ -72,6 +72,8 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     new_user = User(
         email=user_data.email,
         full_name=user_data.full_name,
+        role=user_data.role,
+        sector=user_data.sector,
         birth_date=user_data.birth_date,
         artistic_area=user_data.artistic_area,
         hashed_password=hash_password(user_data.password),

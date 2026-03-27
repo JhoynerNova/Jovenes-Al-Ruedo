@@ -36,7 +36,7 @@ class User(Base):
     __tablename__ = "users"
 
     # ────────────────────────────
-    # 📌 Columnas
+    # Columnas
     # ────────────────────────────
 
     # ¿Qué? Identificador único universal del usuario.
@@ -70,18 +70,36 @@ class User(Base):
     )
 
     # ¿Qué? Fecha de nacimiento del joven artista.
-    # ¿Para qué? Validar que el usuario sea mayor de 18 años al registrarse.
-    # ¿Impacto? Guarda la fecha de nacimiento en vez de la edad estimada.
+    # ¿Para qué? Validar que el usuario sea mayor de 18 años al registrarse (si es artista).
+    # ¿Impacto? Guarda la fecha de nacimiento en vez de la edad estimada. Opcional para empresas.
     birth_date: Mapped[date] = mapped_column(
         Date,
-        nullable=False,
+        nullable=True,
     )
 
     # ¿Qué? Área artística en la que se desenvuelve el joven artista.
     # ¿Para qué? Categorizar al artista dentro de la plataforma.
-    # ¿Impacto? Permite filtrar y conectar artistas por disciplina artística.
+    # ¿Impacto? Permite filtrar y conectar artistas por disciplina artística. Opcional para empresas.
     artistic_area: Mapped[str] = mapped_column(
         String(100),
+        nullable=True,
+    )
+    
+    # ¿Qué? Sector en el que opera la empresa.
+    # ¿Para qué? Categorizar la empresa o fundación.
+    # ¿Impacto? Las empresas deben ingresar este campo en lugar de artistic_area.
+    sector: Mapped[str] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    
+    # ¿Qué? Rol del usuario.
+    # ¿Para qué? Diferenciar entre artistas, empresas o administradores.
+    # ¿Impacto? Controla los permisos y la vista del dashboard inicial.
+    role: Mapped[str] = mapped_column(
+        String(50),
+        default="artista",
+        server_default="artista",
         nullable=False,
     )
 

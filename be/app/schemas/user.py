@@ -13,12 +13,14 @@ import re
 import uuid
 from datetime import datetime, date  # datetime usado en UserResponse
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 
-# ════════════════════════════════════════
-# 📥 Schemas de REQUEST (datos que envía el cliente)
-# ════════════════════════════════════════
+# 
+# Schemas de REQUEST (datos que envía el cliente)
+# 
 
 
 class UserCreate(BaseModel):
@@ -41,15 +43,21 @@ class UserCreate(BaseModel):
     # ¿Impacto? Campo requerido — el frontend lo usa para saludar al usuario.
     full_name: str
 
+    # ¿Qué? Rol del usuario.
+    # ¿Para qué? Diferenciar tipo de cuenta en registro.
+    role: str = "artista"
+
+    # ¿Qué? Sector de la empresa.
+    # ¿Para qué? Las empresas deben ingresar esto.
+    sector: Optional[str] = None
+
     # ¿Qué? Edad del joven artista.
-    # ¿Para qué? Validar que sea mayor de 18 años al registrarse.
-    # ¿Impacto? Sin esta validación, menores de edad podrían registrarse.
-    birth_date: date
+    # ¿Para qué? Validar que sea mayor de 18 años al registrarse. Opcional para empresas.
+    birth_date: Optional[date] = None
 
     # ¿Qué? Área artística del joven.
-    # ¿Para qué? Categorizar al artista dentro de la plataforma.
-    # ¿Impacto? Permite conectar artistas por disciplina.
-    artistic_area: str
+    # ¿Para qué? Categorizar al artista dentro de la plataforma. Opcional para empresas.
+    artistic_area: Optional[str] = None
 
     # ¿Qué? Contraseña en texto plano (solo viaja en el request, NUNCA se almacena así).
     # ¿Para qué? El backend la hashea con bcrypt antes de guardarla en la BD.
@@ -86,13 +94,12 @@ class UserCreate(BaseModel):
 
     @field_validator("birth_date")
     @classmethod
-    def validate_birth_date(cls, v: date) -> date:
+    def validate_birth_date(cls, v: Optional[date]) -> Optional[date]:
         """
-        # ¿Qué? Valida que el usuario tenga entre 18 y 28 años exactos.
-        # ¿Para qué? La plataforma es exclusiva para jóvenes artistas de 18 a 28 años.
-        # ¿Impacto? Sin este rango, menores de edad o adultos mayores podrían registrarse,
-        #           desvirtuando el propósito de la plataforma.
+        # ¿Qué? Valida que el usuario tenga entre 18 y 28 años exactos (solo si se provee).
         """
+        if v is None:
+            return v
         today = date.today()
         years = (today - v).days / 365.25
         if years < 18:
@@ -119,18 +126,31 @@ class UserCreate(BaseModel):
 
     @field_validator("artistic_area")
     @classmethod
-    def validate_artistic_area(cls, v: str) -> str:
+    def validate_artistic_area(cls, v: Optional[str]) -> Optional[str]:
         """
         # ¿Qué? Valida que el área artística tenga contenido significativo.
-        # ¿Para qué? Evitar registros con áreas artísticas vacías o demasiado cortas.
-        # ¿Impacto? Mínimo 3 caracteres garantiza que el campo tenga un valor real.
         """
+        if v is None:
+            return v
         v = v.strip()
         if len(v) < 3:
             raise ValueError("El área artística debe tener al menos 3 caracteres")
         if len(v) > 100:
             raise ValueError("El área artística no puede exceder 100 caracteres")
         return v
+
+    @model_validator(mode="after")
+    def validate_role_fields(self) -> "UserCreate":
+        """Valida campos requeridos dinámicamente según el rol."""
+        if self.role == "artista":
+            if not self.birth_date:
+                raise ValueError("La fecha de nacimiento es requerida para artistas")
+            if not self.artistic_area:
+                raise ValueError("El área artística es requerida para artistas")
+        elif self.role == "empresa":
+            if not self.sector:
+                raise ValueError("El sector es requerido para empresas")
+        return self
 
 
 class UserLogin(BaseModel):
@@ -243,8 +263,10 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
-    birth_date: date
-    artistic_area: str
+    role: str
+    sector: Optional[str] = None
+    birth_date: Optional[date] = None
+    artistic_area: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -280,3 +302,17 @@ class MessageResponse(BaseModel):
     """
 
     message: str
+
+from typing import List
+
+class PaginatedUsersResponse(BaseModel):
+    """Schema para listar usuarios con paginación."""
+    items: List[UserResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+class UserStatusUpdate(BaseModel):
+    """Schema para activar o desactivar un usuario."""
+    is_active: bool

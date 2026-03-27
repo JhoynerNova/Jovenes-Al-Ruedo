@@ -33,14 +33,26 @@ export function Navbar() {
   return (
     <nav className="border-b border-brand-purple/40 bg-brand-dark">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* ¿Qué? Logo/nombre de la app — enlace al dashboard o login. */}
+        {/* ¿Qué? Logo/nombre de la app — enlace al dashboard o landing. */}
         <Link
-          to={isAuthenticated ? "/dashboard" : "/login"}
+          to={isAuthenticated ? "/dashboard" : "/"}
           className="flex items-center gap-2"
         >
           <img src={logo} alt="Jóvenes al Ruedo" className="h-10 w-10 rounded-full object-cover" />
-          <span className="text-xl font-bold tracking-tight text-white">Jóvenes al Ruedo</span>
+          <span className="text-xl font-bold tracking-tight text-white hidden sm:block">Jóvenes al Ruedo</span>
         </Link>
+
+        {/* ¿Qué? Menú de navegación central. */}
+        {isAuthenticated && (
+          <div className="hidden md:flex space-x-8">
+            <Link to="/dashboard" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+              Inicio
+            </Link>
+            <Link to="/change-password" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+              Configuración
+            </Link>
+          </div>
+        )}
 
         {/* ¿Qué? Acciones de la derecha: info del usuario, toggle de tema, logout. */}
         {/* ¿Para qué? Agrupar acciones secundarias y el toggle de tema juntos. */}

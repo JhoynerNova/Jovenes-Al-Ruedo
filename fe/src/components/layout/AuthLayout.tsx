@@ -6,7 +6,9 @@
  *           y estructura, causando inconsistencias visuales.
  */
 
+import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Footer } from "./Footer";
 import logo from "@/assets/logo.png";
 
 /**
@@ -37,7 +39,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="w-full max-w-md">
           {/* ¿Qué? Logo y título de la app centrados. */}
           <div className="mb-8 flex flex-col items-center gap-3">
-            <img src={logo} alt="Jóvenes al Ruedo" className="h-24 w-24 rounded-full object-cover" />
+            <Link to="/" className="hover:opacity-80 transition-opacity">
+              <img src={logo} alt="Jóvenes al Ruedo" className="h-24 w-24 rounded-full object-cover" />
+            </Link>
             <h1 className="text-2xl font-bold tracking-tight text-brand-purple dark:text-brand-teal">
               Jóvenes al Ruedo
             </h1>
@@ -60,6 +64,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

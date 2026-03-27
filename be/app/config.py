@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     """
 
     # ────────────────────────────
-    # 🗄️ Base de datos
+    #  Base de datos
     # ────────────────────────────
     # ¿Qué? URL de conexión a PostgreSQL en formato SQLAlchemy.
     # ¿Para qué? Conectar el backend con la base de datos.
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # ────────────────────────────
-    # 🔐 JWT y Seguridad
+    #  JWT y Seguridad
     # ────────────────────────────
     # ¿Qué? Clave secreta para firmar y verificar tokens JWT.
     # ¿Para qué? Garantizar que solo nuestro backend puede generar tokens válidos.
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ────────────────────────────
-    # 📧 Email
+    #  Email
     # ────────────────────────────
     # ¿Qué? Configuración del servidor SMTP para envío de emails.
     # ¿Para qué? Enviar enlaces de recuperación de contraseña al email del usuario.

@@ -10,6 +10,11 @@
 /* ¿Impacto? Es la única línea necesaria para activar TailwindCSS 4 (detección automática). */
 @import "tailwindcss";
 
+/* ¿Qué? Configura el modo oscuro para activarse con la clase .dark en el HTML. */
+/* ¿Para qué? TailwindCSS v4 necesita esta directiva para que dark: funcione con clases. */
+/* ¿Impacto? Sin esto, todas las clases dark:bg-*, dark:text-*, etc. simplemente no se aplican. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================================
    TEMA PERSONALIZADO — NN Auth System
    ¿Qué? Variables CSS personalizadas para colores, tipografía y transiciones.

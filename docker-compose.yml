@@ -34,7 +34,7 @@ services:
       # ¿Qué? Mapea el puerto 5432 del contenedor al 5432 del host.
       # ¿Para qué? Permitir que el backend (que corre fuera de Docker) se conecte a la BD.
       # ¿Impacto? Si el puerto está ocupado, cambiar el lado izquierdo (ej: "5433:5432").
-      - "5432:5432"
+      - "5433:5432"
 
     volumes:
       # ¿Qué? Volumen nombrado que persiste los datos de PostgreSQL.
