@@ -42,13 +42,16 @@ export function Navbar() {
           <span className="text-xl font-bold tracking-tight text-white hidden sm:block">Jóvenes al Ruedo</span>
         </Link>
 
-        {/* ¿Qué? Menú de navegación central. */}
+        {/* Menú de navegación central */}
         {isAuthenticated && (
           <div className="hidden md:flex space-x-8">
             <Link to="/dashboard" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
               Inicio
             </Link>
-            <Link to="/change-password" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+            <Link to="/explore" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+              Explorar
+            </Link>
+            <Link to="/settings" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
               Configuración
             </Link>
           </div>

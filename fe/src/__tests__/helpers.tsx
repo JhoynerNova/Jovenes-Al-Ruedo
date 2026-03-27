@@ -24,6 +24,8 @@ export const mockUser: UserResponse = {
   sector: null,
   birth_date: "2000-01-01",
   artistic_area: "Music",
+  bio: null,
+  location: null,
   is_active: true,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",

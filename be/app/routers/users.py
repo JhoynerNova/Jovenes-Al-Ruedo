@@ -13,7 +13,9 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 
 from app.dependencies import get_current_user, require_admin, get_db
 from app.models.user import User
-from app.schemas.user import UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse
+from app.models.conv import Conv, Inscripcion
+from app.models.portafolio import Portafolio
+from app.schemas.user import UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate
 
 # ¿Qué? Router de FastAPI para endpoints de usuario.
 # ¿Para qué? Agrupar endpoints relacionados con el perfil del usuario bajo /api/v1/users.
@@ -143,6 +145,162 @@ def change_user_status(
         
     user.is_active = status_update.is_active
     db.commit()
-    
+
     action = "activado" if status_update.is_active else "desactivado"
     return MessageResponse(message=f"Usuario {action} correctamente")
+
+
+@router.patch(
+    "/me",
+    response_model=UserResponse,
+    summary="Actualizar perfil del usuario autenticado",
+)
+def update_profile(
+    body: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Permite al usuario actualizar su perfil (nombre, bio, área, sector, ubicación)."""
+    if body.full_name is not None:
+        current_user.full_name = body.full_name
+    if body.artistic_area is not None:
+        current_user.artistic_area = body.artistic_area
+    if body.sector is not None:
+        current_user.sector = body.sector
+    if body.bio is not None:
+        current_user.bio = body.bio
+    if body.location is not None:
+        current_user.location = body.location
+    db.commit()
+    db.refresh(current_user)
+    return UserResponse.model_validate(current_user)
+
+
+@router.get(
+    "/explore/artists",
+    summary="Listar artistas públicos (feed)",
+)
+def explore_artists(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    area: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Retorna la lista pública de artistas activos para el feed social."""
+    stmt = select(User).where(User.role == "artista", User.is_active == True)
+    if search:
+        term = f"%{search}%"
+        stmt = stmt.where(or_(User.full_name.ilike(term), User.artistic_area.ilike(term)))
+    if area:
+        stmt = stmt.where(User.artistic_area.ilike(f"%{area}%"))
+    total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
+    users = db.execute(stmt.order_by(User.created_at.desc()).offset(skip).limit(limit)).scalars().all()
+    return {
+        "items": [UserResponse.model_validate(u) for u in users],
+        "total": total,
+        "page": (skip // limit) + 1,
+        "size": limit,
+    }
+
+
+@router.get(
+    "/explore/companies",
+    summary="Listar empresas públicas (feed)",
+)
+def explore_companies(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Retorna la lista pública de empresas activas para el feed social."""
+    stmt = select(User).where(User.role == "empresa", User.is_active == True)
+    if search:
+        term = f"%{search}%"
+        stmt = stmt.where(or_(User.full_name.ilike(term), User.sector.ilike(term)))
+    total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
+    users = db.execute(stmt.order_by(User.created_at.desc()).offset(skip).limit(limit)).scalars().all()
+    return {
+        "items": [UserResponse.model_validate(u) for u in users],
+        "total": total,
+        "page": (skip // limit) + 1,
+        "size": limit,
+    }
+
+
+@router.get(
+    "/admin/stats",
+    summary="Estadísticas de la plataforma (admin)",
+)
+def get_admin_stats(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Retorna estadísticas globales de la plataforma para el panel de admin."""
+    total_users = db.execute(select(func.count()).select_from(User)).scalar() or 0
+    total_artistas = db.execute(select(func.count()).where(User.role == "artista")).scalar() or 0
+    total_empresas = db.execute(select(func.count()).where(User.role == "empresa")).scalar() or 0
+    total_admins = db.execute(select(func.count()).where(User.role == "admin")).scalar() or 0
+    active_users = db.execute(select(func.count()).where(User.is_active == True)).scalar() or 0
+    total_convs = db.execute(select(func.count()).select_from(Conv)).scalar() or 0
+    total_inscripciones = db.execute(select(func.count()).select_from(Inscripcion)).scalar() or 0
+    total_portafolios = db.execute(select(func.count()).select_from(Portafolio)).scalar() or 0
+    return {
+        "total_users": total_users,
+        "total_artistas": total_artistas,
+        "total_empresas": total_empresas,
+        "total_admins": total_admins,
+        "active_users": active_users,
+        "inactive_users": total_users - active_users,
+        "total_convocatorias": total_convs,
+        "total_postulaciones": total_inscripciones,
+        "total_portafolios": total_portafolios,
+    }
+
+
+@router.get(
+    "/{user_id}",
+    response_model=UserResponse,
+    summary="Ver perfil de usuario (admin)",
+)
+def get_user_by_id(
+    user_id: str,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Retorna el perfil completo de un usuario específico (solo admin)."""
+    try:
+        import uuid as _uuid
+        uid = _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de usuario inválido")
+    user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return UserResponse.model_validate(user)
+
+
+@router.patch(
+    "/{user_id}/role",
+    response_model=MessageResponse,
+    summary="Cambiar rol de un usuario (admin)",
+)
+def change_user_role(
+    user_id: str,
+    role_update: UserRoleUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Cambia el rol de un usuario. Solo accesible por administradores."""
+    try:
+        import uuid as _uuid
+        uid = _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de usuario inválido")
+    user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user.role = role_update.role
+    db.commit()
+    return MessageResponse(message=f"Rol cambiado a {role_update.role} correctamente")

@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, date
 from typing import List
 
-from sqlalchemy import Boolean, Date, DateTime, String, func
+from sqlalchemy import Boolean, Date, DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -93,6 +93,9 @@ class User(Base):
         nullable=True,
     )
     
+    bio: Mapped[str] = mapped_column(Text, nullable=True)
+    location: Mapped[str] = mapped_column(String(100), nullable=True)
+
     # ¿Qué? Rol del usuario.
     # ¿Para qué? Diferenciar entre artistas, empresas o administradores.
     # ¿Impacto? Controla los permisos y la vista del dashboard inicial.

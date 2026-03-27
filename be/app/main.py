@@ -18,6 +18,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
+from app.routers.convocatorias import router as convocatorias_router
+from app.routers.portafolio import router as portafolio_router
 
 # ¿Qué? Configuración básica del sistema de logging de Python.
 # ¿Para qué? Registrar eventos importantes (logins, errores, arranque) con timestamps.
@@ -132,6 +134,8 @@ async def add_security_headers(request: Request, call_next):
 #           peticiones a /api/v1/auth/* y /api/v1/users/* retornarían 404.
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(convocatorias_router)
+app.include_router(portafolio_router)
 
 
 # ────────────────────────────

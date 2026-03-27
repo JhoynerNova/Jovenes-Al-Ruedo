@@ -267,6 +267,8 @@ class UserResponse(BaseModel):
     sector: Optional[str] = None
     birth_date: Optional[date] = None
     artistic_area: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -316,3 +318,34 @@ class PaginatedUsersResponse(BaseModel):
 class UserStatusUpdate(BaseModel):
     """Schema para activar o desactivar un usuario."""
     is_active: bool
+
+
+class UserUpdate(BaseModel):
+    """Schema para actualizar el perfil del usuario autenticado."""
+    full_name: Optional[str] = None
+    artistic_area: Optional[str] = None
+    sector: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("El nombre debe tener al menos 2 caracteres")
+        return v
+
+
+class UserRoleUpdate(BaseModel):
+    """Schema para cambiar el rol de un usuario (solo admin)."""
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ("artista", "empresa", "admin"):
+            raise ValueError("Rol inválido. Debe ser artista, empresa o admin")
+        return v

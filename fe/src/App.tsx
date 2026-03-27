@@ -20,10 +20,9 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ChangePasswordPage } from "@/pages/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
-// ¿Qué? Import de la página de Política de Privacidad.
-// ¿Para qué? Registrar la ruta /privacy-policy para cumplir con la Ley 1581 de 2012.
-// ¿Impacto? Sin esta ruta, el enlace del checkbox de consentimiento en el registro no funcionaría.
 import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
+import { ExplorePage } from "@/pages/ExplorePage";
+import { SettingsPage } from "@/pages/SettingsPage";
 
 /**
  * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
@@ -59,6 +58,8 @@ function App() {
           >
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/change-password" element={<ChangePasswordPage />} />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
           {/* ¿Qué? Ruta raíz muestra la landing page. */}

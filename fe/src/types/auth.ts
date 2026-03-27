@@ -90,6 +90,8 @@ export interface UserResponse {
   sector: string | null;
   birth_date: string | null;
   artistic_area: string | null;
+  bio: string | null;
+  location: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
