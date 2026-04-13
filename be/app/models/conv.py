@@ -15,6 +15,10 @@ class Conv(Base):
     id_conv:    Mapped[int]           = mapped_column(primary_key=True, autoincrement=True)
     nombre:     Mapped[str]           = mapped_column(String(150), nullable=False)
     glue:       Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    nivel_experiencia: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    tipo_jornada: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    rango_salarial: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    ubicacion:  Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     id_usr:     Mapped[str]           = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime]      = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -63,9 +67,15 @@ class Inscripcion(Base):
     id_i:       Mapped[int]      = mapped_column(primary_key=True, autoincrement=True)
     id_conv:    Mapped[int]      = mapped_column(ForeignKey("conv.id_conv", ondelete="CASCADE"), nullable=False)
     id_usr:     Mapped[str]      = mapped_column(ForeignKey("users.id",     ondelete="CASCADE"), nullable=False)
+    estado:     Mapped[str]      = mapped_column(String(50), default="Enviada", server_default="Enviada", nullable=False)
+    carta_presentacion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    id_portafolio_interno: Mapped[Optional[int]] = mapped_column(ForeignKey("portafolio.id_port", ondelete="SET NULL"), nullable=True)
+    cv_url:     Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     convocatoria: Mapped["Conv"] = relationship(back_populates="inscritos")
+    portafolio_adjunto: Mapped[Optional["Portafolio"]] = relationship("Portafolio")
+    conversaciones: Mapped[list["Conversacion"]] = relationship("Conversacion", foreign_keys="Conversacion.id_i", cascade="all, delete-orphan")
 
     # ¿Qué? Relación hacia el artista inscrito en la convocatoria.
     # ¿Para qué? Acceder al perfil del artista postulado con inscripcion.usuario.

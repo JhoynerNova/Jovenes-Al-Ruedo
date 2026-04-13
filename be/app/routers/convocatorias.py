@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user, get_db
 from app.models.conv import Conv, Inscripcion
 from app.models.user import User
-from app.schemas.conv import ConvCreate, ConvResponse, InscripcionResponse
+from app.schemas.conv import ConvCreate, ConvResponse, InscripcionResponse, InscripcionCreate, InscripcionUpdateStatus
 
 router = APIRouter(prefix="/api/v1/convocatorias", tags=["convocatorias"])
 
@@ -24,6 +24,10 @@ def _conv_to_response(conv: Conv, db: Session) -> ConvResponse:
         id_conv=conv.id_conv,
         nombre=conv.nombre,
         glue=conv.glue,
+        nivel_experiencia=conv.nivel_experiencia,
+        tipo_jornada=conv.tipo_jornada,
+        rango_salarial=conv.rango_salarial,
+        ubicacion=conv.ubicacion,
         id_usr=str(conv.id_usr),
         empresa_nombre=conv.empresa.full_name if conv.empresa else None,
         empresa_sector=conv.empresa.sector if conv.empresa else None,
@@ -88,6 +92,7 @@ def my_applications(
                 "id_conv": i.id_conv,
                 "conv_nombre": conv.nombre,
                 "empresa_nombre": conv.empresa.full_name if conv.empresa else None,
+                "estado": i.estado,
                 "created_at": i.created_at.isoformat(),
             })
     return result
@@ -102,7 +107,15 @@ def create_convocatoria(
 ):
     if current_user.role != "empresa":
         raise HTTPException(status_code=403, detail="Solo las empresas pueden crear convocatorias")
-    conv = Conv(nombre=body.nombre, glue=body.glue, id_usr=str(current_user.id))
+    conv = Conv(
+        nombre=body.nombre, 
+        glue=body.glue, 
+        nivel_experiencia=body.nivel_experiencia,
+        tipo_jornada=body.tipo_jornada,
+        rango_salarial=body.rango_salarial,
+        ubicacion=body.ubicacion,
+        id_usr=str(current_user.id)
+    )
     db.add(conv)
     db.commit()
     db.refresh(conv)
@@ -133,6 +146,10 @@ def update_convocatoria(
         raise HTTPException(status_code=403, detail="No tienes permiso para editar esta convocatoria")
     conv.nombre = body.nombre
     conv.glue = body.glue
+    conv.nivel_experiencia = body.nivel_experiencia
+    conv.tipo_jornada = body.tipo_jornada
+    conv.rango_salarial = body.rango_salarial
+    conv.ubicacion = body.ubicacion
     db.commit()
     db.refresh(conv)
     return _conv_to_response(conv, db)
@@ -158,6 +175,7 @@ def delete_convocatoria(
 @router.post("/{conv_id}/apply", status_code=201, summary="Postularse a convocatoria")
 def apply_to_convocatoria(
     conv_id: int,
+    body: InscripcionCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -174,7 +192,13 @@ def apply_to_convocatoria(
     ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Ya estás postulado a esta convocatoria")
-    insc = Inscripcion(id_conv=conv_id, id_usr=str(current_user.id))
+    insc = Inscripcion(
+        id_conv=conv_id, 
+        id_usr=str(current_user.id),
+        carta_presentacion=body.carta_presentacion,
+        id_portafolio_interno=body.id_portafolio_interno,
+        cv_url=body.cv_url
+    )
     db.add(insc)
     db.commit()
     db.refresh(insc)
@@ -231,6 +255,49 @@ def get_applicants(
                 "artista_area": artista.artistic_area,
                 "artista_bio": artista.bio,
                 "artista_location": artista.location,
+                "estado": i.estado,
+                "carta_presentacion": i.carta_presentacion,
+                "id_portafolio_interno": i.id_portafolio_interno,
+                "cv_url": i.cv_url,
                 "created_at": i.created_at.isoformat(),
             })
     return result
+
+# ── Actualizar estado de postulación (empresa dueña) ──
+@router.put("/{conv_id}/applicants/{inscripcion_id}", summary="Actualizar estado de postulación")
+def update_application_status(
+    conv_id: int,
+    inscripcion_id: int,
+    body: InscripcionUpdateStatus,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    conv = db.get(Conv, conv_id)
+    if not conv or (str(conv.id_usr) != str(current_user.id) and current_user.role != "admin"):
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+    
+    insc = db.get(Inscripcion, inscripcion_id)
+    if not insc or insc.id_conv != conv_id:
+        raise HTTPException(status_code=404, detail="Inscripción no encontrada")
+        
+    insc.estado = body.estado
+    db.commit()
+
+    # Si se acepta la postulación, crear conversación automáticamente
+    if body.estado == "Aceptada":
+        from app.models.conversacion import Conversacion
+        existing = db.execute(
+            select(Conversacion).where(Conversacion.id_i == inscripcion_id)
+        ).scalar_one_or_none()
+        if not existing:
+            nueva_conv = Conversacion(
+                tipo="postulacion",
+                id_i=inscripcion_id,
+                empresa_id=conv.id_usr,
+                artista_id=insc.id_usr,
+            )
+            db.add(nueva_conv)
+            db.commit()
+
+    return {"message": "Estado actualizado", "estado": insc.estado}
+

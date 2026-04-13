@@ -21,8 +21,11 @@ import { ChangePasswordPage } from "@/pages/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
+import { TermsPage } from "@/pages/TermsPage";
 import { ExplorePage } from "@/pages/ExplorePage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { Chat } from "@/pages/Chat";
+import { PublicProfile } from "@/pages/PublicProfile";
 
 /**
  * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
@@ -60,6 +63,8 @@ function App() {
             <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/mensajes" element={<Chat />} />
+            <Route path="/perfil/:userId" element={<PublicProfile />} />
           </Route>
 
           {/* ¿Qué? Ruta raíz muestra la landing page. */}
@@ -67,6 +72,7 @@ function App() {
           {/* ¿Impacto? Mejora la conversión al dar contexto antes de pedir el registro. */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
 
           {/* ¿Qué? Ruta catch-all para URLs no existentes. */}
           {/* ¿Para qué? Redirigir al login cualquier ruta desconocida. */}

@@ -14,6 +14,8 @@ class Portafolio(Base):
 
     id_port:    Mapped[int]      = mapped_column(primary_key=True, autoincrement=True)
     nombre:     Mapped[str]      = mapped_column(String(150), nullable=False)
+    descripcion: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    visibilidad: Mapped[str]     = mapped_column(String(20), default="Publico", server_default="Publico", nullable=False)
     id_usr:     Mapped[str]      = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -36,6 +38,10 @@ class DetPortafolio(Base):
 
     id_det_p:   Mapped[int]      = mapped_column(primary_key=True, autoincrement=True)
     id_port:    Mapped[int]      = mapped_column(ForeignKey("portafolio.id_port", ondelete="CASCADE"), nullable=False)
+    titulo:     Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    descripcion: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    portada_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    etiquetas:  Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
     archivo:    Mapped[str]      = mapped_column(String(255), nullable=False)
     estado:     Mapped[str]      = mapped_column(String(1), nullable=False, default="G")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

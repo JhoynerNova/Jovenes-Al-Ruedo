@@ -54,6 +54,9 @@ export function Navbar() {
             <Link to="/settings" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
               Configuración
             </Link>
+            <Link to="/mensajes" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+              Mensajes
+            </Link>
           </div>
         )}
 
@@ -70,13 +73,13 @@ export function Navbar() {
                 {user.full_name}
               </span>
 
-              {/* ¿Qué? Botón de cerrar sesión con icono de Lucide. */}
+              {/* ¿Qué? Botón de cerrar sesión prominente y visible. */}
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-purple-200 transition-colors hover:bg-brand-purple/40"
+                className="inline-flex items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm font-semibold text-red-400 transition-all hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/20"
               >
-                <LogOut className="h-4 w-4" aria-hidden="true" />
-                Salir
+                <LogOut className="h-5 w-5" aria-hidden="true" />
+                <span className="hidden sm:inline">Cerrar sesión</span>
               </button>
             </>
           )}

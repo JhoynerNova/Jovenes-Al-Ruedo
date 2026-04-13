@@ -60,4 +60,9 @@ export const usersApi = {
     const { data } = await api.get<ExploreResponse>("/api/v1/users/explore/companies", { params });
     return data;
   },
+
+  getPublicProfile: async (userId: string) => {
+    const { data } = await api.get<any>(`/api/v1/users/profile/${userId}`);
+    return data;
+  },
 };

@@ -3,6 +3,10 @@ import api from "./axios";
 export interface DetPortafolioResponse {
   id_det_p: number;
   id_port: number;
+  titulo: string | null;
+  descripcion: string | null;
+  portada_url: string | null;
+  etiquetas: string | null;
   archivo: string;
   estado: string;
   created_at: string;
@@ -11,6 +15,8 @@ export interface DetPortafolioResponse {
 export interface PortafolioResponse {
   id_port: number;
   nombre: string;
+  descripcion: string | null;
+  visibilidad: string;
   id_usr: string;
   created_at: string;
   archivos: DetPortafolioResponse[];
@@ -27,8 +33,8 @@ export const portafolioApi = {
     return data;
   },
 
-  create: async (nombre: string) => {
-    const { data } = await api.post<PortafolioResponse>("/api/v1/portafolio", { nombre });
+  create: async (body: { nombre: string; descripcion?: string; visibilidad?: string }) => {
+    const { data } = await api.post<PortafolioResponse>("/api/v1/portafolio", body);
     return data;
   },
 
@@ -36,8 +42,8 @@ export const portafolioApi = {
     await api.delete(`/api/v1/portafolio/${id}`);
   },
 
-  addItem: async (portId: number, archivo: string, estado: string = "G") => {
-    const { data } = await api.post<DetPortafolioResponse>(`/api/v1/portafolio/${portId}/items`, { archivo, estado });
+  addItem: async (portId: number, body: { archivo: string; titulo?: string; descripcion?: string; portada_url?: string; etiquetas?: string; estado?: string }) => {
+    const { data } = await api.post<DetPortafolioResponse>(`/api/v1/portafolio/${portId}/items`, body);
     return data;
   },
 

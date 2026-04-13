@@ -5,9 +5,9 @@
  * ¿Impacto? Sin esta página, no habría forma de crear cuentas desde el frontend.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Lock, KeyRound } from "lucide-react";
+import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
@@ -26,23 +26,50 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     role: "artista",
     email: "",
-    full_name: "",
+    first_name: "",
+    last_name: "",
     birth_date: "",
     artistic_area: "",
     sector: "",
     password: "",
     confirmPassword: "",
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    // Limpiar error del campo cuando el usuario escribe
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
     setGeneralError(null);
   };
+
+  /**
+   * ¿Qué? Calcula si el formulario está completo para habilitar el botón.
+   * ¿Para qué? El botón de registro solo se activa cuando TODOS los campos están llenos
+   *            y el usuario acepta los términos y condiciones.
+   * ¿Impacto? Previene envíos incompletos y mejora la UX con feedback visual.
+   */
+  const isFormComplete = useMemo(() => {
+    const baseComplete =
+      formData.email.trim() !== "" &&
+      formData.first_name.trim().length >= 2 &&
+      formData.last_name.trim().length >= 2 &&
+      formData.password.length >= 8 &&
+      formData.confirmPassword !== "" &&
+      formData.password === formData.confirmPassword &&
+      acceptedTerms;
+
+    if (formData.role === "artista") {
+      return baseComplete &&
+        formData.birth_date !== "" &&
+        formData.artistic_area.trim().length >= 2;
+    } else {
+      return baseComplete &&
+        formData.sector.trim().length >= 2;
+    }
+  }, [formData, acceptedTerms]);
 
   /**
    * ¿Qué? Validación del lado del cliente antes de enviar al backend.
@@ -56,8 +83,12 @@ export function RegisterPage() {
       newErrors.email = "El correo es obligatorio";
     }
 
-    if (!formData.full_name || formData.full_name.trim().length < 2) {
-      newErrors.full_name = "El nombre debe tener al menos 2 caracteres";
+    if (!formData.first_name || formData.first_name.trim().length < 2) {
+      newErrors.first_name = "El nombre debe tener al menos 2 caracteres";
+    }
+
+    if (!formData.last_name || formData.last_name.trim().length < 2) {
+      newErrors.last_name = "El apellido debe tener al menos 2 caracteres";
     }
 
     if (formData.role === "artista") {
@@ -113,10 +144,13 @@ export function RegisterPage() {
 
     setIsLoading(true);
     try {
+      // Concatenar nombre + apellido → full_name para el backend
+      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
+
       const payload: any = {
         role: formData.role,
         email: formData.email,
-        full_name: formData.full_name.trim(),
+        full_name: fullName,
         password: formData.password,
       };
 
@@ -172,17 +206,58 @@ export function RegisterPage() {
           </label>
         </div>
 
-        <InputField
-          label={formData.role === "artista" ? "Nombre completo" : "Nombre de la empresa / fundación"}
-          name="full_name"
-          type="text"
-          value={formData.full_name}
-          placeholder={formData.role === "artista" ? "Juan Pérez" : "Fundación Cultural..."}
-          autoComplete="name"
-          icon={<User className="h-5 w-5" />}
-          error={errors.full_name}
-          onChange={handleChange}
-        />
+        {/* Nombre y Apellido separados (o nombre empresa) */}
+        {formData.role === "artista" ? (
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label="Nombre"
+              name="first_name"
+              type="text"
+              value={formData.first_name}
+              placeholder="Juan"
+              autoComplete="given-name"
+              icon={<User className="h-5 w-5" />}
+              error={errors.first_name}
+              onChange={handleChange}
+            />
+            <InputField
+              label="Apellido"
+              name="last_name"
+              type="text"
+              value={formData.last_name}
+              placeholder="Pérez"
+              autoComplete="family-name"
+              icon={<User className="h-5 w-5" />}
+              error={errors.last_name}
+              onChange={handleChange}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label="Nombre de la empresa"
+              name="first_name"
+              type="text"
+              value={formData.first_name}
+              placeholder="Fundación Cultural"
+              autoComplete="organization"
+              icon={<Building2 className="h-5 w-5" />}
+              error={errors.first_name}
+              onChange={handleChange}
+            />
+            <InputField
+              label="Sigla o complemento"
+              name="last_name"
+              type="text"
+              value={formData.last_name}
+              placeholder="S.A.S. / ONG"
+              autoComplete="organization"
+              icon={<Building2 className="h-5 w-5" />}
+              error={errors.last_name}
+              onChange={handleChange}
+            />
+          </div>
+        )}
 
         <InputField
           label="Correo electrónico"
@@ -204,7 +279,7 @@ export function RegisterPage() {
               type="date"
               value={formData.birth_date}
               placeholder="2000-01-01"
-              icon={<User className="h-5 w-5" />}
+              icon={<Calendar className="h-5 w-5" />}
               error={errors.birth_date}
               onChange={handleChange}
             />
@@ -215,7 +290,7 @@ export function RegisterPage() {
               type="text"
               value={formData.artistic_area}
               placeholder="Música, Danza, Teatro, Pintura..."
-              icon={<User className="h-5 w-5" />}
+              icon={<Palette className="h-5 w-5" />}
               error={errors.artistic_area}
               onChange={handleChange}
             />
@@ -227,7 +302,7 @@ export function RegisterPage() {
             type="text"
             value={formData.sector}
             placeholder="Audiovisual, Entretenimiento, Educación..."
-            icon={<User className="h-5 w-5" />}
+            icon={<Building2 className="h-5 w-5" />}
             error={errors.sector}
             onChange={handleChange}
           />
@@ -257,28 +332,39 @@ export function RegisterPage() {
           onChange={handleChange}
         />
 
-        {/* ¿Qué? Checkbox de consentimiento obligatorio. */}
-        {/* ¿Para qué? Cumplir con la Ley 1581 de 2012 — el usuario debe aceptar antes de registrarse. */}
-        {/* ¿Impacto? Sin este consentimiento, el tratamiento de datos personales sería ilegal en Colombia. */}
+        {/* Checkbox de consentimiento */}
         <div className="mb-4 flex items-start gap-2">
           <input
             type="checkbox"
             id="privacy-consent"
-            required
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
             className="mt-1 h-4 w-4 accent-brand-purple"
           />
           <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
             He leído y acepto la{" "}
-            <Link to="/privacy-policy" className="text-brand-blue hover:underline" target="_blank">
+            <Link to="/privacy-policy" className="text-brand-blue hover:underline font-medium" target="_blank">
               Política de Privacidad
-            </Link>{" "}
-            y el uso de cookies conforme a la{" "}
+            </Link>
+            {" "}y los{" "}
+            <Link to="/terms" className="text-brand-blue hover:underline font-medium" target="_blank">
+              Términos y Condiciones
+            </Link>
+            {" "}conforme a la{" "}
             <strong>Ley 1581 de 2012</strong>
           </label>
         </div>
 
+        {/* Indicador de formulario incompleto */}
+        {!isFormComplete && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+            <span>Completa todos los campos y acepta los términos para continuar</span>
+          </div>
+        )}
+
         <div className="mt-2 flex justify-end">
-          <Button type="submit" fullWidth isLoading={isLoading}>
+          <Button type="submit" fullWidth isLoading={isLoading} disabled={!isFormComplete}>
             Crear cuenta
           </Button>
         </div>

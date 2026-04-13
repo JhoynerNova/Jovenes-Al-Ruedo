@@ -92,6 +92,8 @@ export interface UserResponse {
   artistic_area: string | null;
   bio: string | null;
   location: string | null;
+  profile_pic_url: string | null;
+  cover_pic_url: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

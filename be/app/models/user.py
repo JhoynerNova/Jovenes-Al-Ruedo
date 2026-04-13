@@ -95,6 +95,8 @@ class User(Base):
     
     bio: Mapped[str] = mapped_column(Text, nullable=True)
     location: Mapped[str] = mapped_column(String(100), nullable=True)
+    profile_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    cover_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
     # ¿Qué? Rol del usuario.
     # ¿Para qué? Diferenciar entre artistas, empresas o administradores.

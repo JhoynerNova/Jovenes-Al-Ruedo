@@ -20,15 +20,16 @@ class ConvCreate(BaseModel):
     # ¿Impacto? Mínimo 5 caracteres garantiza convocatorias con títulos significativos.
     """
 
-    # ¿Qué? Nombre o título de la convocatoria.
-    # ¿Para qué? Describir brevemente la oferta artística que se publica.
-    # ¿Impacto? Es lo primero que ve el artista — debe ser claro y descriptivo.
     nombre: str
 
     # ¿Qué? Descripción detallada (glue) de la convocatoria.
     # ¿Para qué? Dar contexto completo sobre lo que busca la empresa.
     # ¿Impacto? Campo opcional — permite convocatorias simples sin descripción larga.
     glue: str | None = None
+    nivel_experiencia: str | None = None
+    tipo_jornada: str | None = None
+    rango_salarial: str | None = None
+    ubicacion: str | None = None
 
     @field_validator("nombre")
     @classmethod
@@ -58,7 +59,14 @@ class ConvResponse(BaseModel):
     id_conv: int
     nombre: str
     glue: str | None
-    id_usr: uuid.UUID
+    nivel_experiencia: str | None = None
+    tipo_jornada: str | None = None
+    rango_salarial: str | None = None
+    ubicacion: str | None = None
+    id_usr: str
+    empresa_nombre: str | None = None
+    empresa_sector: str | None = None
+    total_inscritos: int = 0
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -75,7 +83,9 @@ class InscripcionCreate(BaseModel):
     # ¿Qué? Identificador de la convocatoria a la que se postula el artista.
     # ¿Para qué? Relacionar la postulación con la convocatoria correcta.
     # ¿Impacto? Sin este campo, no hay forma de saber a qué convocatoria se postula.
-    id_conv: int
+    carta_presentacion: str | None = None
+    id_portafolio_interno: int | None = None
+    cv_url: str | None = None
 
 
 class InscripcionResponse(BaseModel):
@@ -88,10 +98,20 @@ class InscripcionResponse(BaseModel):
 
     id_i: int
     id_conv: int
-    id_usr: uuid.UUID
+    id_usr: str
+    estado: str = "Enviada"
+    carta_presentacion: str | None = None
+    id_portafolio_interno: int | None = None
+    cv_url: str | None = None
+    artista_nombre: str | None = None
+    artista_area: str | None = None
+    artista_email: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class InscripcionUpdateStatus(BaseModel):
+    estado: str
 
 
 class DetConvCreate(BaseModel):

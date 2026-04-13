@@ -38,7 +38,12 @@ def create_portafolio(
     db: Session = Depends(get_db),
 ):
     _require_artista(current_user)
-    port = Portafolio(nombre=body.nombre, id_usr=str(current_user.id))
+    port = Portafolio(
+        nombre=body.nombre,
+        descripcion=body.descripcion,
+        visibilidad=body.visibilidad,
+        id_usr=str(current_user.id)
+    )
     db.add(port)
     db.commit()
     db.refresh(port)
@@ -90,7 +95,15 @@ def add_item(
         raise HTTPException(status_code=404, detail="Portafolio no encontrado")
     if str(port.id_usr) != str(current_user.id):
         raise HTTPException(status_code=403, detail="No tienes permiso para editar este portafolio")
-    item = DetPortafolio(id_port=port_id, archivo=body.archivo, estado=body.estado)
+    item = DetPortafolio(
+        id_port=port_id,
+        archivo=body.archivo,
+        titulo=body.titulo,
+        descripcion=body.descripcion,
+        portada_url=body.portada_url,
+        etiquetas=body.etiquetas,
+        estado=body.estado
+    )
     db.add(item)
     db.commit()
     db.refresh(item)

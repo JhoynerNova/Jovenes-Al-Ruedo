@@ -269,6 +269,8 @@ class UserResponse(BaseModel):
     artistic_area: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
+    profile_pic_url: Optional[str] = None
+    cover_pic_url: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -327,6 +329,8 @@ class UserUpdate(BaseModel):
     sector: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
+    profile_pic_url: Optional[str] = None
+    cover_pic_url: Optional[str] = None
 
     @field_validator("full_name")
     @classmethod

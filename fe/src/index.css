@@ -63,3 +63,77 @@
     border-color: theme(--color-gray-700);
   }
 }
+
+/* ============================================================================
+   ANIMACIONES — Micro-interacciones y transiciones profesionales
+   ¿Qué? Keyframes y clases utilitarias para animar tarjetas y elementos.
+   ¿Para qué? Dar una sensación profesional y moderna a la interfaz.
+   ¿Impacto? Sin estas animaciones, la UI se siente estática y amateur.
+   ============================================================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Clase utilitaria para animación fadeInUp */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+/* Clase utilitaria para animación scaleIn */
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out both;
+}
+
+/* Clase utilitaria para animación slideInLeft */
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s ease-out both;
+}
+
+/* Delays escalonados para animaciones en secuencia */
+.delay-0 { animation-delay: 0ms; }
+.delay-1 { animation-delay: 80ms; }
+.delay-2 { animation-delay: 160ms; }
+.delay-3 { animation-delay: 240ms; }
+.delay-4 { animation-delay: 320ms; }
+.delay-5 { animation-delay: 400ms; }
+.delay-6 { animation-delay: 480ms; }
+.delay-7 { animation-delay: 560ms; }
+
+/* Hover profesional para tarjetas */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px -8px rgba(90, 63, 160, 0.18);
+}

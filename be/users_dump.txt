@@ -1,0 +1,12 @@
+artista|Juan@test.com|Juan Perez
+empresa|Segurosboli@boli.com|seguros
+admin|admin@admin.com|Administrador Principal
+artista|Juan1@test.com|Juan
+artista|jhoynerarleynovaoviedo@gmail.com|JHOYNER NOVA
+empresa|Agucate@gmail.com|Aguacate
+artista|franky@gmail.com|franky
+artista|mauelmurillo@gmail.com|manuel murillo
+artista|test@test.com|Test Name
+empresa|Manuela@umb.com|umb S.A
+artista|chat_test_999@unique.com|Test User
+artista|verifier@test.com|Verifier Bot

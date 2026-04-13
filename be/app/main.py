@@ -20,6 +20,10 @@ from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.convocatorias import router as convocatorias_router
 from app.routers.portafolio import router as portafolio_router
+from app.routers.upload import router as upload_router
+from app.routers.chat import router as chat_router
+from fastapi.staticfiles import StaticFiles
+import os
 
 # ¿Qué? Configuración básica del sistema de logging de Python.
 # ¿Para qué? Registrar eventos importantes (logins, errores, arranque) con timestamps.
@@ -136,6 +140,11 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(convocatorias_router)
 app.include_router(portafolio_router)
+app.include_router(upload_router)
+app.include_router(chat_router)
+
+# Mount static files
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 # ────────────────────────────

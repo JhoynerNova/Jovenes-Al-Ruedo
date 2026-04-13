@@ -30,10 +30,10 @@ class DetPortafolioCreate(BaseModel):
     # ¿Para qué? Almacenar la referencia al archivo subido por el artista.
     # ¿Impacto? La extensión se valida para asegurar que solo se acepten formatos artísticos.
     archivo: str
-
-    # ¿Qué? Estado del archivo: G=Guardado (borrador) o P=Publicado.
-    # ¿Para qué? Controlar la visibilidad del archivo en el portafolio.
-    # ¿Impacto? Solo archivos en estado 'P' son visibles para las empresas.
+    titulo: str | None = None
+    descripcion: str | None = None
+    portada_url: str | None = None
+    etiquetas: str | None = None
     estado: str = "G"
 
     @field_validator("archivo")
@@ -77,6 +77,10 @@ class DetPortafolioResponse(BaseModel):
 
     id_det_p: int
     id_port: int
+    titulo: str | None = None
+    descripcion: str | None = None
+    portada_url: str | None = None
+    etiquetas: str | None = None
     archivo: str
     estado: str
     created_at: datetime
@@ -96,6 +100,8 @@ class PortafolioCreate(BaseModel):
     # ¿Para qué? Identificar la colección de obras del artista.
     # ¿Impacto? El nombre es la primera descripción que ve la empresa al revisar el portafolio.
     nombre: str
+    descripcion: str | None = None
+    visibilidad: str = "Publico"
 
     @field_validator("nombre")
     @classmethod
@@ -124,6 +130,8 @@ class PortafolioResponse(BaseModel):
 
     id_port: int
     nombre: str
+    descripcion: str | None = None
+    visibilidad: str
     id_usr: uuid.UUID
     created_at: datetime
     archivos: list[DetPortafolioResponse] = []

@@ -260,6 +260,67 @@ def get_admin_stats(
 
 
 @router.get(
+    "/profile/{user_id}",
+    summary="Ver perfil público de un usuario",
+)
+def get_public_profile(
+    user_id: str,
+    db: Session = Depends(get_db),
+):
+    """Retorna el perfil público de un usuario con sus portafolios (si es artista)."""
+    try:
+        import uuid as _uuid
+        uid = _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de usuario inválido")
+    user = db.execute(select(User).where(User.id == uid, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    profile = UserResponse.model_validate(user)
+    
+    # Si es artista, incluir portafolios publicados
+    portafolios_data = []
+    if user.role == "artista":
+        from app.models.portafolio import DetPortafolio
+        ports = db.execute(select(Portafolio).where(Portafolio.id_usr == str(uid))).scalars().all()
+        for p in ports:
+            archivos = db.execute(
+                select(DetPortafolio).where(DetPortafolio.id_port == p.id_port, DetPortafolio.estado == "P")
+            ).scalars().all()
+            portafolios_data.append({
+                "id_port": p.id_port,
+                "nombre": p.nombre,
+                "archivos": [
+                    {"id_det_p": a.id_det_p, "archivo": a.archivo, "titulo": a.titulo, "descripcion": a.descripcion}
+                    for a in archivos
+                ],
+            })
+    
+    # Convocatorias publicadas (si es empresa)
+    convocatorias_data = []
+    if user.role == "empresa":
+        convs_q = db.execute(select(Conv).where(Conv.id_usr == str(uid))).scalars().all()
+        for c in convs_q:
+            total_inscritos = db.execute(
+                select(func.count()).where(Inscripcion.id_conv == c.id_conv)
+            ).scalar() or 0
+            convocatorias_data.append({
+                "id_conv": c.id_conv,
+                "nombre": c.nombre,
+                "glue": c.glue,
+                "total_inscritos": total_inscritos,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            })
+    
+    return {
+        "user": profile,
+        "portafolios": portafolios_data,
+        "convocatorias": convocatorias_data,
+    }
+
+
+@router.get(
     "/{user_id}",
     response_model=UserResponse,
     summary="Ver perfil de usuario (admin)",
