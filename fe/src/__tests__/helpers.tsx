@@ -26,6 +26,8 @@ export const mockUser: UserResponse = {
   artistic_area: "Music",
   bio: null,
   location: null,
+  profile_pic_url: null,
+  cover_pic_url: null,
   is_active: true,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",

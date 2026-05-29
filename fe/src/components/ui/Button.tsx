@@ -11,15 +11,12 @@
  * ¿Para qué? Configurar variante (primary, secondary, danger), tamaño, loading, etc.
  * ¿Impacto? TypeScript garantiza que solo se usen variantes válidas.
  */
-interface ButtonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  type?: "button" | "submit" | "reset";
   variant?: "primary" | "secondary" | "danger";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   isLoading?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
 }
 
 /**
@@ -37,6 +34,8 @@ export function Button({
   isLoading = false,
   disabled = false,
   onClick,
+  className = "",
+  ...props
 }: ButtonProps) {
   // ¿Qué? Clases CSS según la variante elegida (primary, secondary, danger).
   // ¿Para qué? Cada variante tiene colores distintos para comunicar intención.
@@ -64,7 +63,8 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || isLoading}
-      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""}`}
+      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      {...props}
     >
       {/* ¿Qué? Spinner SVG animado que aparece durante la carga. */}
       {/* ¿Para qué? Feedback visual de que la acción está procesándose. */}

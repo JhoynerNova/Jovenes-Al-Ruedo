@@ -46,7 +46,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=False,       # En producción cambiar a True (requiere HTTPS)
+        secure=False,       
         samesite="lax",
         max_age=ACCESS_TOKEN_MAX_AGE,
         path="/",
@@ -60,7 +60,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,       # En producción cambiar a True (requiere HTTPS)
+        secure=False,       
         samesite="lax",
         max_age=REFRESH_TOKEN_MAX_AGE,
         path="/api/v1/auth/refresh",

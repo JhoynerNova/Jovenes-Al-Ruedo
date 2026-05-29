@@ -400,7 +400,9 @@ docker compose ps
 # 2. Levantar backend (Terminal 1)
 cd be && source .venv/Scripts/activate
 
- && uvicorn app.main:app --reload
+ && 
+ 
+uvicorn app.main:app --reload
 # → http://localhost:8000
 # → Swagger UI: http://localhost:8000/docs
 
