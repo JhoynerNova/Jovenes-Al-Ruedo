@@ -367,7 +367,6 @@ Base URL: `http://localhost:8000/api/v1`
 | **Franky Almario** | Desarrollador |
 | **Jhoyner Nova** | Desarrollador |
 
-**Instructor:** ergrato-dev  
 **Programa:** SENA — Ficha 3171599  
 **Fecha:** Febrero 2026
 
