@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -76,6 +77,15 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Captura cualquier excepción no manejada y retorna un error 500 estandarizado."""
+    logger.error(f"Error interno detectado: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Ocurrió un error interno en el servidor. Por favor, contacte al soporte técnico."},
+    )
 
 # ¿Qué? Middleware que valida el header Host de las peticiones entrantes.
 # ¿Para qué? Prevenir ataques de Host Header Injection.

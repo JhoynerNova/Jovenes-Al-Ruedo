@@ -10,7 +10,7 @@ Endpoints:
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy import select, or_, and_, func
 from sqlalchemy.orm import Session
 
@@ -136,13 +136,10 @@ def crear_conversacion_directa(
     user_id_str = str(current_user.id)
 
     # Verificar que el artista existe y es artista
-    try:
-        artista_uid = uuid.UUID(body.artista_id)
-        artista = db.execute(
-            select(User).where(User.id == artista_uid)
-        ).scalar_one_or_none()
-    except Exception:
-        artista = None
+    artista_uid = body.artista_id
+    artista = db.execute(
+        select(User).where(User.id == artista_uid)
+    ).scalar_one_or_none()
 
     if not artista:
         raise HTTPException(status_code=404, detail="Artista no encontrado")
@@ -248,3 +245,73 @@ def enviar_mensaje(
     db.commit()
     db.refresh(nuevo_mensaje)
     return nuevo_mensaje
+
+
+# ── WebSockets Connection Manager & Endpoint ──
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[int, list[WebSocket]] = {}
+
+    async def connect(self, websocket: WebSocket, id_conversacion: int):
+        await websocket.accept()
+        if id_conversacion not in self.active_connections:
+            self.active_connections[id_conversacion] = []
+        self.active_connections[id_conversacion].append(websocket)
+
+    def disconnect(self, websocket: WebSocket, id_conversacion: int):
+        if id_conversacion in self.active_connections:
+            self.active_connections[id_conversacion].remove(websocket)
+            if not self.active_connections[id_conversacion]:
+                del self.active_connections[id_conversacion]
+
+    async def broadcast(self, message: dict, id_conversacion: int):
+        if id_conversacion in self.active_connections:
+            for connection in self.active_connections[id_conversacion]:
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    # Ignore disconnected or dead sockets during broadcast
+                    pass
+
+manager = ConnectionManager()
+
+
+@router.websocket("/ws/{id_conversacion}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    id_conversacion: int,
+    db: Session = Depends(get_db),
+):
+    """Enlace bidireccional WebSocket para chat en tiempo real."""
+    await manager.connect(websocket, id_conversacion)
+    try:
+        while True:
+            # Recibir datos del cliente
+            data = await websocket.receive_json()
+            remitente_id = data.get("remitente_id")
+            contenido = data.get("contenido")
+            
+            if contenido and remitente_id:
+                # Guardar en base de datos
+                nuevo_mensaje = Mensaje(
+                    id_conversacion=id_conversacion,
+                    remitente_id=uuid.UUID(remitente_id),
+                    contenido=contenido,
+                )
+                db.add(nuevo_mensaje)
+                db.commit()
+                db.refresh(nuevo_mensaje)
+                
+                # Transmitir a todos los conectados
+                broadcast_data = {
+                    "id_msg": nuevo_mensaje.id_msg,
+                    "id_conversacion": id_conversacion,
+                    "remitente_id": str(nuevo_mensaje.remitente_id),
+                    "contenido": nuevo_mensaje.contenido,
+                    "created_at": nuevo_mensaje.created_at.isoformat() if nuevo_mensaje.created_at else None,
+                    "leido": nuevo_mensaje.leido
+                }
+                await manager.broadcast(broadcast_data, id_conversacion)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, id_conversacion)
