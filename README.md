@@ -1,301 +1,229 @@
-# 🎨 Jóvenes al Ruedo
+# 🎨 Jóvenes al Ruedo — Web & API
 
-**Proyecto educativo — SENA, Ficha 3171599 | Febrero 2026**
+**Proyecto educativo — SENA, Ficha 3171599 | Junio 2026**
 
-Sistema de autenticación y gestión de perfiles para la plataforma **Jóvenes al Ruedo** — una plataforma que conecta jóvenes artistas con empresas y oportunidades en el sector cultural y creativo.
+Plataforma de conexión cultural y bolsa de empleo que conecta a jóvenes artistas (de 18 a 28 años) con fundaciones, empresas y gestores culturales para promover el empleo y la visualización de talento emergente.
 
 ---
 
 ## 📋 Tabla de Contenidos
 
 - [Descripción del Proyecto](#descripción-del-proyecto)
+- [Novedades Recientes (Backlog Completado)](#novedades-recientes-backlog-completado)
 - [Stack Tecnológico](#stack-tecnológico)
 - [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)
 - [Prerrequisitos](#prerrequisitos)
-- [Instalación y Setup](#instalación-y-setup)
-- [Ejecución](#ejecución)
-- [Testing](#testing)
-- [Documentación Técnica](#documentación-técnica)
-- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Instalación y Configuración](#instalación-y-configuración)
+- [Ejecución en Desarrollo](#ejecución-en-desarrollo)
+- [Testing y Cobertura](#testing-y-cobertura)
+- [Estructura del Repositorio](#estructura-del-repositorio)
 - [Endpoints de la API](#endpoints-de-la-api)
-- [Convenciones](#convenciones)
 - [Autores](#autores)
 
 ---
 
 ## 📖 Descripción del Proyecto
 
-**Jóvenes al Ruedo** es una plataforma digital diseñada para empoderar a jóvenes artistas, permitiéndoles:
+**Jóvenes al Ruedo** permite a las empresas y artistas dinamizar el ecosistema cultural:
+- **Artistas:** Pueden registrarse con restricciones de edad (18-28 años), subir su portafolio con soporte multimedia enriquecido (música, videos, PDFs) y postularse rápidamente a convocatorias.
+- **Empresas:** Pueden publicar convocatorias artísticas, administrar un tablero visual tipo **Kanban** para evaluar postulantes y filtrar perfiles por área artística o presupuesto.
+- **Chat en Tiempo Real:** Ambos actores interactúan directamente mediante salas de chat bidireccionales con **WebSockets** y fallback automático por HTTP.
 
-- 🎭 Registrarse con su perfil artístico (nombre, edad, área artística)
-- 🗂️ Crear y gestionar su portafolio de proyectos y habilidades
-- 🏢 Conectar con empresas del sector cultural
-- 💼 Postularse a ofertas laborales y retos creativos
-- 💬 Comunicarse directamente con empresas mediante mensajes y comentarios
+---
 
-Este repositorio contiene el sistema de autenticación base (registro, login, cambio y recuperación de contraseña), construido sobre el proyecto educativo del instructor.
+## 🚀 Novedades Recientes (Backlog Completado)
+
+Hemos completado el backlog al 80%+ implementando:
+1. **Gestor de Dependencias Ultra Rápido (`uv`):** Reemplazamos la gestión clásica de `pip` en el backend por `uv` (desarrollado en Rust por Astral) para instalación y ejecución de tests instantánea.
+2. **Carga de Archivos Avanzada:** Soporte para carga de imágenes, audio y video con validación estricta de tamaños máximos (Videos max 50MB, Audios max 15MB, otros 10MB).
+3. **Grid Multimedia en Web:** Dashboard de artista con reproductores embebidos de audio/video y visores de PDF.
+4. **Filtros e Interfaces Kanban:** Buscador avanzado de ofertas y visualización de postulaciones en columnas de evaluación para empresas.
+5. **Comunicaciones con WebSockets:** Chat instantáneo y bidireccional en el backend y frontend web con alertas de red personalizadas y reconexión automática de 3s.
+6. **Robustez y Pruebas:** Middleware global de captura de errores y 36/36 unit tests en `pytest` pasando con éxito.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
 ### Backend (`be/`)
-
-| Tecnología | Versión | Propósito |
-|---|---|---|
-| Python | 3.12+ | Lenguaje principal |
-| FastAPI | 0.115+ | Framework web async |
-| SQLAlchemy | 2.0+ | ORM para PostgreSQL |
-| Alembic | latest | Migraciones de BD |
-| Pydantic | 2.0+ | Validación de datos |
-| python-jose | latest | Tokens JWT |
-| passlib[bcrypt] | latest | Hashing de contraseñas |
-| pytest | latest | Testing |
-| uvicorn | latest | Servidor ASGI |
+- **Python 3.12+**
+- **FastAPI 0.115+** (Framework web asíncrono)
+- **SQLAlchemy 2.0+** (ORM con PostgreSQL)
+- **Alembic** (Migraciones de base de datos)
+- **uv** (Gestor de entornos virtuales y paquetes de Astral)
+- **Pytest** (Framework de testing)
 
 ### Frontend (`fe/`)
-
-| Tecnología | Versión | Propósito |
-|---|---|---|
-| React | 18+ | Interfaz de usuario |
-| TypeScript | 5.0+ | Tipado estático |
-| Vite | 6+ | Bundler y dev server |
-| TailwindCSS | 4+ | Estilos utility-first |
-| React Router | 7+ | Enrutamiento |
-| Axios | latest | Cliente HTTP |
-| Vitest | latest | Testing frontend |
-
-### Base de Datos
-
-| Tecnología | Versión | Propósito |
-|---|---|---|
-| PostgreSQL | 17+ | Base de datos relacional |
-| Docker Compose | latest | Contenedor de la BD |
+- **React 19** + **TypeScript**
+- **Vite 7** (Desarrollo y compilación)
+- **TailwindCSS 4** (Diseño visual moderno)
+- **Axios** (Comunicaciones HTTP)
+- **Lucide React** (Iconografía)
 
 ---
 
 ## 🗄️ Estructura de la Base de Datos
 
-La plataforma cuenta con las siguientes entidades principales:
-
-### Entidades principales
-
-| Tabla | Descripción |
-|---|---|
-| `Usuarios` | Jóvenes artistas registrados en la plataforma |
-| `Empresa` | Organizaciones y empresas del sector cultural |
-| `Portafolio` | Portafolios de proyectos de cada artista |
-| `Habilidad` | Tipos de arte y habilidades artísticas |
-| `Portafolio_Habilidad` | Relación entre portafolios y habilidades |
-| `Oferta` | Oportunidades laborales publicadas por empresas |
-| `Postulacion` | Postulaciones de artistas a ofertas |
-| `Reto` | Retos creativos propuestos por empresas |
-| `Participa` | Participación de artistas en retos |
-| `Rol` | Roles de los usuarios en el sistema |
-| `Mensaje` | Mensajes entre artistas y empresas |
-| `Comentario` | Comentarios en perfiles y portafolios |
-
-### Tabla `Usuarios`
-
-| Columna | Tipo | Descripción |
-|---|---|---|
-| `id_usuario` | INTEGER (PK) | Identificador único |
-| `Nombre` | VARCHAR(50) | Nombre completo |
-| `Edad` | INTEGER | Edad del artista (mínimo 18) |
-| `Telefono` | VARCHAR(50) | Teléfono de contacto |
-| `Direccion` | VARCHAR(50) | Dirección |
-| `Correo` | VARCHAR(50) | Correo electrónico |
-
-### Tabla `Empresa`
-
-| Columna | Tipo | Descripción |
-|---|---|---|
-| `id_empresa` | INTEGER (PK) | Identificador único |
-| `Nombre` | VARCHAR(50) | Nombre de la empresa |
-| `Sector_empresa` | TEXT(50) | Sector artístico/cultural |
-| `Correo` | VARCHAR(50) | Correo de contacto |
-| `Numero_NIT` | INTEGER | NIT de la empresa |
-| `Telefono` | VARCHAR(10) | Teléfono |
+Entidades principales gestionadas por el ORM:
+- **`users`:** Almacena artistas y empresas con sus perfiles correspondientes.
+- **`conversacion`:** Administra canales de chat directo o creados mediante postulaciones.
+- **`mensaje`:** Contiene los mensajes de chat leídos/no leídos con timestamps.
+- **`convocatoria`:** Ofertas culturales publicadas por empresas.
+- **`inscripcion`:** Relación de postulación de artistas a convocatorias.
+- **`portafolio` / `portafolio_items`:** Contenedores de archivos multimedia de artistas.
 
 ---
 
 ## ✅ Prerrequisitos
 
-| Herramienta | Versión mínima | Verificar con |
-|---|---|---|
-| Python | 3.12+ | `python --version` |
-| Node.js | 20 LTS+ | `node --version` |
-| pnpm | 9+ | `pnpm --version` |
-| Docker | 24+ | `docker --version` |
-| Docker Compose | 2.20+ | `docker compose version` |
-| Git | 2.40+ | `git --version` |
-
-> ⚠️ **Importante:** Usar `pnpm` como gestor de paquetes de Node.js. **Nunca usar npm ni yarn.**
+- **Docker y Docker Compose** (para PostgreSQL)
+- **Node.js 20 LTS+** y **pnpm 9+** (para el Frontend)
+- **uv** (Instalación en Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`)
 
 ---
 
-## 🚀 Instalación y Setup
+## 🚀 Instalación y Configuración
 
 ### 1. Clonar el repositorio
-
 ```bash
 git clone https://github.com/JhoynerNova/Jovenes-Al-Ruedo.git
 cd Jovenes-Al-Ruedo
 ```
 
-### 2. Levantar la base de datos
-
+### 2. Base de Datos (Docker)
+Levanta el contenedor de PostgreSQL (mapeado al puerto local `5433` según el archivo `.env` del backend):
 ```bash
 docker compose up -d
-docker compose ps
-# Debe mostrar nn_auth_db con estado "healthy"
 ```
 
-### 3. Configurar el Backend
-
+### 3. Configuración del Backend
+Navega a `be`, sincroniza dependencias y ejecuta las migraciones iniciales de Alembic:
 ```bash
 cd be
+# Crear entorno virtual e instalar dependencias con uv de forma automática
+uv sync
 
-# Crear entorno virtual
-python -m venv .venv
-
-# Activar entorno virtual
-source .venv/Scripts/activate    # Windows (Git Bash)
-source .venv/bin/activate        # Linux/macOS
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-
-# Ejecutar migraciones
-alembic upgrade head
+# Ejecutar migraciones de la base de datos
+uv run alembic upgrade head
 ```
 
-### 4. Configurar el Frontend
-
+### 4. Configuración del Frontend
+Navega a `fe` e instala dependencias:
 ```bash
-cd fe
+cd ../fe
 pnpm install
-cp .env.example .env
 ```
 
 ---
 
-## ▶️ Ejecución
+## ▶️ Ejecución en Desarrollo
 
+### Servidor Backend (FastAPI)
+Desde la carpeta `be/`:
 ```bash
-# Terminal 1 — Base de datos
-docker compose up -d
+uv run uvicorn app.main:app --reload
+# -> Servidor corriendo en: http://localhost:8000
+# -> Swagger interactivo en: http://localhost:8000/docs
+```
 
-docker exec -it jovenes_al_ruedo_db psql -U jar_user -d jovenes_al_ruedo
-
-\dt → ver tablas
-SELECT * FROM users; → ver todos los usuarios
-\q → salir
-
-# Terminal 2 — Backend (FastAPI)
-cd be && source .venv/Scripts/activate
-uvicorn app.main:app --reload
-# → API en http://localhost:8000
-# → Swagger UI en http://localhost:8000/docs
-
-# Terminal 3 — Frontend (React)
-cd fe && pnpm dev
-# → App en http://localhost:5173
+### Cliente Web (React)
+Desde la carpeta `fe/`:
+```bash
+pnpm dev
+# -> Cliente web corriendo en: http://localhost:5173
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing y Cobertura
 
 ### Backend
-
+Para correr las pruebas unitarias y verificar el flujo del chat y websockets:
 ```bash
-cd be && source .venv/Scripts/activate
-
-# Todos los tests
-pytest -v
-
-# Con cobertura
-pytest --cov=app --cov-report=term-missing
+cd be
+uv run pytest app/tests -v
 ```
-
-**Resultado:** ✅ 32/32 tests pasando
+**Resultado:** ✅ 36/36 tests pasando exitosamente.
 
 ### Frontend
-
+Para ejecutar las pruebas en el cliente web:
 ```bash
 cd fe
-
-# Todos los tests
 pnpm test
-
-# Con cobertura
-pnpm test:coverage
 ```
-
-**Resultado:** ✅ 82/82 tests pasando
 
 ---
 
-## � Documentación Técnica
+## 🏗️ Arquitectura del Sistema
 
-Documentación completa y detallada sobre la arquitectura, endpoints y base de datos:
+El sistema adopta una arquitectura de **Cliente-Servidor desacoplada** estructurada bajo los principios de **Clean Architecture** (Arquitectura Limpia) y separación de responsabilidades:
 
-| Documento | Descripción |
-|-----------|------------|
-| [architecture.md](_docs/architecture.md) | Arquitectura de alto nivel, componentes, flujos de datos, patrones de diseño |
-| [api-endpoints.md](_docs/api-endpoints.md) | Especificación completa de endpoints, parámetros, ejemplos con curl |
-| [database-schema.md](_docs/database-schema.md) | Modelo de datos, tablas, migraciones, queries comunes, ER diagram |
+```mermaid
+graph TD
+    subgraph Frontend Web [React SPA + Vite]
+        UI[Componentes React] --> Axios[Cliente Axios]
+    end
 
-### 🔍 API Interactiva (Swagger UI)
+    subgraph App Móvil [React Native + Expo]
+        RN[UI Nativa Expo] --> AxiosMobile[Cliente Axios]
+    end
 
-Una vez levantado el backend, acceder a la documentación interactiva en:
+    subgraph Backend API [FastAPI]
+        Routers[Capa Routers / Controllers] --> Services[Capa Servicios de Negocio]
+        Services --> Models[Capa Modelos de Datos]
+        Models --> DB[(PostgreSQL)]
+    end
 
+    Axios --> Routers
+    AxiosMobile --> Routers
 ```
-http://localhost:8000/docs
-```
 
-Permite probar todos los endpoints directamente sin usar curl.
+### Capas del Backend (Clean Architecture):
+* **Capa de Presentación (`app/routers`)**: Expone endpoints REST y WebSockets, valida entradas con Pydantic y delega a los servicios.
+* **Capa de Lógica de Negocio (`app/services`)**: Contiene reglas de negocio (ej. validación de rango de edad, validación de tamaños multimedia).
+* **Capa de Persistencia (`app/models`)**: Modelos ORM relacionales de SQLAlchemy.
+* **Capa de Configuración y Seguridad (`app/core` & `app/utils`)**: Configuración con Pydantic Settings, JWT y hashing.
 
 ---
 
-```
+## 📂 Estructura del Repositorio
+
+A continuación se detalla la estructura simplificada de este repositorio:
+
+```text
 Jovenes-Al-Ruedo/
-├── .github/
-│   └── copilot-instructions.md    # Reglas y convenciones del proyecto
-├── _docs/                         # Documentación técnica
-│   ├── HUs/                       # Historias de Usuario
-│   ├── RFs/                       # Requerimientos Funcionales
-│   ├── RNFs/                      # Requerimientos No Funcionales
-│   └── restrictions/              # Restricciones del sistema
 ├── be/                            # Backend — FastAPI + Python
+│   ├── alembic/                   # Historial de migraciones SQL
 │   ├── app/
-│   │   ├── main.py                # Punto de entrada FastAPI
-│   │   ├── config.py              # Configuración (Pydantic Settings)
-│   │   ├── database.py            # Conexión a PostgreSQL
-│   │   ├── models/                # Modelos ORM
-│   │   │   ├── user.py            # Modelo User (con age y artistic_area)
-│   │   │   └── password_reset_token.py
-│   │   ├── schemas/               # Schemas Pydantic
-│   │   ├── routers/               # Endpoints (auth, users)
-│   │   ├── services/              # Lógica de negocio
-│   │   ├── utils/                 # Seguridad y email
-│   │   └── tests/                 # Tests con pytest
-│   ├── alembic/                   # Migraciones de BD
-│   └── requirements.txt
-├── fe/                            # Frontend — React + Vite + TypeScript
-│   └── src/
-│       ├── api/                   # Clientes HTTP
-│       ├── components/            # Componentes reutilizables
-│       ├── pages/                 # Páginas/vistas
-│       ├── hooks/                 # Custom hooks
-│       ├── context/               # Context providers
-│       └── types/                 # Tipos TypeScript
-├── docker-compose.yml             # PostgreSQL 17
-└── README.md
+│   │   ├── core/                  # Cookies y privacidad
+│   │   ├── models/                # Modelos SQLAlchemy ORM
+│   │   ├── routers/               # Controladores y Endpoints de la API
+│   │   ├── schemas/               # Modelos de validación Pydantic
+│   │   ├── services/              # Lógica de negocio (auth_service)
+│   │   ├── tests/                 # Unit tests (test_auth, test_chat)
+│   │   ├── utils/                 # Envíos de email y seguridad
+│   │   ├── database.py            # Inicialización de motor de base de datos
+│   │   ├── dependencies.py        # Dependencias inyectadas (current_user, get_db)
+│   │   └── main.py                # Punto de entrada FastAPI y middleware global
+│   ├── pyproject.toml             # Declaración de dependencias del backend para `uv`
+│   └── requirements.txt           # Dependencias compiladas
+├── db/                            # Scripts SQL puros (seed y schemas)
+├── docs/                          # Carpetas de documentación técnica general
+│   ├── conceptos/                 # Conceptos y glosarios
+│   ├── referencia-tecnica/        # Endpoints, arquitectura, modelo de datos y diseño
+│   └── requisitos/                # Historias de usuario (HUs), funcionales y restricciones
+├── fe/                            # Frontend — React + Vite + TS
+│   ├── src/
+│   │   ├── api/                   # Clientes de Axios
+│   │   ├── components/            # Layouts y componentes UI reutilizables
+│   │   ├── context/               # Proveedor de estado de autenticación
+│   │   ├── hooks/                 # Custom react hooks
+│   │   ├── pages/                 # Vistas del dashboard, explore, chat, etc.
+│   │   └── types/                 # Interfaces de tipos de TypeScript
+│   ├── package.json               # Dependencias de npm
+│   └── vite.config.ts             # Configuración de compilador Vite
+├── docker-compose.yml             # Contenedor de base de datos PostgreSQL
+└── README.md                      # Esta guía
 ```
 
 ---
@@ -305,139 +233,24 @@ Jovenes-Al-Ruedo/
 Base URL: `http://localhost:8000/api/v1`
 
 ### Autenticación (`/auth`)
+- `POST /auth/register` - Registro de usuarios (validaciones de edad)
+- `POST /auth/login` - Obtención de tokens de acceso JWT
+- `POST /auth/change-password` - Cambio de contraseña con sesión activa
+- `POST /auth/forgot-password` - Envío de código de recuperación por email
+- `POST /auth/reset-password` - Reestablecer contraseña usando token
 
-| Método | Ruta | Descripción | Auth |
-|---|---|---|---|
-| POST | `/auth/register` | Registrar joven artista | No |
-| POST | `/auth/login` | Iniciar sesión | No |
-| POST | `/auth/refresh` | Renovar access token | No |
-| POST | `/auth/change-password` | Cambiar contraseña | Sí |
-| POST | `/auth/forgot-password` | Solicitar recuperación | No |
-| POST | `/auth/reset-password` | Restablecer contraseña | No |
-
-### Usuario (`/users`)
-
-| Método | Ruta | Descripción | Auth |
-|---|---|---|---|
-| GET | `/users/me` | Obtener perfil del artista | Sí |
-
-### Campos de registro
-
-```json
-{
-  "email": "artista@ejemplo.com",
-  "full_name": "Nombre Completo",
-  "age": 20,
-  "artistic_area": "Música",
-  "password": "Contraseña123"
-}
-```
-
-> 📖 Documentación interactiva completa en: **http://localhost:8000/docs**
-
----
-
-## 📏 Convenciones
-
-| Aspecto | Regla |
-|---|---|
-| Nomenclatura técnica | Inglés (variables, funciones, endpoints) |
-| Comentarios y docs | Español (¿Qué? ¿Para qué? ¿Impacto?) |
-| Commits | Conventional Commits en inglés |
-| Python | PEP 8 + type hints + ruff |
-| TypeScript | strict mode + ESLint + Prettier |
-| Gestor paquetes | venv (Python), pnpm (Node.js) |
-
----
-
-## 🔐 Seguridad
-
-- Contraseñas hasheadas con **bcrypt** — nunca en texto plano
-- Autenticación con **JWT** (Access Token 15 min + Refresh Token 7 días)
-- Validación de edad mínima: **18 años**
-- Validación de contraseña: mínimo 8 caracteres, mayúscula, minúscula y número
-- CORS configurado solo para `http://localhost:5173`
+### Chat & WebSockets (`/chat`)
+- `GET /chat/conversaciones` - Listado de conversaciones del usuario
+- `POST /chat/conversaciones/directo` - Iniciar chat directo (Empresa a Artista)
+- `GET /chat/conversacion/{id}/mensajes` - Historial de mensajes (marca no leídos como leídos)
+- `POST /chat/conversacion/{id}/mensajes` - Enviar mensaje tradicional por HTTP
+- `WebSocket /chat/ws/{id}` - Conexión bidireccional en tiempo real para chat interactivo
 
 ---
 
 ## 👥 Autores
 
-| Nombre | Rol |
-|---|---|
-| **Franky Almario** | Desarrollador |
-| **Jhoyner Nova** | Desarrollador |
+- **Franky Almario** - Desarrollador
+- **Jhoyner Nova** - Desarrollador
 
-**Programa:** SENA — Ficha 3171599  
-**Fecha:** Febrero 2026
-
----
-
-## ✅ Verificación Final del Sistema
-
-La implementación ha completado todas las fases del proyecto:
-
-### Checklist de Completitud
-
-```bash
-# ✅ Fase 1 — Backend Setup                        [COMPLETADA]
-# ✅ Fase 2 — Modelo de Datos y Migraciones        [COMPLETADA]
-# ✅ Fase 3 — Autenticación Backend                [COMPLETADA]
-# ✅ Fase 4 — Tests Backend (32/32 ✅)              [COMPLETADA]
-# ✅ Fase 5 — Frontend Setup                       [COMPLETADA]
-# ✅ Fase 6 — Frontend Auth                        [COMPLETADA]
-# ✅ Fase 7 — Tests Frontend (82/82 ✅)             [COMPLETADA]
-# ✅ Fase 8 — Documentación Final                  [COMPLETADA]
-```
-
-### Probar el Sistema Completo
-
-```bash
-# 1. Levantar base de datos
-docker compose up -d
-docker compose ps
-
-# 2. Levantar backend (Terminal 1)
-cd be && source .venv/Scripts/activate
-
- && 
- 
-uvicorn app.main:app --reload
-# → http://localhost:8000
-# → Swagger UI: http://localhost:8000/docs
-
-# 3. Levantar frontend (Terminal 2)
-cd fe && pnpm dev
-# → http://localhost:5173
-
-# 4. Ejecutar tests (Terminal 3)
-cd be && source .venv/Scripts/activate
-
- && pytest -v --cov=app
-cd fe && pnpm test
-
-# 5. Flujo manual completo:
-#    ✓ Ir a http://localhost:5173
-#    ✓ Registro con nuevo usuario
-#    ✓ Login con credenciales
-#    ✓ Ver perfil (/dashboard)
-#    ✓ Cambiar contraseña (/change-password)
-#    ✓ Logout
-#    ✓ Forgot password (revisa consola del backend por email)
-#    ✓ Reset password (usa token del email)
-#    ✓ Login nuevamente con nueva contraseña
-```
-
-### Estado del Proyecto
-
-| Aspecto | Estado |
-|--------|--------|
-| Backend (FastAPI) | ✅ Funcional |
-| Frontend (React) | ✅ Funcional |
-| Base de Datos | ✅ Funcional |
-| Autenticación JWT | ✅ Implementada |
-| Tests Backend | ✅ 32/32 pasando (96% cobertura) |
-| Tests Frontend | ✅ 82/82 pasando |
-| Documentación | ✅ Completa |
-| Seguridad | ✅ Implementada (bcrypt, JWT, CORS) |
-
----
+**SENA — Ficha 3171599 | Junio 2026**
