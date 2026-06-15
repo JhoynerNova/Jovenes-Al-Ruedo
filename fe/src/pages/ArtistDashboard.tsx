@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart3, Image, Briefcase, Send, Settings, Globe,
-  Building2, Users, Calendar, FolderPlus, Trash2,
+  Building2, Users, Calendar, FolderPlus, Trash2, FileText,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
@@ -59,6 +59,39 @@ export function ArtistDashboard() {
     return edad;
   };
 
+  const handleExportProfile = () => {
+    const printWindow = window.open("", "_blank");
+    if(!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ficha Artística - ${user?.full_name}</title>
+          <style>
+            body { font-family: sans-serif; color: #333; padding: 40px; line-height: 1.6; }
+            .card { border: 2px solid #5A3FA0; border-radius: 12px; padding: 30px; max-width: 600px; margin: auto; }
+            h1 { color: #5A3FA0; margin-top: 0; }
+            .badge { display: inline-block; background: #2EC4B6; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+            .section { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+            .label { font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>${user?.full_name}</h1>
+            <span class="badge">${user?.artistic_area || "Artista"}</span>
+            <div class="section">
+              <p><span class="label">Correo:</span> ${user?.email}</p>
+              <p><span class="label">Ubicación:</span> ${user?.location || "Bogotá, Colombia"}</p>
+              <p><span class="label">Biografía:</span><br/>${user?.bio || "Sin biografía especificada."}</p>
+            </div>
+          </div>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const loadPortafolios = useCallback(async () => {
     setLoadingPort(true);
     try {
@@ -99,7 +132,8 @@ export function ArtistDashboard() {
   useEffect(() => {
     loadPortafolios();
     loadMisPostulaciones();
-  }, [loadPortafolios, loadMisPostulaciones]);
+    loadConvocatorias();
+  }, [loadPortafolios, loadMisPostulaciones, loadConvocatorias]);
 
   useEffect(() => {
     if (activeTab === "convocatorias") loadConvocatorias();
@@ -233,7 +267,8 @@ export function ArtistDashboard() {
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="secondary" size="sm" onClick={handleExportProfile}><FileText className="mr-1.5 h-4 w-4 inline" /> Exportar CV 📄</Button>
             <Link to="/settings"><Button variant="secondary" size="sm"><Settings className="mr-1.5 h-4 w-4 inline" /> Configuración</Button></Link>
             <Link to="/explore"><Button variant="secondary" size="sm"><Globe className="mr-1.5 h-4 w-4 inline" /> Explorar</Button></Link>
           </div>
@@ -327,6 +362,81 @@ export function ArtistDashboard() {
               </div>
             </div>
           )}
+
+          {/* Tips and Useful Resources for Artists */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+              <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">💡 Consejos para Artistas Jóvenes</h2>
+              <ul className="space-y-3 text-sm">
+                <li className="flex gap-2">
+                  <span className="text-brand-purple dark:text-brand-teal font-bold">✔</span>
+                  <p className="text-gray-600 dark:text-gray-400"><strong>Arma un Reel Corto:</strong> Las empresas suelen mirar solo los primeros 30 segundos de tus audios o videos. ¡Sé impactante!</p>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-brand-purple dark:text-brand-teal font-bold">✔</span>
+                  <p className="text-gray-600 dark:text-gray-400"><strong>Sube muestras claras:</strong> Asegúrate de subir imágenes de buena resolución y archivos en formatos universales (MP3, MP4, PDF).</p>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-brand-purple dark:text-brand-teal font-bold">✔</span>
+                  <p className="text-gray-600 dark:text-gray-400"><strong>Mantén tu perfil al día:</strong> Actualiza tu biografía y localización para que más empresas cercanas te encuentren.</p>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+              <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">🎯 Ofertas recomendadas para ti</h2>
+              {convs.length === 0 ? (
+                <p className="text-xs text-gray-500">No hay convocatorias cargadas en este momento.</p>
+              ) : (
+                <div className="space-y-3">
+                  {(() => {
+                    const filtered = convs.filter(c => {
+                      const userArea = user?.artistic_area?.toLowerCase() || "";
+                      return userArea && (c.nombre.toLowerCase().includes(userArea) || c.glue?.toLowerCase().includes(userArea));
+                    });
+
+                    if (filtered.length > 0) {
+                      return filtered.slice(0, 3).map(c => (
+                        <div key={c.id_conv} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 last:border-b-0 last:pb-0">
+                          <div className="min-w-0 flex-1 mr-2">
+                            <h4 className="font-bold text-xs text-gray-900 dark:text-white truncate">{c.nombre}</h4>
+                            <p className="text-[10px] text-gray-500 truncate">{c.empresa_nombre || "Empresa"}</p>
+                          </div>
+                          <button
+                            onClick={() => setActiveTab("convocatorias")}
+                            className="text-[10px] bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple font-bold px-2 py-1 rounded dark:bg-brand-teal/10 dark:text-brand-teal dark:hover:bg-brand-teal/20 whitespace-nowrap"
+                          >
+                            Ver oferta →
+                          </button>
+                        </div>
+                      ));
+                    }
+
+                    // Fallback to latest 3 jobs
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 italic mb-2">No encontramos ofertas exactas para tu área, pero mira las últimas publicadas:</p>
+                        {convs.slice(0, 3).map(c => (
+                          <div key={c.id_conv} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 last:border-b-0 last:pb-0">
+                            <div className="min-w-0 flex-1 mr-2">
+                              <h4 className="font-bold text-xs text-gray-900 dark:text-white truncate">{c.nombre}</h4>
+                              <p className="text-[10px] text-gray-500 truncate">{c.empresa_nombre || "Empresa"}</p>
+                            </div>
+                            <button
+                              onClick={() => setActiveTab("convocatorias")}
+                              className="text-[10px] bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple font-bold px-2 py-1 rounded dark:bg-brand-teal/10 dark:text-brand-teal dark:hover:bg-brand-teal/20 whitespace-nowrap"
+                            >
+                              Ver oferta →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

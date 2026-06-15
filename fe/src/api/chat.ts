@@ -24,12 +24,12 @@ export interface MensajeResponse {
 
 export const chatApi = {
   getConversaciones: async () => {
-    const { data } = await api.get<ConversacionResponse[]>("/api/v1/chat/conversaciones");
+    const { data } = await api.get<ConversacionResponse[]>("/api/v1/chat/conversaciones/");
     return data;
   },
 
   crearConversacionDirecta: async (artistaId: string) => {
-    const { data } = await api.post<ConversacionResponse>("/api/v1/chat/conversaciones/directo", {
+    const { data } = await api.post<ConversacionResponse>("/api/v1/chat/conversaciones/directo/", {
       artista_id: artistaId,
     });
     return data;
@@ -37,14 +37,14 @@ export const chatApi = {
 
   getMensajes: async (idConversacion: number) => {
     const { data } = await api.get<MensajeResponse[]>(
-      `/api/v1/chat/conversacion/${idConversacion}/mensajes`
+      `/api/v1/chat/conversacion/${idConversacion}/mensajes/`
     );
     return data;
   },
 
   enviarMensaje: async (idConversacion: number, contenido: string) => {
     const { data } = await api.post<MensajeResponse>(
-      `/api/v1/chat/conversacion/${idConversacion}/mensajes`,
+      `/api/v1/chat/conversacion/${idConversacion}/mensajes/`,
       { contenido }
     );
     return data;

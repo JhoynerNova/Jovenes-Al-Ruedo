@@ -1,17 +1,33 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  BarChart3, Megaphone, Inbox, Settings, PlusCircle, Pencil, Trash2, Users
+  BarChart3, Megaphone, Inbox, Settings, PlusCircle, Pencil, Trash2, Users, X, ExternalLink, MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type Applicant } from "@/api/convocatorias";
+import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
+import { chatApi } from "@/api/chat";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
 export function CompanyDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("resumen");
+  const navigate = useNavigate();
+  const [startingChatId, setStartingChatId] = useState<string | null>(null);
+
+  const handleStartChat = async (artistaId: string) => {
+    setStartingChatId(artistaId);
+    try {
+      await chatApi.crearConversacionDirecta(artistaId);
+      navigate("/mensajes");
+    } catch {
+      alert("Error al iniciar chat con el artista.");
+    } finally {
+      setStartingChatId(null);
+    }
+  };
 
   // Convocatorias
   const [convs, setConvs] = useState<ConvResponse[]>([]);
@@ -29,6 +45,25 @@ export function CompanyDashboard() {
   const [allApplicants, setAllApplicants] = useState<(Applicant & { conv_nombre: string, id_conv: number })[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
+
+  // States for viewing artist portfolio in modal
+  const [selectedPortfolio, setSelectedPortfolio] = useState<PortafolioResponse | null>(null);
+  const [loadingPortfolio, setLoadingPortfolio] = useState(false);
+  const [portfolioError, setPortfolioError] = useState("");
+
+  const handleViewPortfolio = async (id: number) => {
+    setLoadingPortfolio(true);
+    setPortfolioError("");
+    setSelectedPortfolio(null);
+    try {
+      const data = await portafolioApi.get(id);
+      setSelectedPortfolio(data);
+    } catch (e: any) {
+      setPortfolioError("No se pudo cargar el portafolio de este artista.");
+    } finally {
+      setLoadingPortfolio(false);
+    }
+  };
 
   const loadConvs = useCallback(async () => {
     setLoadingConvs(true);
@@ -262,6 +297,31 @@ export function CompanyDashboard() {
                 {editingConv ? "Editar convocatoria" : "Nueva convocatoria"}
               </h3>
               <div className="space-y-3">
+                {!editingConv && (
+                  <div className="flex gap-2 items-center mb-2 overflow-x-auto py-1">
+                    <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">Plantillas rápidas:</span>
+                    {[
+                      { label: "📸 Fotógrafo", title: "Fotógrafo Profesional para Evento", exp: "Intermedio", jor: "Freelance", sal: "$2.0M - $3.5M COP", desc: "Buscamos un fotógrafo creativo con experiencia en retratos y eventos culturales. Se requiere portafolio y equipo propio." },
+                      { label: "🎸 Músico", title: "Músico de Sesión / Instrumentista", exp: "Intermedio", jor: "Freelance", sal: "$2.5M - $4.0M COP", desc: "Necesitamos un instrumentista (guitarrista/pianista) para grabación de pistas de estudio y soporte en vivo." },
+                      { label: "🎭 Actor/Actriz", title: "Actor de Teatro / Doblaje de Voz", exp: "Principiante", jor: "Freelance", sal: "$1.8M - $3.0M COP", desc: "Convocatoria abierta para proyecto de doblaje vocal y cortometraje teatral. No se requiere amplia experiencia, pero sí excelente modulación." }
+                    ].map(t => (
+                      <button
+                        type="button"
+                        key={t.label}
+                        onClick={() => {
+                          setNewConvNombre(t.title);
+                          setNewConvExp(t.exp);
+                          setNewConvJornada(t.jor);
+                          setNewConvSalario(t.sal);
+                          setNewConvGlue(t.desc);
+                        }}
+                        className="text-[10px] bg-brand-purple/5 hover:bg-brand-purple/10 text-brand-purple px-2 py-1 rounded border border-brand-purple/20 font-bold whitespace-nowrap dark:bg-brand-teal/5 dark:text-brand-teal dark:border-brand-teal/20"
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <input
                   type="text"
                   value={editingConv ? editingConv.nombre : newConvNombre}
@@ -455,10 +515,10 @@ export function CompanyDashboard() {
                           </div>
 
                           {(a.id_portafolio_interno || a.cv_url) && (
-                            <div className="flex justify-between items-center pt-1 text-[10px]">
+                            <div className="flex justify-between items-center pt-1 text-[10px] gap-2">
                               {a.id_portafolio_interno && (
-                                <button onClick={() => alert(`Visualización de Portafolio Interno en desarrollo. ID: ${a.id_portafolio_interno}`)} className="text-brand-purple hover:underline font-semibold">
-                                  Ver Portafolio
+                                <button onClick={() => handleViewPortfolio(a.id_portafolio_interno!)} className="text-brand-purple hover:underline font-semibold dark:text-brand-teal">
+                                  Ver Portafolio 🎨
                                 </button>
                               )}
                               {a.cv_url && (
@@ -468,6 +528,17 @@ export function CompanyDashboard() {
                               )}
                             </div>
                           )}
+
+                          <div className="pt-2 border-t border-gray-100 dark:border-gray-850">
+                            <button
+                              onClick={() => handleStartChat(a.id_usr)}
+                              disabled={startingChatId === a.id_usr}
+                              className="w-full text-center rounded-lg bg-brand-purple/10 text-brand-purple py-1.5 font-bold transition-all hover:bg-brand-purple/20 text-[10px] flex items-center justify-center gap-1.5 dark:bg-brand-teal/10 dark:text-brand-teal dark:hover:bg-brand-teal/20"
+                            >
+                              <MessageSquare className="h-3 w-3" />
+                              {startingChatId === a.id_usr ? "Conectando..." : "Chat con el Artista 💬"}
+                            </button>
+                          </div>
                         </div>
                       ))}
                       {colApps.length === 0 && (
@@ -479,6 +550,105 @@ export function CompanyDashboard() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Portfolio Viewer Modal */}
+      {(loadingPortfolio || selectedPortfolio || portfolioError) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="animate-scale-in w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-800 max-h-[85vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {loadingPortfolio ? "Cargando portafolio..." : selectedPortfolio?.nombre || "Portafolio del Artista"}
+                </h3>
+                {selectedPortfolio && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Este portafolio contiene {selectedPortfolio.archivos.length} obras.
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => { setSelectedPortfolio(null); setLoadingPortfolio(false); setPortfolioError(""); }}
+                className="rounded-lg p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {loadingPortfolio && (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-purple border-t-transparent" />
+                <p className="text-sm text-gray-500 font-medium">Buscando obras del artista...</p>
+              </div>
+            )}
+
+            {portfolioError && (
+              <div className="text-center py-10">
+                <p className="text-sm font-semibold text-red-500">⚠️ {portfolioError}</p>
+              </div>
+            )}
+
+            {selectedPortfolio && (
+              <div className="flex-1 space-y-4">
+                {selectedPortfolio.archivos.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
+                    <p className="text-gray-500 text-sm">Este portafolio no tiene obras cargadas aún.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {selectedPortfolio.archivos.map((a) => {
+                      const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.archivo}`;
+                      const isImage = a.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
+                      const isVideo = a.archivo.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
+                      const isAudio = a.archivo.match(/\.(mp3|wav|ogg|m4a)$/i);
+
+                      return (
+                        <div key={a.id_det_p} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 flex flex-col group transition-all hover:shadow-md">
+                          <div className="h-44 bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center overflow-hidden">
+                            {isImage ? (
+                              <img src={fileUrl} alt={a.titulo || "Obra"} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            ) : isVideo ? (
+                              <video src={fileUrl} controls className="h-full w-full object-cover" />
+                            ) : isAudio ? (
+                              <div className="flex h-full w-full flex-col items-center justify-center p-3 bg-brand-purple/5">
+                                <span className="text-3xl mb-2">🎵</span>
+                                <audio src={fileUrl} controls className="w-full scale-90" />
+                              </div>
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center">
+                                <span className="text-4xl mb-2">📄</span>
+                                <a
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-purple dark:text-brand-teal hover:underline"
+                                >
+                                  Ver Documento <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3 border-t border-gray-100 dark:border-gray-850">
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{a.titulo || "Sin título"}</h4>
+                            {a.descripcion && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 italic">
+                                "{a.descripcion}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-6 flex justify-end">
+              <Button onClick={() => setSelectedPortfolio(null)}>Cerrar Portafolio</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

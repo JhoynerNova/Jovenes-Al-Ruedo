@@ -49,55 +49,55 @@ export interface Applicant {
 
 export const convocatoriasApi = {
   list: async (params?: { skip?: number; limit?: number; search?: string }) => {
-    const { data } = await api.get<PaginatedConvResponse>("/api/v1/convocatorias", { params });
+    const { data } = await api.get<PaginatedConvResponse>("/api/v1/convocatorias/", { params });
     return data;
   },
 
   getMisConvocatorias: async () => {
-    const { data } = await api.get<ConvResponse[]>("/api/v1/convocatorias/mis-convocatorias");
+    const { data } = await api.get<ConvResponse[]>("/api/v1/convocatorias/mis-convocatorias/");
     return data;
   },
 
   getMisPostulaciones: async () => {
-    const { data } = await api.get<MiPostulacion[]>("/api/v1/convocatorias/mis-postulaciones");
+    const { data } = await api.get<MiPostulacion[]>("/api/v1/convocatorias/mis-postulaciones/");
     return data;
   },
 
   get: async (id: number) => {
-    const { data } = await api.get<ConvResponse>(`/api/v1/convocatorias/${id}`);
+    const { data } = await api.get<ConvResponse>(`/api/v1/convocatorias/${id}/`);
     return data;
   },
 
   create: async (body: { nombre: string; glue?: string; nivel_experiencia?: string; tipo_jornada?: string; rango_salarial?: string; ubicacion?: string }) => {
-    const { data } = await api.post<ConvResponse>("/api/v1/convocatorias", body);
+    const { data } = await api.post<ConvResponse>("/api/v1/convocatorias/", body);
     return data;
   },
 
   update: async (id: number, body: { nombre: string; glue?: string; nivel_experiencia?: string; tipo_jornada?: string; rango_salarial?: string; ubicacion?: string }) => {
-    const { data } = await api.put<ConvResponse>(`/api/v1/convocatorias/${id}`, body);
+    const { data } = await api.put<ConvResponse>(`/api/v1/convocatorias/${id}/`, body);
     return data;
   },
 
   delete: async (id: number) => {
-    await api.delete(`/api/v1/convocatorias/${id}`);
+    await api.delete(`/api/v1/convocatorias/${id}/`);
   },
 
   apply: async (convId: number, body: { carta_presentacion?: string; id_portafolio_interno?: number; cv_url?: string }) => {
-    const { data } = await api.post(`/api/v1/convocatorias/${convId}/apply`, body);
+    const { data } = await api.post(`/api/v1/convocatorias/${convId}/apply/`, body);
     return data;
   },
 
   withdraw: async (convId: number) => {
-    await api.delete(`/api/v1/convocatorias/${convId}/apply`);
+    await api.delete(`/api/v1/convocatorias/${convId}/apply/`);
   },
 
   getApplicants: async (convId: number) => {
-    const { data } = await api.get<Applicant[]>(`/api/v1/convocatorias/${convId}/applicants`);
+    const { data } = await api.get<Applicant[]>(`/api/v1/convocatorias/${convId}/applicants/`);
     return data;
   },
   
   updateApplicantStatus: async (convId: number, inscripcionId: number, estado: string) => {
-    const { data } = await api.put(`/api/v1/convocatorias/${convId}/applicants/${inscripcionId}`, { estado });
+    const { data } = await api.put(`/api/v1/convocatorias/${convId}/applicants/${inscripcionId}/`, { estado });
     return data;
   }
 };

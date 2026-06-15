@@ -93,6 +93,17 @@ export function AdminDashboard() {
     }
   };
 
+  const handleExportMetrics = () => {
+    if(!stats) return;
+    const jsonStr = JSON.stringify(stats, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `reporte_metricas_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
+
   const openDetail = (u: UserResponse) => {
     setSelectedUser(u);
     setNewRole(u.role);
@@ -104,9 +115,14 @@ export function AdminDashboard() {
       {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-gray-800 to-brand-dark p-6 text-white shadow-lg sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative">
-          <h1 className="text-2xl font-bold">🛡️ Panel de Administración</h1>
-          <p className="mt-1 text-sm text-white/70">Gestiona usuarios, roles y supervisa la plataforma</p>
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">🛡️ Panel de Administración</h1>
+            <p className="mt-1 text-sm text-white/70">Gestiona usuarios, roles y supervisa la plataforma</p>
+          </div>
+          <div>
+            <Button variant="secondary" size="sm" onClick={handleExportMetrics}>📥 Descargar Métricas (JSON)</Button>
+          </div>
         </div>
       </div>
 
