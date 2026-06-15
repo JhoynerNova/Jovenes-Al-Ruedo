@@ -173,6 +173,7 @@ def delete_convocatoria(
 
 # ── Postularse a una convocatoria (artista) ──
 @router.post("/{conv_id}/apply", status_code=201, summary="Postularse a convocatoria")
+@router.post("/{conv_id}/postularse", status_code=201, summary="Postularse a convocatoria (rápida)")
 def apply_to_convocatoria(
     conv_id: int,
     body: InscripcionCreate,
