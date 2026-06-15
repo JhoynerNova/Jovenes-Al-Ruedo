@@ -399,68 +399,84 @@ export function CompanyDashboard() {
               <p className="text-gray-500">No hay postulaciones aún</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {allApplicants.map((a) => (
-                <div key={a.id_i} className="animate-fade-in-up card-hover rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple/20 to-brand-teal/20 text-lg font-bold text-brand-purple dark:text-brand-teal">
-                      {a.artista_nombre.charAt(0)}
+            <div className="grid gap-4 md:grid-cols-4 items-start">
+              {/* Kanban Columns */}
+              {([
+                { key: "Enviada", label: "Recibidas (Enviadas)", color: "border-t-blue-500 bg-blue-50/50 dark:bg-blue-950/10" },
+                { key: "En revisión", label: "En revisión", color: "border-t-orange-500 bg-orange-50/50 dark:bg-orange-950/10" },
+                { key: "Aceptada", label: "Aceptadas", color: "border-t-green-500 bg-green-50/50 dark:bg-green-950/10" },
+                { key: "Rechazada", label: "Rechazadas", color: "border-t-red-500 bg-red-50/50 dark:bg-red-950/10" }
+              ]).map((col) => {
+                const colApps = allApplicants.filter(a => a.estado === col.key);
+                return (
+                  <div key={col.key} className={`rounded-xl border border-gray-200 dark:border-gray-800 border-t-4 ${col.color} p-3 min-h-[500px]`}>
+                    <div className="flex items-center justify-between mb-3 border-b border-gray-200/50 pb-2 dark:border-gray-800/50">
+                      <h4 className="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider">{col.label}</h4>
+                      <span className="rounded-full bg-gray-200 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-gray-700 dark:text-gray-400">{colApps.length}</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{a.artista_nombre}</h3>
-                        <span className="text-xs text-gray-400">{new Date(a.created_at).toLocaleDateString("es-CO")}</span>
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{a.artista_email}</p>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {a.artista_area && (
-                          <span className="inline-flex items-center rounded-full bg-brand-teal/10 px-2.5 py-0.5 text-xs font-medium text-brand-teal">
-                            {a.artista_area}
-                          </span>
-                        )}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2.5 py-0.5 text-xs text-brand-purple dark:text-purple-300">
-                          <Megaphone className="h-3 w-3" /> {a.conv_nombre}
-                        </span>
-                        <select
-                          value={a.estado}
-                          onChange={(e) => handleUpdateApplicantStatus(a.id_conv, a.id_i, e.target.value)}
-                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border-0 focus:ring-0 ${
-                            a.estado === 'Aceptada' ? 'bg-green-100 text-green-800' :
-                            a.estado === 'Rechazada' ? 'bg-red-100 text-red-800' :
-                            a.estado === 'En revisión' ? 'bg-orange-100 text-orange-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          <option value="Enviada">Enviada</option>
-                          <option value="En revisión">En revisión</option>
-                          <option value="Aceptada">Aceptada</option>
-                          <option value="Rechazada">Rechazada</option>
-                        </select>
-                      </div>
-                      
-                      <div className="mt-3 text-sm text-gray-700 dark:text-gray-300 border-l-2 border-brand-purple/20 pl-3">
-                        <p className="font-medium text-xs text-gray-500 uppercase tracking-wider mb-1">Carta de presentación</p>
-                        <p className="line-clamp-3 text-xs">{a.carta_presentacion || "El artista no incluyó carta de presentación."}</p>
-                      </div>
+                    <div className="space-y-3">
+                      {colApps.map((a) => (
+                        <div key={a.id_i} className="animate-scale-in rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-xs space-y-2.5">
+                          <div className="flex items-start justify-between gap-1">
+                            <div>
+                              <h5 className="font-bold text-gray-900 dark:text-white">{a.artista_nombre}</h5>
+                              <p className="text-[10px] text-gray-400">{a.artista_email}</p>
+                              {a.artista_area && <span className="mt-1 inline-block text-[10px] text-brand-teal font-medium">✨ {a.artista_area}</span>}
+                            </div>
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(a.created_at).toLocaleDateString("es-CO", { day: '2-digit', month: '2-digit' })}</span>
+                          </div>
 
-                      {(a.id_portafolio_interno || a.cv_url) && (
-                        <div className="mt-3 flex gap-3 text-sm">
-                          {a.id_portafolio_interno && (
-                            <button onClick={() => alert(`Visualización de Portafolio Interno en desarrollo. ID: ${a.id_portafolio_interno}`)} className="text-brand-purple hover:underline text-xs">
-                              Ver Portafolio en Plataforma →
-                            </button>
+                          <div className="rounded-md bg-gray-50 dark:bg-gray-850 p-2 border-l-2 border-brand-purple/20">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Vacante</p>
+                            <p className="truncate font-semibold text-gray-700 dark:text-gray-300">{a.conv_nombre}</p>
+                          </div>
+
+                          {a.carta_presentacion && (
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 italic line-clamp-2">"{a.carta_presentacion}"</p>
                           )}
-                          {a.cv_url && (
-                            <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline text-xs">
-                              Descargar CV →
-                            </a>
+
+                          <div className="flex flex-col gap-2 pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                            <label className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">Mover estado:</label>
+                            <select
+                              value={a.estado}
+                              onChange={(e) => handleUpdateApplicantStatus(a.id_conv, a.id_i, e.target.value)}
+                              className={`w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs focus:ring-1 focus:ring-brand-purple ${
+                                a.estado === 'Aceptada' ? 'text-green-600 font-semibold' :
+                                a.estado === 'Rechazada' ? 'text-red-600 font-semibold' :
+                                a.estado === 'En revisión' ? 'text-orange-600 font-semibold' :
+                                'text-gray-600'
+                              }`}
+                            >
+                              <option value="Enviada">Recibida (Enviada)</option>
+                              <option value="En revisión">En revisión</option>
+                              <option value="Aceptada">Aceptada</option>
+                              <option value="Rechazada">Rechazada</option>
+                            </select>
+                          </div>
+
+                          {(a.id_portafolio_interno || a.cv_url) && (
+                            <div className="flex justify-between items-center pt-1 text-[10px]">
+                              {a.id_portafolio_interno && (
+                                <button onClick={() => alert(`Visualización de Portafolio Interno en desarrollo. ID: ${a.id_portafolio_interno}`)} className="text-brand-purple hover:underline font-semibold">
+                                  Ver Portafolio
+                                </button>
+                              )}
+                              {a.cv_url && (
+                                <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline font-semibold ml-auto">
+                                  Descargar CV 📄
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
+                      ))}
+                      {colApps.length === 0 && (
+                        <p className="text-gray-400 dark:text-gray-600 text-center py-6 text-[10px] border border-dashed border-gray-200/55 dark:border-gray-800 rounded-lg">Columna vacía</p>
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

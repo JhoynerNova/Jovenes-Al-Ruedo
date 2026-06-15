@@ -59,6 +59,8 @@ export function ExplorePage() {
   const [filterNivel, setFilterNivel] = useState("");
   const [filterJornada, setFilterJornada] = useState("");
   const [filterUbicacion, setFilterUbicacion] = useState("");
+  const [filterArea, setFilterArea] = useState("");
+  const [filterPresupuesto, setFilterPresupuesto] = useState("");
 
   const [artistas, setArtistas] = useState<UserResponse[]>([]);
   const [empresas, setEmpresas] = useState<UserResponse[]>([]);
@@ -119,15 +121,19 @@ export function ExplorePage() {
     setFilterNivel("");
     setFilterJornada("");
     setFilterUbicacion("");
+    setFilterArea("");
+    setFilterPresupuesto("");
   };
 
-  const hasActiveFilters = filterNivel || filterJornada || filterUbicacion;
+  const hasActiveFilters = filterNivel || filterJornada || filterUbicacion || filterArea || filterPresupuesto;
 
   // Apply client-side filters to convocatorias
   const filteredConvs = convs.filter((c) => {
     if (filterNivel && c.nivel_experiencia?.toLowerCase() !== filterNivel.toLowerCase()) return false;
     if (filterJornada && c.tipo_jornada?.toLowerCase() !== filterJornada.toLowerCase()) return false;
     if (filterUbicacion && !c.ubicacion?.toLowerCase().includes(filterUbicacion.toLowerCase())) return false;
+    if (filterArea && c.empresa_sector?.toLowerCase() !== filterArea.toLowerCase()) return false;
+    if (filterPresupuesto && !c.rango_salarial?.toLowerCase().includes(filterPresupuesto.toLowerCase())) return false;
     return true;
   });
 
@@ -227,7 +233,7 @@ export function ExplorePage() {
             Filtros
             {hasActiveFilters && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-purple text-[10px] font-bold text-white">
-                {[filterNivel, filterJornada, filterUbicacion].filter(Boolean).length}
+                {[filterNivel, filterJornada, filterUbicacion, filterArea, filterPresupuesto].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -247,7 +253,7 @@ export function ExplorePage() {
               </button>
             )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-5">
             {/* Nivel */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Experiencia</label>
@@ -282,6 +288,37 @@ export function ExplorePage() {
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>
+            </div>
+            {/* Área Artística */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Área Artística</label>
+              <div className="relative">
+                <select
+                  value={filterArea}
+                  onChange={(e) => setFilterArea(e.target.value)}
+                  className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="">Todas las áreas</option>
+                  <option value="Música">Música</option>
+                  <option value="Artes Visuales">Artes Visuales</option>
+                  <option value="Teatro">Teatro</option>
+                  <option value="Danza">Danza</option>
+                  <option value="Literatura">Literatura</option>
+                  <option value="Cine">Cine</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+            {/* Presupuesto */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presupuesto</label>
+              <input
+                type="text"
+                value={filterPresupuesto}
+                onChange={(e) => setFilterPresupuesto(e.target.value)}
+                placeholder="Ej: $1'000.000"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
             </div>
             {/* Ubicación */}
             <div>
