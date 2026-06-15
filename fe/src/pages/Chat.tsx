@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Search, MessageCircle, Briefcase, ArrowLeft } from "lucide-react";
+import { Send, Search, MessageCircle, Briefcase, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { chatApi, type ConversacionResponse, type MensajeResponse } from "@/api/chat";
 
@@ -18,6 +18,19 @@ export function Chat() {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Estados de conexión y notificaciones
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("disconnected");
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: "error" | "info" | "success" }[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  const addToast = (message: string, type: "error" | "info" | "success" = "info") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
   // Cargar conversaciones
   useEffect(() => {
     const fetchConvs = async () => {
@@ -29,18 +42,21 @@ export function Chat() {
         }
       } catch (e) {
         console.error(e);
+        addToast("Error al cargar la lista de conversaciones", "error");
       } finally {
         setLoadingConvs(false);
       }
     };
     fetchConvs();
-    const interval = setInterval(fetchConvs, 10000);
+    const interval = setInterval(fetchConvs, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Cargar mensajes
+  // Cargar mensajes y conectar WebSocket
   useEffect(() => {
     if (!activeConvId) return;
+    
+    // 1. Cargar historial por HTTP
     setLoadingMsgs(true);
     const fetchMsgs = async () => {
       try {
@@ -49,18 +65,70 @@ export function Chat() {
         scrollToBottom();
       } catch (e) {
         console.error(e);
+        addToast("Error al cargar el historial de mensajes", "error");
       } finally {
         setLoadingMsgs(false);
       }
     };
     fetchMsgs();
-    const interval = setInterval(async () => {
-      try {
-        const data = await chatApi.getMensajes(activeConvId);
-        setMensajes(data);
-      } catch { /* silent */ }
-    }, 4000);
-    return () => clearInterval(interval);
+
+    // 2. Conectar WebSocket
+    let reconnectTimeout: any;
+    const connectWs = () => {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const wsProtocol = apiUrl.startsWith("https") ? "wss" : "ws";
+      const wsHost = apiUrl.replace(/^https?:\/\//, "");
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws/${activeConvId}`;
+
+      setConnectionStatus("connecting");
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setConnectionStatus("connected");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setMensajes((prev) => {
+            if (prev.some((m) => m.id_msg === data.id_msg)) return prev;
+            return [...prev, data];
+          });
+          scrollToBottom();
+          
+          setConversaciones((prev) =>
+            prev.map((c) =>
+              c.id_conversacion === activeConvId
+                ? { ...c, ultimo_mensaje_texto: data.contenido, ultimo_mensaje_fecha: data.created_at }
+                : c
+            )
+          );
+        } catch (err) {
+          console.error("Error parseando mensaje WS:", err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("Error WS:", error);
+        setConnectionStatus("disconnected");
+      };
+
+      ws.onclose = () => {
+        setConnectionStatus("disconnected");
+        // Reintentar conectar en 3 segundos
+        reconnectTimeout = setTimeout(connectWs, 3000);
+      };
+    };
+
+    connectWs();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      clearTimeout(reconnectTimeout);
+    };
   }, [activeConvId]);
 
   const scrollToBottom = () => {
@@ -73,20 +141,37 @@ export function Chat() {
 
   const handleSend = async () => {
     if (!nuevoMensaje.trim() || !activeConvId) return;
-    try {
-      const msg = await chatApi.enviarMensaje(activeConvId, nuevoMensaje.trim());
-      setMensajes((prev) => [...prev, msg]);
-      setNuevoMensaje("");
-      scrollToBottom();
-      setConversaciones((prev) =>
-        prev.map((c) =>
-          c.id_conversacion === activeConvId
-            ? { ...c, ultimo_mensaje_texto: msg.contenido, ultimo_mensaje_fecha: msg.created_at }
-            : c
-        )
-      );
-    } catch (e) {
-      console.error(e);
+    const text = nuevoMensaje.trim();
+    setNuevoMensaje("");
+
+    if (wsRef.current && connectionStatus === "connected") {
+      try {
+        wsRef.current.send(
+          JSON.stringify({
+            remitente_id: user?.id,
+            contenido: text,
+          })
+        );
+      } catch (err) {
+        console.error(err);
+        addToast("Error al enviar, reintentando por canal alterno...", "info");
+        try {
+          const msg = await chatApi.enviarMensaje(activeConvId, text);
+          setMensajes((prev) => [...prev, msg]);
+          scrollToBottom();
+        } catch {
+          addToast("No se pudo enviar el mensaje", "error");
+        }
+      }
+    } else {
+      // Fallback HTTP
+      try {
+        const msg = await chatApi.enviarMensaje(activeConvId, text);
+        setMensajes((prev) => [...prev, msg]);
+        scrollToBottom();
+      } catch {
+        addToast("Error de red. No se pudo enviar el mensaje.", "error");
+      }
     }
   };
 
@@ -263,7 +348,7 @@ export function Chat() {
                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
                   {activeConv.otro_usuario_nombre}
                 </h3>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {activeConv.tipo === "postulacion" ? (
                     <span className="flex items-center gap-1 text-[11px] font-medium text-brand-purple">
                       <Briefcase className="h-3 w-3" />
@@ -273,6 +358,25 @@ export function Chat() {
                     <span className="flex items-center gap-1 text-[11px] font-medium text-brand-teal">
                       <MessageCircle className="h-3 w-3" />
                       Mensaje directo
+                    </span>
+                  )}
+                  <span className="text-[10px] text-gray-300 dark:text-gray-700">•</span>
+                  {connectionStatus === "connected" && (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      En vivo
+                    </span>
+                  )}
+                  {connectionStatus === "connecting" && (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Conectando...
+                    </span>
+                  )}
+                  {connectionStatus === "disconnected" && (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-red-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                      Sin conexión (HTTP activo)
                     </span>
                   )}
                 </div>
@@ -408,6 +512,31 @@ export function Chat() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications Container */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-center gap-2.5 rounded-xl px-4 py-3 shadow-xl border transition-all duration-300 transform translate-y-0 scale-100 ${
+              toast.type === "error"
+                ? "bg-red-50 text-red-800 border-red-200 dark:bg-red-950/80 dark:text-red-200 dark:border-red-900"
+                : toast.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-900"
+                : "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-900"
+            }`}
+          >
+            {toast.type === "error" ? (
+              <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+            ) : toast.type === "success" ? (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+            )}
+            <span className="text-xs font-semibold">{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
