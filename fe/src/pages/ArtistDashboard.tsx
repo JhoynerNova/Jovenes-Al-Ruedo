@@ -404,7 +404,7 @@ export function ArtistDashboard() {
                     <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Archivo <span className="text-red-500">*</span></label>
                     <div className="relative group flex flex-1 w-full min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:border-brand-purple hover:bg-brand-purple/5 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-brand-teal dark:hover:bg-brand-teal/5 transition-all overflow-hidden text-center p-4">
                       <input
-                        type="file" accept="image/*,.pdf" 
+                        type="file" accept="image/*,.pdf,audio/*,video/*" 
                         onChange={(e) => {
                           const file = e.target.files?.[0] || null;
                           setNewItemFile(file);
@@ -433,10 +433,11 @@ export function ArtistDashboard() {
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                           </div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">Haz clic o arrastra un archivo</p>
-                          <p className="mt-1 flex items-center justify-center gap-2 text-xs text-gray-500">
-                            <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">JPG</span>
-                            <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">PNG</span>
+                          <p className="mt-1 flex items-center justify-center gap-1.5 text-xs text-gray-500">
+                            <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">IMG</span>
                             <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">PDF</span>
+                            <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">AUDIO</span>
+                            <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">VIDEO</span>
                           </p>
                           {newItemFile && !previewUrl && <div className="mt-4 px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-xs font-medium text-teal-700 dark:text-teal-400 max-w-[80%] truncate">📄 {newItemFile.name}</div>}
                         </div>
@@ -464,24 +465,37 @@ export function ArtistDashboard() {
                 <p className="text-gray-500 text-sm text-center py-8">No hay obras en este portafolio aún.</p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {viewingPort.archivos.map(a => (
-                    <div key={a.id_det_p} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col group">
-                      <div className="h-40 bg-gray-100 dark:bg-gray-800 relative">
-                        {a.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.archivo}`} alt={a.titulo || "Obra"} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-gray-500">PDF / Documento</div>
-                        )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button onClick={() => handleDeleteItem(a.id_det_p)} className="rounded bg-red-600 p-2 text-white hover:bg-red-700 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                  {viewingPort.archivos.map(a => {
+                    const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.archivo}`;
+                    return (
+                      <div key={a.id_det_p} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col group">
+                        <div className="h-40 bg-gray-100 dark:bg-gray-800 relative">
+                          {a.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
+                            <img src={fileUrl} alt={a.titulo || "Obra"} className="h-full w-full object-cover" />
+                          ) : a.archivo.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                            <video src={fileUrl} controls className="h-full w-full object-cover" />
+                          ) : a.archivo.match(/\.(mp3|wav|ogg|m4a)$/i) ? (
+                            <div className="flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/80 p-2">
+                              <span className="text-3xl mb-1">🎵</span>
+                              <audio src={fileUrl} controls className="w-full scale-90" />
+                            </div>
+                          ) : (
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/80 p-2 text-xs text-gray-500 hover:text-brand-purple transition-colors">
+                              <span className="text-3xl mb-1">📄</span>
+                              <span className="font-semibold">Documento PDF</span>
+                            </a>
+                          )}
+                          <div className="absolute top-2 right-2 z-25 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleDeleteItem(a.id_det_p)} className="rounded bg-red-600 p-2 text-white hover:bg-red-700 transition-colors shadow-md"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-1">{a.titulo}</h4>
+                          {a.descripcion && <p className="text-xs text-gray-500 line-clamp-2 mt-1">{a.descripcion}</p>}
                         </div>
                       </div>
-                      <div className="p-3">
-                        <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-1">{a.titulo}</h4>
-                        {a.descripcion && <p className="text-xs text-gray-500 line-clamp-2 mt-1">{a.descripcion}</p>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
