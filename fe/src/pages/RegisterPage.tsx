@@ -83,6 +83,8 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
     if (!formData.email) {
       newErrors.email = "El correo es obligatorio";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "El formato del correo es inválido";
     }
 
     if (!formData.first_name || formData.first_name.trim().length < 2) {
@@ -107,7 +109,9 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
           if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
             age--;
           }
-          if (age < 18) newErrors.birth_date = "Debes ser mayor de 18 años";
+          if (age < 18 || age > 28) {
+            newErrors.birth_date = "La plataforma es exclusiva para jóvenes entre 18 y 28 años";
+          }
         }
       }
 
@@ -168,9 +172,13 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
         closeModal();
       }
       navigate("/dashboard", { replace: true });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al registrar usuario";
-      showToast(message, "error", "Error de registro");
+    } catch (err: any) {
+      if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
+        setErrors(err.validationErrors);
+      } else {
+        const message = err instanceof Error ? err.message : "Error al registrar usuario";
+        showToast(message, "error", "Error de registro");
+      }
     } finally {
       setIsLoading(false);
     }
