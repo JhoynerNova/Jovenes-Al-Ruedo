@@ -285,16 +285,41 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               onChange={handleChange}
             />
     
-            <InputField
-              label="Área artística"
-              name="artistic_area"
-              type="text"
-              value={formData.artistic_area}
-              placeholder="Música, Danza, Teatro..."
-              icon={<Palette className="h-5 w-5" />}
-              error={errors.artistic_area}
-              onChange={handleChange}
-            />
+            <div className="mb-3">
+              <label htmlFor="artistic_area" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Área artística
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <Palette className="h-5 w-5" />
+                </div>
+                <select
+                  id="artistic_area"
+                  name="artistic_area"
+                  value={formData.artistic_area}
+                  onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                  className={`block w-full rounded-lg border pl-10 pr-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 ${
+                    errors.artistic_area
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-400 dark:focus:ring-red-400/20"
+                      : "border-gray-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-brand-purple/40 dark:focus:border-brand-blue dark:focus:ring-brand-blue/20"
+                  } ${!formData.artistic_area ? "text-gray-400 dark:text-gray-500" : ""}`}
+                >
+                  <option value="" disabled>Selecciona un área...</option>
+                  <option value="Música">Música</option>
+                  <option value="Danza">Danza</option>
+                  <option value="Teatro">Teatro</option>
+                  <option value="Artes Plásticas">Artes Plásticas</option>
+                  <option value="Literatura">Literatura</option>
+                  <option value="Audiovisual">Audiovisual</option>
+                  <option value="Fotografía">Fotografía</option>
+                  <option value="Circo">Circo</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              {errors.artistic_area && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.artistic_area}</p>
+              )}
+            </div>
           </div>
         ) : (
           <InputField

@@ -47,7 +47,6 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
       {isOpen && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-md transition-all duration-300 animate-fade-in-up"
-          onClick={closeModal}
         >
           <div className="flex min-h-full items-center justify-center p-4">
             <div 
