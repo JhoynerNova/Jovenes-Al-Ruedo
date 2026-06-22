@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
@@ -19,10 +20,11 @@ import { Button } from "@/components/ui/Button";
  * ¿Para qué? Crear cuenta → login automático → redirección al dashboard.
  * ¿Impacto? Tras un registro exitoso, el usuario queda logueado automáticamente.
  */
-export function RegisterPage() {
+export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { showToast } = useToast();
+  const { openLogin, closeModal } = useAuthModal();
 
   const [formData, setFormData] = useState({
     role: "artista",
@@ -162,6 +164,9 @@ export function RegisterPage() {
 
       await register(payload);
       showToast("¡Registro exitoso! Cuenta creada.", "success");
+      if (isModalMode) {
+        closeModal();
+      }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
@@ -172,8 +177,9 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte">
+    <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte" isModal={isModalMode}>
       <form onSubmit={handleSubmit} noValidate>
+
 
         {/* Selector de Rol */}
         <div className="mb-6 flex gap-4">
@@ -367,13 +373,23 @@ export function RegisterPage() {
 
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         ¿Ya tienes cuenta?{" "}
-        <Link
-          to="/login"
-          className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Iniciar sesión
-        </Link>
+        {isModalMode ? (
+          <button
+            onClick={openLogin}
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer focus:outline-none"
+          >
+            Iniciar sesión
+          </button>
+        ) : (
+          <Link
+            to="/login"
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Iniciar sesión
+          </Link>
+        )}
       </p>
     </AuthLayout>
   );
 }
+
