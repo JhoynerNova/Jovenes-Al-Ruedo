@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useState } from "react";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 /**
  * ¿Qué? Datos de las categorías artísticas soportadas por la plataforma.
@@ -61,6 +62,7 @@ const pasosEmpresa = [
  *           y llegarían directo al login sin entender el valor del producto.
  */
 export function LandingPage() {
+  const { openLogin, openRegister } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDiscipline, setSelectedDiscipline] = useState<"Pintura" | "Música" | "Actuación" | "Danza" | "Fotografía" | "Canto">("Pintura");
 
@@ -93,19 +95,20 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-xl px-4 py-2 text-sm font-semibold text-purple-200 transition-all hover:bg-white/10 hover:text-white"
+            <button
+              onClick={openLogin}
+              className="rounded-xl px-4 py-2 text-sm font-semibold text-purple-200 transition-all hover:bg-white/10 hover:text-white cursor-pointer"
             >
               Iniciar sesión
-            </Link>
-            <Link
-              to="/register"
-              className="rounded-xl bg-brand-orange px-4 py-2 text-sm font-bold text-white transition-all hover:bg-orange-500 shadow-md hover:shadow-brand-orange/20"
+            </button>
+            <button
+              onClick={openRegister}
+              className="rounded-xl bg-brand-orange px-4 py-2 text-sm font-bold text-white transition-all hover:bg-orange-500 shadow-md hover:shadow-brand-orange/20 cursor-pointer"
             >
               Regístrate gratis
-            </Link>
+            </button>
           </div>
+
         </div>
       </nav>
 
@@ -255,10 +258,14 @@ export function LandingPage() {
 
                 <div className="mt-8 flex items-center justify-between">
                   <p className="text-xs text-gray-400">Datos obtenidos de las ofertas activas en Bogotá.</p>
-                  <Link to="/register" className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-purple hover:underline dark:text-brand-teal">
+                  <button
+                    onClick={openRegister}
+                    className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-purple hover:underline dark:text-brand-teal cursor-pointer focus:outline-none"
+                  >
                     Postularme a ofertas <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  </button>
                 </div>
+
               </div>
             </div>
           </div>

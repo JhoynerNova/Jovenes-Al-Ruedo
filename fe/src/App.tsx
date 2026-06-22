@@ -53,6 +53,12 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               {/* Las rutas de política y landing están agrupadas abajo */}
 
+              {/* 🔓 Rutas públicas con diseño común (AppLayout) */}
+              <Route element={<AppLayout />}>
+                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/perfil/:userId" element={<PublicProfile />} />
+              </Route>
+
               {/* 🔒 Rutas protegidas */}
               <Route
                 element={
@@ -63,10 +69,8 @@ function App() {
               >
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
-                <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/mensajes" element={<Chat />} />
-                <Route path="/perfil/:userId" element={<PublicProfile />} />
               </Route>
 
               {/* Ruta raíz */}

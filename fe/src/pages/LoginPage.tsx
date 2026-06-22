@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
@@ -19,10 +20,11 @@ import { Button } from "@/components/ui/Button";
  * ¿Para qué? Autenticar al usuario con email + password y obtener tokens JWT.
  * ¿Impacto? Una vez autenticado, se redirige al dashboard automáticamente.
  */
-export function LoginPage() {
+export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { showToast } = useToast();
+  const { openRegister, closeModal } = useAuthModal();
 
   // ¿Qué? Estado del formulario — email y password.
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -30,6 +32,7 @@ export function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   // ¿Qué? Flag de carga — deshabilita el botón mientras se procesa el login.
   const [isLoading, setIsLoading] = useState(false);
+
 
   /**
    * ¿Qué? Actualiza el campo correspondiente cuando el usuario escribe.
@@ -75,6 +78,9 @@ export function LoginPage() {
     try {
       await login(formData);
       showToast("¡Sesión iniciada correctamente!", "success");
+      if (isModalMode) {
+        closeModal();
+      }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al iniciar sesión";
@@ -85,7 +91,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Iniciar sesión" subtitle="Ingresa tus credenciales para acceder">
+    <AuthLayout title="Iniciar sesión" subtitle="Ingresa tus credenciales para acceder" isModal={isModalMode}>
       <form onSubmit={handleSubmit} noValidate>
         <InputField
           label="Correo electrónico"
@@ -115,6 +121,7 @@ export function LoginPage() {
         <div className="mb-6 flex justify-end">
           <Link
             to="/forgot-password"
+            onClick={() => isModalMode && closeModal()}
             className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             ¿Olvidaste tu contraseña?
@@ -130,17 +137,27 @@ export function LoginPage() {
         </div>
       </form>
 
-      {/* ¿Qué? Enlace a la página de registro. */}
+      {/* ¿Qué? Enlace a la página de registro o botón para abrir modal de registro. */}
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         ¿No tienes cuenta?{" "}
-        <Link
-          to="/register"
-          className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Crear cuenta
-        </Link>
+        {isModalMode ? (
+          <button
+            onClick={openRegister}
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer focus:outline-none"
+          >
+            Crear cuenta
+          </button>
+        ) : (
+          <Link
+            to="/register"
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Crear cuenta
+          </Link>
+        )}
       </p>
     </AuthLayout>
   );
 }
+
 

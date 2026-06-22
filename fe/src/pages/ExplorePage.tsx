@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { usersApi } from "@/api/users";
 import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
 import type { UserResponse } from "@/types/auth";
@@ -51,6 +52,7 @@ const JORNADA_ICONS: Record<string, string> = {
 
 export function ExplorePage() {
   const { user, isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const [activeTab, setActiveTab] = useState<FeedTab>("todo");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -593,11 +595,12 @@ export function ExplorePage() {
                                   : "Aplicar Ahora"}
                               </button>
                             ) : !isAuthenticated ? (
-                              <Link to="/login" className="block">
-                                <button className="w-full rounded-lg bg-brand-purple py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-purple/90 transition-all">
-                                  Ingresar para postularse
-                                </button>
-                              </Link>
+                              <button
+                                onClick={openLogin}
+                                className="w-full rounded-lg bg-brand-purple py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-purple/90 transition-all cursor-pointer"
+                              >
+                                Ingresar para postularse
+                              </button>
                             ) : null}
                           </div>
                         </div>
