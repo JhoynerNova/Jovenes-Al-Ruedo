@@ -7,8 +7,10 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+
 
 // ¿Qué? Imports de todas las páginas de la aplicación.
 // ¿Para qué? Cada página se renderiza según la ruta activa.
@@ -38,47 +40,50 @@ function App() {
       {/* ¿Qué? AuthProvider envuelve todas las rutas para que useAuth() funcione. */}
       {/* ¿Para qué? Sin AuthProvider, ningún componente hijo puede acceder al contexto de auth. */}
       {/* ¿Impacto? Debe ser el wrapper más externo después del BrowserRouter. */}
-      <AuthProvider>
-        <Routes>
-          {/* ════════════════════════════════════════ */}
-          {/* 🔓 Rutas públicas (no requieren autenticación) */}
-          {/* ════════════════════════════════════════ */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          {/* Las rutas de política y landing están agrupadas abajo */}
+      <ToastProvider>
+        <AuthProvider>
+          <Routes>
+            {/* ════════════════════════════════════════ */}
+            {/* 🔓 Rutas públicas (no requieren autenticación) */}
+            {/* ════════════════════════════════════════ */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            {/* Las rutas de política y landing están agrupadas abajo */}
 
-          {/* ════════════════════════════════════════ */}
-          {/* 🔒 Rutas protegidas (requieren sesión activa) */}
-          {/* ════════════════════════════════════════ */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/change-password" element={<ChangePasswordPage />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/mensajes" element={<Chat />} />
-            <Route path="/perfil/:userId" element={<PublicProfile />} />
-          </Route>
+            {/* ════════════════════════════════════════ */}
+            {/* 🔒 Rutas protegidas (requieren sesión activa) */}
+            {/* ════════════════════════════════════════ */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/change-password" element={<ChangePasswordPage />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/mensajes" element={<Chat />} />
+              <Route path="/perfil/:userId" element={<PublicProfile />} />
+            </Route>
 
-          {/* ¿Qué? Ruta raíz muestra la landing page. */}
-          {/* ¿Para qué? El visitante nuevo ve la presentación del producto antes del login. */}
-          {/* ¿Impacto? Mejora la conversión al dar contexto antes de pedir el registro. */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
+            {/* ¿Qué? Ruta raíz muestra la landing page. */}
+            {/* ¿Para qué? El visitante nuevo ve la presentación del producto antes del login. */}
+            {/* ¿Impacto? Mejora la conversión al dar contexto antes de pedir el registro. */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
 
-          {/* ¿Qué? Ruta catch-all para URLs no existentes. */}
-          {/* ¿Para qué? Redirigir al login cualquier ruta desconocida. */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </AuthProvider>
+            {/* ¿Qué? Ruta catch-all para URLs no existentes. */}
+            {/* ¿Para qué? Redirigir al login cualquier ruta desconocida. */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </AuthProvider>
+      </ToastProvider>
+
     </BrowserRouter>
   );
 }
