@@ -43,8 +43,8 @@ function App() {
       {/* ¿Para qué? Sin AuthProvider, ningún componente hijo puede acceder al contexto de auth. */}
       {/* ¿Impacto? Debe ser el wrapper más externo después del BrowserRouter. */}
       <ToastProvider>
-        <AuthModalProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <AuthModalProvider>
             <Routes>
               {/* 🔓 Rutas públicas */}
               <Route path="/login" element={<LoginPage />} />
@@ -81,8 +81,8 @@ function App() {
               {/* Ruta catch-all */}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-          </AuthProvider>
-        </AuthModalProvider>
+          </AuthModalProvider>
+        </AuthProvider>
       </ToastProvider>
 
 
