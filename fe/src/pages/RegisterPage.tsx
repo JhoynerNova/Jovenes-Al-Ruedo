@@ -182,7 +182,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
 
         {/* Selector de Rol */}
-        <div className="mb-6 flex gap-4">
+        <div className="mb-3 flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
@@ -273,7 +273,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
         />
 
         {formData.role === "artista" ? (
-          <>
+          <div className="grid grid-cols-2 gap-3">
             <InputField
               label="Fecha de nacimiento"
               name="birth_date"
@@ -290,12 +290,12 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               name="artistic_area"
               type="text"
               value={formData.artistic_area}
-              placeholder="Música, Danza, Teatro, Pintura..."
+              placeholder="Música, Danza, Teatro..."
               icon={<Palette className="h-5 w-5" />}
               error={errors.artistic_area}
               onChange={handleChange}
             />
-          </>
+          </div>
         ) : (
           <InputField
             label="Sector de la industria"
@@ -309,29 +309,31 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
           />
         )}
 
-        <InputField
-          label="Contraseña"
-          name="password"
-          type="password"
-          value={formData.password}
-          placeholder="Mínimo 8 caracteres"
-          autoComplete="new-password"
-          icon={<Lock className="h-5 w-5" />}
-          error={errors.password}
-          onChange={handleChange}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <InputField
+            label="Contraseña"
+            name="password"
+            type="password"
+            value={formData.password}
+            placeholder="Mínimo 8"
+            autoComplete="new-password"
+            icon={<Lock className="h-5 w-5" />}
+            error={errors.password}
+            onChange={handleChange}
+          />
 
-        <InputField
-          label="Confirmar contraseña"
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          placeholder="Repite tu contraseña"
-          autoComplete="new-password"
-          icon={<KeyRound className="h-5 w-5" />}
-          error={errors.confirmPassword}
-          onChange={handleChange}
-        />
+          <InputField
+            label="Confirmar"
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            placeholder="Repetir"
+            autoComplete="new-password"
+            icon={<KeyRound className="h-5 w-5" />}
+            error={errors.confirmPassword}
+            onChange={handleChange}
+          />
+        </div>
 
         {/* Checkbox de consentimiento */}
         <div className="mb-4 flex items-start gap-2">
@@ -371,7 +373,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
         </div>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+      <p className="mt-3 text-center text-sm text-gray-600 dark:text-gray-400">
         ¿Ya tienes cuenta?{" "}
         {isModalMode ? (
           <button

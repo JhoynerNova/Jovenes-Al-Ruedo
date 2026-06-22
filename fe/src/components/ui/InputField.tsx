@@ -54,7 +54,7 @@ export function InputField({
   const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       {/* ¿Qué? Label asociada al input por htmlFor + id. */}
       {/* ¿Para qué? Accesibilidad — lectores de pantalla anuncian qué campo es. */}
       {/* ¿Impacto? Sin htmlFor, los usuarios con discapacidad no sabrían qué ingresar. */}
@@ -83,7 +83,7 @@ export function InputField({
           onChange={onChange}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
-          className={`block w-full rounded-lg border ${icon ? "pl-10" : "px-3"} ${isPassword ? "pr-10" : icon ? "pr-3" : ""} py-2.5 text-sm transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 ${
+          className={`block w-full rounded-lg border ${icon ? "pl-10" : "px-3"} ${isPassword ? "pr-10" : icon ? "pr-3" : ""} py-2 text-sm transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 ${
             error
               ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-400 dark:focus:ring-red-400/20"
               : "border-gray-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-brand-purple/40 dark:focus:border-brand-blue dark:focus:ring-brand-blue/20"

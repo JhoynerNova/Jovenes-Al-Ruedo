@@ -32,7 +32,7 @@ export function AuthLayout({ children, title, subtitle, isModal = false }: AuthL
     return (
       <div className="w-full">
         {/* ¿Qué? Título y subtítulo del formulario. */}
-        <div className="mb-6">
+        <div className="mb-3">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
           {subtitle && (
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
