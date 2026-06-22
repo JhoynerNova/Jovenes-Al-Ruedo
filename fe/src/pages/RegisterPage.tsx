@@ -9,10 +9,10 @@ import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/context/ToastContext";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
 
 /**
  * ¿Qué? Página de registro con validación de campos y feedback de errores.
@@ -22,6 +22,7 @@ import { Alert } from "@/components/ui/Alert";
 export function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     role: "artista",
@@ -36,14 +37,13 @@ export function RegisterPage() {
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
-    setGeneralError(null);
   };
+
 
   /**
    * ¿Qué? Calcula si el formulario está completo para habilitar el botón.
@@ -138,7 +138,6 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGeneralError(null);
 
     if (!validate()) return;
 
@@ -162,10 +161,11 @@ export function RegisterPage() {
       }
 
       await register(payload);
+      showToast("¡Registro exitoso! Cuenta creada.", "success");
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
-      setGeneralError(message);
+      showToast(message, "error", "Error de registro");
     } finally {
       setIsLoading(false);
     }
@@ -173,13 +173,8 @@ export function RegisterPage() {
 
   return (
     <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte">
-      {generalError && (
-        <div className="mb-4">
-          <Alert type="error" message={generalError} onClose={() => setGeneralError(null)} />
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} noValidate>
+
         {/* Selector de Rol */}
         <div className="mb-6 flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">

@@ -9,10 +9,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/context/ToastContext";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
 
 /**
  * ¿Qué? Página de login con formulario, manejo de errores y redirección post-login.
@@ -22,11 +22,12 @@ import { Alert } from "@/components/ui/Alert";
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   // ¿Qué? Estado del formulario — email y password.
   const [formData, setFormData] = useState({ email: "", password: "" });
-  // ¿Qué? Error general del formulario (credenciales inválidas, servidor caído, etc.).
-  const [error, setError] = useState<string | null>(null);
+  // ¿Qué? Errores específicos de validación por campo.
+  const [errors, setErrors] = useState<Record<string, string>>({});
   // ¿Qué? Flag de carga — deshabilita el botón mientras se procesa el login.
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +38,27 @@ export function LoginPage() {
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError(null); // Limpiar error al escribir
+    setErrors((prev) => ({ ...prev, [e.target.name]: "" })); // Limpiar error de campo al escribir
+  };
+
+  /**
+   * ¿Qué? Valida los campos de entrada antes de hacer la petición.
+   */
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.email.trim()) {
+      newErrors.email = "El correo electrónico es obligatorio";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Formato de correo no válido";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "La contraseña es obligatoria";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   /**
@@ -47,15 +68,17 @@ export function LoginPage() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (!validate()) return;
+
     setIsLoading(true);
 
     try {
       await login(formData);
+      showToast("¡Sesión iniciada correctamente!", "success");
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al iniciar sesión";
-      setError(message);
+      showToast(message, "error", "Error de inicio de sesión");
     } finally {
       setIsLoading(false);
     }
@@ -63,13 +86,6 @@ export function LoginPage() {
 
   return (
     <AuthLayout title="Iniciar sesión" subtitle="Ingresa tus credenciales para acceder">
-      {/* ¿Qué? Alerta de error visible cuando el login falla. */}
-      {error && (
-        <div className="mb-4">
-          <Alert type="error" message={error} onClose={() => setError(null)} />
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} noValidate>
         <InputField
           label="Correo electrónico"
@@ -79,6 +95,7 @@ export function LoginPage() {
           placeholder="correo@ejemplo.com"
           autoComplete="email"
           icon={<Mail className="h-5 w-5" />}
+          error={errors.email}
           onChange={handleChange}
         />
 
@@ -90,6 +107,7 @@ export function LoginPage() {
           placeholder="••••••••"
           autoComplete="current-password"
           icon={<Lock className="h-5 w-5" />}
+          error={errors.password}
           onChange={handleChange}
         />
 
@@ -125,3 +143,4 @@ export function LoginPage() {
     </AuthLayout>
   );
 }
+
