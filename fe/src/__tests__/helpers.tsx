@@ -17,9 +17,11 @@ import type { ReactNode } from "react";
 // ¿Para qué? Simular un usuario autenticado sin llamar al backend.
 // ¿Impacto? Se usa en tests de Dashboard, ChangePassword, ProtectedRoute, etc.
 export const mockUser: UserResponse = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
-  email: "test@nn-company.com",
-  full_name: "Test User",
+  id: "test-user-id",
+  email: "test@example.com",
+  first_name: "Usuario",
+  last_name: "Prueba",
+  full_name: "Usuario Prueba",
   role: "artista",
   sector: null,
   birth_date: "2000-01-01",
@@ -48,6 +50,7 @@ export const defaultAuthContext: AuthContextType = {
   changePassword: vi.fn(),
   forgotPassword: vi.fn(),
   resetPassword: vi.fn(),
+  updateUser: vi.fn(),
 };
 
 /**

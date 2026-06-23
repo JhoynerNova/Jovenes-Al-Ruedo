@@ -329,6 +329,7 @@ class UserUpdate(BaseModel):
     location: Optional[str] = None
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
+    color_palette: Optional[str] = None
 
     @field_validator("first_name", "last_name")
     @classmethod

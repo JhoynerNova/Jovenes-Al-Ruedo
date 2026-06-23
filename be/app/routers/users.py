@@ -71,7 +71,7 @@ def list_users(
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = None,
     role: Optional[str] = None,
-    sort_by: str = Query("created_at", pattern="^(created_at|full_name|email)$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|first_name|email)$"),
     sort_desc: bool = True,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -84,7 +84,8 @@ def list_users(
         search_term = f"%{search}%"
         stmt = stmt.where(
             or_(
-                User.full_name.ilike(search_term),
+                User.first_name.ilike(search_term),
+                User.last_name.ilike(search_term),
                 User.email.ilike(search_term),
                 User.sector.ilike(search_term)
             )
@@ -161,8 +162,10 @@ def update_profile(
     db: Session = Depends(get_db),
 ):
     """Permite al usuario actualizar su perfil (nombre, bio, área, sector, ubicación)."""
-    if body.full_name is not None:
-        current_user.full_name = body.full_name
+    if body.first_name is not None:
+        current_user.first_name = body.first_name
+    if body.last_name is not None:
+        current_user.last_name = body.last_name
     if body.artistic_area is not None:
         current_user.artistic_area = body.artistic_area
     if body.sector is not None:
@@ -171,6 +174,8 @@ def update_profile(
         current_user.bio = body.bio
     if body.location is not None:
         current_user.location = body.location
+    if body.color_palette is not None:
+        current_user.color_palette = body.color_palette
     db.commit()
     db.refresh(current_user)
     return UserResponse.model_validate(current_user)
@@ -191,7 +196,11 @@ def explore_artists(
     stmt = select(User).where(User.role == "artista", User.is_active == True)
     if search:
         term = f"%{search}%"
-        stmt = stmt.where(or_(User.full_name.ilike(term), User.artistic_area.ilike(term)))
+        stmt = stmt.where(or_(
+            User.first_name.ilike(term), 
+            User.last_name.ilike(term), 
+            User.artistic_area.ilike(term)
+        ))
     if area:
         stmt = stmt.where(User.artistic_area.ilike(f"%{area}%"))
     total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
@@ -218,7 +227,11 @@ def explore_companies(
     stmt = select(User).where(User.role == "empresa", User.is_active == True)
     if search:
         term = f"%{search}%"
-        stmt = stmt.where(or_(User.full_name.ilike(term), User.sector.ilike(term)))
+        stmt = stmt.where(or_(
+            User.first_name.ilike(term), 
+            User.last_name.ilike(term), 
+            User.sector.ilike(term)
+        ))
     total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
     users = db.execute(stmt.order_by(User.created_at.desc()).offset(skip).limit(limit)).scalars().all()
     return {

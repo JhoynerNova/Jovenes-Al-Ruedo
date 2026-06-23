@@ -7,7 +7,7 @@ import { usersApi } from "@/api/users";
 type SettingsTab = "perfil" | "seguridad" | "cuenta";
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
 
   // Perfil
@@ -41,6 +41,8 @@ export function SettingsPage() {
         color_palette: colorPalette,
       });
       setSaveMsg("Perfil actualizado correctamente");
+      // Actualizar el contexto global de auth para que el color se aplique al instante
+      updateUser(updated);
       // Update local display values
       setFullName(updated.full_name);
       setArtisticArea(updated.artistic_area || "");

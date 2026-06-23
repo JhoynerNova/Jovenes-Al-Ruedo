@@ -163,6 +163,7 @@ export interface AuthContextType extends AuthState {
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
+  updateUser: (user: UserResponse) => void;
 }
 
 /**
