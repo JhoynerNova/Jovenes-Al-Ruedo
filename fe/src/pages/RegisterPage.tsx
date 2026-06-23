@@ -39,11 +39,13 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    setFormError(null);
   };
 
 
@@ -144,6 +146,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     if (!validate()) return;
 
@@ -173,11 +176,16 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
       }
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
+      const message = err instanceof Error ? err.message : "Error al registrar usuario";
+      
       if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
         setErrors(err.validationErrors);
+      } else if (message.toLowerCase().includes("email") || message.toLowerCase().includes("correo")) {
+        // Si el error de negocio es sobre el correo (ej: "El correo ya está registrado")
+        setErrors({ email: message });
       } else {
-        const message = err instanceof Error ? err.message : "Error al registrar usuario";
-        showToast(message, "error", "Error de registro");
+        // Errores generales sin campo específico, se muestran en el formulario, NO en Toast
+        setFormError(message);
       }
     } finally {
       setIsLoading(false);
@@ -390,6 +398,13 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
             <strong>Ley 1581 de 2012</strong>
           </label>
         </div>
+
+        {/* Error general del formulario (errores de backend no asociados a un campo específico) */}
+        {formError && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            {formError}
+          </div>
+        )}
 
         {/* Indicador de formulario incompleto */}
         {!isFormComplete && (
