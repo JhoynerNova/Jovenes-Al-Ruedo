@@ -85,7 +85,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
     if (!formData.email) {
       newErrors.email = "El correo es obligatorio";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
       newErrors.email = "El formato del correo es inválido";
     }
 
