@@ -81,6 +81,8 @@ export function InputField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           onChange={onChange}
+          onPaste={isPassword ? (e) => e.preventDefault() : undefined}
+          onCopy={isPassword ? (e) => e.preventDefault() : undefined}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
           className={`block w-full rounded-lg border ${icon ? "pl-10" : "px-3"} ${isPassword ? "pr-10" : icon ? "pr-3" : ""} py-2 text-sm transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 ${
