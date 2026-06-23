@@ -61,10 +61,16 @@ class User(Base):
         nullable=False,
     )
 
-    # ¿Qué? Nombre completo del usuario.
+    # ¿Qué? Nombres del usuario.
     # ¿Para qué? Mostrar el nombre en el perfil y en la interfaz del frontend.
-    # ¿Impacto? Campo requerido para personalizar la experiencia del usuario.
-    full_name: Mapped[str] = mapped_column(
+    first_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    # ¿Qué? Apellidos del usuario.
+    # ¿Para qué? Mostrar el apellido en el perfil y en la interfaz del frontend.
+    last_name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
@@ -107,6 +113,10 @@ class User(Base):
         server_default="artista",
         nullable=False,
     )
+
+    # ¿Qué? Paleta de colores preferida por el usuario.
+    # ¿Para qué? Temas dinámicos según el arte del usuario o su preferencia.
+    color_palette: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # ¿Qué? Hash bcrypt de la contraseña del usuario.
     # ¿Para qué? Almacenar la contraseña de forma segura — el hash es irreversible,
