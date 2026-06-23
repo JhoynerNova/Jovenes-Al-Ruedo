@@ -30,6 +30,8 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   // ¿Qué? Errores específicos de validación por campo.
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // ¿Qué? Error general (credenciales incorrectas, error de red, etc.)
+  const [formError, setFormError] = useState<string | null>(null);
   // ¿Qué? Flag de carga — deshabilita el botón mientras se procesa el login.
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,7 +43,8 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: "" })); // Limpiar error de campo al escribir
+    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    setFormError(null); // Limpiar error general al escribir
   };
 
   /**
@@ -83,8 +86,9 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
       }
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
-      showToast(message, "error", "Error de inicio de sesión");
+      const message = err instanceof Error ? err.message : "Credenciales incorrectas. Verifica tu correo y contraseña.";
+      // Mostrar el error debajo del formulario, no solo como toast
+      setFormError(message);
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +131,13 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
+
+        {/* Error general: credenciales incorrectas, error de red, etc. */}
+        {formError && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert">
+            {formError}
+          </div>
+        )}
 
         {/* ¿Qué? Botón de submit con estado de carga. */}
         {/* ¿Para qué? Enviar el formulario y deshabilitarse mientras se procesa. */}

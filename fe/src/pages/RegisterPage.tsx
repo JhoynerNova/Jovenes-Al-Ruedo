@@ -5,9 +5,9 @@
  * ¿Impacto? Sin esta página, no habría forma de crear cuentas desde el frontend.
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
 import { useAuthModal } from "@/context/AuthModalContext";
@@ -47,33 +47,6 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
     setFormError(null);
   };
-
-
-  /**
-   * ¿Qué? Calcula si el formulario está completo para habilitar el botón.
-   * ¿Para qué? El botón de registro solo se activa cuando TODOS los campos están llenos
-   *            y el usuario acepta los términos y condiciones.
-   * ¿Impacto? Previene envíos incompletos y mejora la UX con feedback visual.
-   */
-  const isFormComplete = useMemo(() => {
-    const baseComplete =
-      formData.email.trim() !== "" &&
-      formData.first_name.trim().length >= 2 &&
-      formData.last_name.trim().length >= 2 &&
-      formData.password.length >= 8 &&
-      formData.confirmPassword !== "" &&
-      formData.password === formData.confirmPassword &&
-      acceptedTerms;
-
-    if (formData.role === "artista") {
-      return baseComplete &&
-        formData.birth_date !== "" &&
-        formData.artistic_area.trim().length >= 2;
-    } else {
-      return baseComplete &&
-        formData.sector.trim().length >= 2;
-    }
-  }, [formData, acceptedTerms]);
 
   /**
    * ¿Qué? Validación del lado del cliente antes de enviar al backend.
@@ -138,6 +111,10 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
+    }
+
+    if (!acceptedTerms) {
+      newErrors.acceptedTerms = "Debes aceptar los términos y condiciones de privacidad";
     }
 
     setErrors(newErrors);
@@ -375,26 +352,36 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
         </div>
 
         {/* Checkbox de consentimiento */}
-        <div className="mb-4 flex items-start gap-2">
-          <input
-            type="checkbox"
-            id="privacy-consent"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-brand-purple"
-          />
-          <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
-            He leído y acepto la{" "}
-            <Link to="/privacy-policy" className="text-brand-blue hover:underline font-medium" target="_blank">
-              Política de Privacidad
-            </Link>
-            {" "}y los{" "}
-            <Link to="/terms" className="text-brand-blue hover:underline font-medium" target="_blank">
-              Términos y Condiciones
-            </Link>
-            {" "}conforme a la{" "}
-            <strong>Ley 1581 de 2012</strong>
-          </label>
+        <div className="mb-4">
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="privacy-consent"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (e.target.checked) {
+                  setErrors((prev) => ({ ...prev, acceptedTerms: "" }));
+                }
+              }}
+              className="mt-1 h-4 w-4 accent-brand-purple"
+            />
+            <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
+              He leído y acepto la{" "}
+              <Link to="/privacy-policy" className="text-brand-blue hover:underline font-medium" target="_blank">
+                Política de Privacidad
+              </Link>
+              {" "}y los{" "}
+              <Link to="/terms" className="text-brand-blue hover:underline font-medium" target="_blank">
+                Términos y Condiciones
+              </Link>
+              {" "}conforme a la{" "}
+              <strong>Ley 1581 de 2012</strong>
+            </label>
+          </div>
+          {errors.acceptedTerms && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.acceptedTerms}</p>
+          )}
         </div>
 
         {/* Error general del formulario (errores de backend no asociados a un campo específico) */}
@@ -404,16 +391,8 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
           </div>
         )}
 
-        {/* Indicador de formulario incompleto */}
-        {!isFormComplete && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>Completa todos los campos y acepta los términos para continuar</span>
-          </div>
-        )}
-
         <div className="mt-2 flex justify-end">
-          <Button type="submit" fullWidth isLoading={isLoading} disabled={!isFormComplete}>
+          <Button type="submit" fullWidth isLoading={isLoading}>
             Crear cuenta
           </Button>
         </div>
