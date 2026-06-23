@@ -41,7 +41,7 @@ export const usersApi = {
     return data;
   },
 
-  updateProfile: async (body: { full_name?: string; artistic_area?: string; sector?: string; bio?: string; location?: string }) => {
+  updateProfile: async (body: { first_name?: string; last_name?: string; artistic_area?: string; sector?: string; bio?: string; location?: string; color_palette?: string }) => {
     const { data } = await api.patch<UserResponse>("/api/v1/users/me/", body);
     return data;
   },
