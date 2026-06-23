@@ -5,21 +5,40 @@
  * ¿Impacto? Sin este componente, la app no tendría navegación ni estructura de páginas.
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
-import { AuthModalProvider } from "@/context/AuthModalContext";
+import { AuthModalProvider, useAuthModal } from "@/context/AuthModalContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 
+// Componentes de redirección — muestran el modal sobre la landing, nunca páginas separadas
+function LoginRedirect() {
+  const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
+  useEffect(() => {
+    navigate("/", { replace: true });
+    openLogin();
+  }, []);
+  return null;
+}
 
+function RegisterRedirect() {
+  const navigate = useNavigate();
+  const { openRegister } = useAuthModal();
+  useEffect(() => {
+    navigate("/", { replace: true });
+    openRegister();
+  }, []);
+  return null;
+}
 
 // ¿Qué? Imports de todas las páginas de la aplicación.
+
 // ¿Para qué? Cada página se renderiza según la ruta activa.
 // ¿Impacto? Al agregar una nueva página, se importa aquí y se agrega una <Route>.
 import { LandingPage } from "@/pages/LandingPage";
-import { LoginPage } from "@/pages/LoginPage";
-import { RegisterPage } from "@/pages/RegisterPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ChangePasswordPage } from "@/pages/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
@@ -47,8 +66,8 @@ function App() {
           <AuthModalProvider>
             <Routes>
               {/* 🔓 Rutas públicas */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginRedirect />} />
+              <Route path="/register" element={<RegisterRedirect />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               {/* Las rutas de política y landing están agrupadas abajo */}
@@ -79,7 +98,7 @@ function App() {
               <Route path="/terms" element={<TermsPage />} />
 
               {/* Ruta catch-all */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AuthModalProvider>
         </AuthProvider>
