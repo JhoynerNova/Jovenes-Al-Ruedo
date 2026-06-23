@@ -200,11 +200,10 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        """Representación legible del usuario para debugging.
-
-        ¿Qué? Retorna una cadena descriptiva al imprimir el objeto User.
-        ¿Para qué? Facilitar el debugging — en lugar de ver <User object at 0x...>,
-                   se ve User(id=..., email=...).
-        ¿Impacto? NUNCA incluir hashed_password en __repr__ por seguridad.
-        """
+        """Representación legible del usuario para debugging."""
         return f"User(id={self.id}, email={self.email}, is_active={self.is_active})"
+
+    @property
+    def full_name(self) -> str:
+        """Propiedad calculada para compatibilidad con el frontend."""
+        return f"{self.first_name} {self.last_name}".strip()

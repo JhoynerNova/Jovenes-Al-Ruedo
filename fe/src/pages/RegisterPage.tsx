@@ -152,13 +152,11 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
 
     setIsLoading(true);
     try {
-      // Concatenar nombre + apellido → full_name para el backend
-      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
-
       const payload: any = {
         role: formData.role,
         email: formData.email,
-        full_name: fullName,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
         password: formData.password,
       };
 
