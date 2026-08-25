@@ -18,9 +18,12 @@
  */
 export interface RegisterRequest {
   email: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
-  role?: string;
+  role: string;
   sector?: string;
+  color_palette?: string;
   birth_date?: string;
   artistic_area?: string;
   password: string;
@@ -85,8 +88,11 @@ export interface RefreshTokenRequest {
 export interface UserResponse {
   id: string;
   email: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
   role: string;
+  color_palette?: string;
   sector: string | null;
   birth_date: string | null;
   artistic_area: string | null;
@@ -157,6 +163,7 @@ export interface AuthContextType extends AuthState {
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
+  updateUser: (user: UserResponse) => void;
 }
 
 /**

@@ -68,6 +68,15 @@ api.interceptors.response.use(
           (err: { msg: string }) => err.msg,
         );
         error.message = messages.join(". ");
+        
+        // Extraer errores por campo para que los formularios los muestren bajo el input
+        (error as any).validationErrors = data.detail.reduce((acc: Record<string, string>, err: any) => {
+          if (err.loc && err.loc.length > 0) {
+            const field = err.loc[err.loc.length - 1]; // Usualmente ['body', 'email'] -> 'email'
+            acc[field] = err.msg;
+          }
+          return acc;
+        }, {});
       } else if (typeof data.detail === "string") {
         error.message = data.detail;
       }

@@ -5,23 +5,26 @@
  * ¿Impacto? Sin esta página, no habría forma de crear cuentas desde el frontend.
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, KeyRound, Calendar, Palette, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/context/ToastContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
 
 /**
  * ¿Qué? Página de registro con validación de campos y feedback de errores.
  * ¿Para qué? Crear cuenta → login automático → redirección al dashboard.
  * ¿Impacto? Tras un registro exitoso, el usuario queda logueado automáticamente.
  */
-export function RegisterPage() {
+export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { showToast } = useToast();
+  const { openLogin, closeModal } = useAuthModal();
 
   const [formData, setFormData] = useState({
     role: "artista",
@@ -36,40 +39,14 @@ export function RegisterPage() {
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
-    setGeneralError(null);
+    setFormError(null);
   };
-
-  /**
-   * ¿Qué? Calcula si el formulario está completo para habilitar el botón.
-   * ¿Para qué? El botón de registro solo se activa cuando TODOS los campos están llenos
-   *            y el usuario acepta los términos y condiciones.
-   * ¿Impacto? Previene envíos incompletos y mejora la UX con feedback visual.
-   */
-  const isFormComplete = useMemo(() => {
-    const baseComplete =
-      formData.email.trim() !== "" &&
-      formData.first_name.trim().length >= 2 &&
-      formData.last_name.trim().length >= 2 &&
-      formData.password.length >= 8 &&
-      formData.confirmPassword !== "" &&
-      formData.password === formData.confirmPassword &&
-      acceptedTerms;
-
-    if (formData.role === "artista") {
-      return baseComplete &&
-        formData.birth_date !== "" &&
-        formData.artistic_area.trim().length >= 2;
-    } else {
-      return baseComplete &&
-        formData.sector.trim().length >= 2;
-    }
-  }, [formData, acceptedTerms]);
 
   /**
    * ¿Qué? Validación del lado del cliente antes de enviar al backend.
@@ -81,6 +58,8 @@ export function RegisterPage() {
 
     if (!formData.email) {
       newErrors.email = "El correo es obligatorio";
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+      newErrors.email = "El formato del correo es inválido";
     }
 
     if (!formData.first_name || formData.first_name.trim().length < 2) {
@@ -105,7 +84,9 @@ export function RegisterPage() {
           if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
             age--;
           }
-          if (age < 18) newErrors.birth_date = "Debes ser mayor de 18 años";
+          if (age < 18 || age > 28) {
+            newErrors.birth_date = "La plataforma es exclusiva para jóvenes entre 18 y 28 años";
+          }
         }
       }
 
@@ -132,25 +113,27 @@ export function RegisterPage() {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
 
+    if (!acceptedTerms) {
+      newErrors.acceptedTerms = "Debes aceptar los términos y condiciones de privacidad";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGeneralError(null);
+    setFormError(null);
 
     if (!validate()) return;
 
     setIsLoading(true);
     try {
-      // Concatenar nombre + apellido → full_name para el backend
-      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
-
       const payload: any = {
         role: formData.role,
         email: formData.email,
-        full_name: fullName,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
         password: formData.password,
       };
 
@@ -162,26 +145,35 @@ export function RegisterPage() {
       }
 
       await register(payload);
+      showToast("¡Registro exitoso! Cuenta creada.", "success");
+      if (isModalMode) {
+        closeModal();
+      }
       navigate("/dashboard", { replace: true });
-    } catch (err) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
-      setGeneralError(message);
+      
+      if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
+        setErrors(err.validationErrors);
+      } else if (message.toLowerCase().includes("email") || message.toLowerCase().includes("correo")) {
+        // Si el error de negocio es sobre el correo (ej: "El correo ya está registrado")
+        setErrors({ email: message });
+      } else {
+        // Errores generales sin campo específico, se muestran en el formulario, NO en Toast
+        setFormError(message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte">
-      {generalError && (
-        <div className="mb-4">
-          <Alert type="error" message={generalError} onClose={() => setGeneralError(null)} />
-        </div>
-      )}
-
+    <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte" isModal={isModalMode}>
       <form onSubmit={handleSubmit} noValidate>
+
+
         {/* Selector de Rol */}
-        <div className="mb-6 flex gap-4">
+        <div className="mb-3 flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
@@ -272,7 +264,7 @@ export function RegisterPage() {
         />
 
         {formData.role === "artista" ? (
-          <>
+          <div className="grid grid-cols-2 gap-3">
             <InputField
               label="Fecha de nacimiento"
               name="birth_date"
@@ -284,17 +276,42 @@ export function RegisterPage() {
               onChange={handleChange}
             />
     
-            <InputField
-              label="Área artística"
-              name="artistic_area"
-              type="text"
-              value={formData.artistic_area}
-              placeholder="Música, Danza, Teatro, Pintura..."
-              icon={<Palette className="h-5 w-5" />}
-              error={errors.artistic_area}
-              onChange={handleChange}
-            />
-          </>
+            <div className="mb-3">
+              <label htmlFor="artistic_area" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Área artística
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <Palette className="h-5 w-5" />
+                </div>
+                <select
+                  id="artistic_area"
+                  name="artistic_area"
+                  value={formData.artistic_area}
+                  onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                  className={`block w-full rounded-lg border pl-10 pr-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 ${
+                    errors.artistic_area
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-400 dark:focus:ring-red-400/20"
+                      : "border-gray-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-brand-purple/40 dark:focus:border-brand-blue dark:focus:ring-brand-blue/20"
+                  } ${!formData.artistic_area ? "text-gray-400 dark:text-gray-500" : ""}`}
+                >
+                  <option value="" disabled>Selecciona un área...</option>
+                  <option value="Música">Música</option>
+                  <option value="Danza">Danza</option>
+                  <option value="Teatro">Teatro</option>
+                  <option value="Artes Plásticas">Artes Plásticas</option>
+                  <option value="Literatura">Literatura</option>
+                  <option value="Audiovisual">Audiovisual</option>
+                  <option value="Fotografía">Fotografía</option>
+                  <option value="Circo">Circo</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              {errors.artistic_area && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.artistic_area}</p>
+              )}
+            </div>
+          </div>
         ) : (
           <InputField
             label="Sector de la industria"
@@ -308,77 +325,98 @@ export function RegisterPage() {
           />
         )}
 
-        <InputField
-          label="Contraseña"
-          name="password"
-          type="password"
-          value={formData.password}
-          placeholder="Mínimo 8 caracteres"
-          autoComplete="new-password"
-          icon={<Lock className="h-5 w-5" />}
-          error={errors.password}
-          onChange={handleChange}
-        />
-
-        <InputField
-          label="Confirmar contraseña"
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          placeholder="Repite tu contraseña"
-          autoComplete="new-password"
-          icon={<KeyRound className="h-5 w-5" />}
-          error={errors.confirmPassword}
-          onChange={handleChange}
-        />
-
-        {/* Checkbox de consentimiento */}
-        <div className="mb-4 flex items-start gap-2">
-          <input
-            type="checkbox"
-            id="privacy-consent"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-brand-purple"
+        <div className="grid grid-cols-2 gap-3">
+          <InputField
+            label="Contraseña"
+            name="password"
+            type="password"
+            value={formData.password}
+            placeholder="Mínimo 8"
+            autoComplete="new-password"
+            icon={<Lock className="h-5 w-5" />}
+            error={errors.password}
+            onChange={handleChange}
           />
-          <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
-            He leído y acepto la{" "}
-            <Link to="/privacy-policy" className="text-brand-blue hover:underline font-medium" target="_blank">
-              Política de Privacidad
-            </Link>
-            {" "}y los{" "}
-            <Link to="/terms" className="text-brand-blue hover:underline font-medium" target="_blank">
-              Términos y Condiciones
-            </Link>
-            {" "}conforme a la{" "}
-            <strong>Ley 1581 de 2012</strong>
-          </label>
+
+          <InputField
+            label="Confirmar"
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            placeholder="Repetir"
+            autoComplete="new-password"
+            icon={<KeyRound className="h-5 w-5" />}
+            error={errors.confirmPassword}
+            onChange={handleChange}
+          />
         </div>
 
-        {/* Indicador de formulario incompleto */}
-        {!isFormComplete && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>Completa todos los campos y acepta los términos para continuar</span>
+        {/* Checkbox de consentimiento */}
+        <div className="mb-4">
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="privacy-consent"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (e.target.checked) {
+                  setErrors((prev) => ({ ...prev, acceptedTerms: "" }));
+                }
+              }}
+              className="mt-1 h-4 w-4 accent-brand-purple"
+            />
+            <label htmlFor="privacy-consent" className="text-sm text-gray-600 dark:text-gray-400">
+              He leído y acepto la{" "}
+              <Link to="/privacy-policy" className="text-brand-blue hover:underline font-medium" target="_blank">
+                Política de Privacidad
+              </Link>
+              {" "}y los{" "}
+              <Link to="/terms" className="text-brand-blue hover:underline font-medium" target="_blank">
+                Términos y Condiciones
+              </Link>
+              {" "}conforme a la{" "}
+              <strong>Ley 1581 de 2012</strong>
+            </label>
+          </div>
+          {errors.acceptedTerms && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.acceptedTerms}</p>
+          )}
+        </div>
+
+        {/* Error general del formulario (errores de backend no asociados a un campo específico) */}
+        {formError && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            {formError}
           </div>
         )}
 
         <div className="mt-2 flex justify-end">
-          <Button type="submit" fullWidth isLoading={isLoading} disabled={!isFormComplete}>
+          <Button type="submit" fullWidth isLoading={isLoading}>
             Crear cuenta
           </Button>
         </div>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+      <p className="mt-3 text-center text-sm text-gray-600 dark:text-gray-400">
         ¿Ya tienes cuenta?{" "}
-        <Link
-          to="/login"
-          className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Iniciar sesión
-        </Link>
+        {isModalMode ? (
+          <button
+            onClick={openLogin}
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer focus:outline-none"
+          >
+            Iniciar sesión
+          </button>
+        ) : (
+          <Link
+            to="/login"
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Iniciar sesión
+          </Link>
+        )}
       </p>
     </AuthLayout>
   );
 }
+

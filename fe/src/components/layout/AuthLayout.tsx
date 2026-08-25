@@ -19,6 +19,7 @@ interface AuthLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  isModal?: boolean;
 }
 
 /**
@@ -26,7 +27,24 @@ interface AuthLayoutProps {
  * ¿Para qué? Diseño mobile-first: el card ocupa el ancho completo en móvil y se centra en desktop.
  * ¿Impacto? Consistencia visual: todos los formularios de auth tienen el mismo look.
  */
-export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+export function AuthLayout({ children, title, subtitle, isModal = false }: AuthLayoutProps) {
+  if (isModal) {
+    return (
+      <div className="w-full">
+        {/* ¿Qué? Título y subtítulo del formulario. */}
+        <div className="mb-3">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+          {subtitle && (
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
+          )}
+        </div>
+
+        {/* ¿Qué? Slot para el contenido del formulario (children). */}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-brand-dark">
       {/* ¿Qué? Header mínimo con toggle de tema en la esquina superior derecha. */}
@@ -68,3 +86,4 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
     </div>
   );
 }
+

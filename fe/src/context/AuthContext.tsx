@@ -178,6 +178,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
+   * ¿Qué? Actualiza el usuario en el contexto sin hacer login de nuevo.
+   * ¿Para qué? Reflejar cambios de perfil (nombre, color) de forma inmediata.
+   * ¿Impacto? Sin esto, el color/nombre actualizado no se vería hasta recargar la página.
+   */
+  const updateUser = useCallback((updatedUser: UserResponse) => {
+    setUser(updatedUser);
+  }, []);
+
+  /**
    * ¿Qué? Valor memoizado del contexto para evitar re-renders innecesarios.
    * ¿Para qué? useMemo evita que React re-renderice todos los consumers del contexto
    *           cuando el objeto value cambia de referencia pero no de contenido.
@@ -196,6 +205,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       changePassword,
       forgotPassword,
       resetPassword: resetPasswordAction,
+      updateUser,
     }),
     [
       user,
@@ -209,6 +219,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       changePassword,
       forgotPassword,
       resetPasswordAction,
+      updateUser,
     ],
   );
 

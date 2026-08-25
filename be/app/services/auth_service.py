@@ -69,9 +69,25 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     # ¿Para qué? Almacenar la contraseña de forma segura — NUNCA en texto plano.
     # ¿Impacto? hash_password usa bcrypt, que es deliberadamente lento para dificultar
     #           ataques de fuerza bruta contra hashes filtrados.
+    # Asignar un color por defecto dependiendo del área artística
+    default_palette = "blue" # Color por defecto para empresas o sin área
+    if user_data.role == "artista" and user_data.artistic_area:
+        area_colors = {
+            "música": "blue",
+            "danza": "purple",
+            "teatro": "red",
+            "artes plásticas": "green",
+            "literatura": "amber",
+            "artes audiovisuales": "pink"
+        }
+        # Buscar color o usar azul por defecto si no coincide exactamente
+        default_palette = area_colors.get(user_data.artistic_area.lower(), "blue")
+
     new_user = User(
         email=user_data.email,
-        full_name=user_data.full_name,
+        first_name=user_data.first_name.upper(),
+        last_name=user_data.last_name.upper(),
+        color_palette=default_palette,
         role=user_data.role,
         sector=user_data.sector,
         birth_date=user_data.birth_date,

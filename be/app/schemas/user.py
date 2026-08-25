@@ -38,10 +38,9 @@ class UserCreate(BaseModel):
     # ¿Impacto? EmailStr rechaza emails inválidos (sin @, sin dominio, etc.).
     email: EmailStr
 
-    # ¿Qué? Nombre completo del usuario.
-    # ¿Para qué? Personalización de la experiencia en el frontend.
-    # ¿Impacto? Campo requerido — el frontend lo usa para saludar al usuario.
-    full_name: str
+    # ¿Qué? Nombres y apellidos.
+    first_name: str
+    last_name: str
 
     # ¿Qué? Rol del usuario.
     # ¿Para qué? Diferenciar tipo de cuenta en registro.
@@ -108,20 +107,15 @@ class UserCreate(BaseModel):
             raise ValueError("Esta plataforma es exclusiva para jóvenes entre 18 y 28 años")
         return v
 
-    @field_validator("full_name")
+    @field_validator("first_name", "last_name")
     @classmethod
-    def validate_full_name(cls, v: str) -> str:
-        """Valida que el nombre no esté vacío y no exceda el límite.
-
-        ¿Qué? Verifica que el nombre tenga contenido real y no sea solo espacios.
-        ¿Para qué? Evitar registros con nombres vacíos o excesivamente largos.
-        ¿Impacto? Sin esto, un usuario podría registrarse con nombre "   " (solo espacios).
-        """
+    def validate_name(cls, v: str) -> str:
+        """Valida que los nombres no estén vacíos y no excedan el límite."""
         v = v.strip()
         if len(v) < 2:
-            raise ValueError("El nombre debe tener al menos 2 caracteres")
+            raise ValueError("El nombre/apellido debe tener al menos 2 caracteres")
         if len(v) > 255:
-            raise ValueError("El nombre no puede exceder 255 caracteres")
+            raise ValueError("El nombre/apellido no puede exceder 255 caracteres")
         return v
 
     @field_validator("artistic_area")
@@ -262,7 +256,10 @@ class UserResponse(BaseModel):
 
     id: uuid.UUID
     email: str
+    first_name: str
+    last_name: str
     full_name: str
+    color_palette: Optional[str] = None
     role: str
     sector: Optional[str] = None
     birth_date: Optional[date] = None
@@ -324,22 +321,24 @@ class UserStatusUpdate(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema para actualizar el perfil del usuario autenticado."""
-    full_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     artistic_area: Optional[str] = None
     sector: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
+    color_palette: Optional[str] = None
 
-    @field_validator("full_name")
+    @field_validator("first_name", "last_name")
     @classmethod
-    def validate_full_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
         v = v.strip()
         if len(v) < 2:
-            raise ValueError("El nombre debe tener al menos 2 caracteres")
+            raise ValueError("El nombre/apellido debe tener al menos 2 caracteres")
         return v
 
 

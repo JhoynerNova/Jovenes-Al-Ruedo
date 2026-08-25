@@ -1,3 +1,4 @@
+
 # 🎨 Jóvenes al Ruedo — Web & API
 
 **Proyecto educativo — SENA, Ficha 3171599 | Junio 2026**
@@ -16,6 +17,13 @@ Plataforma de conexión cultural y bolsa de empleo que conecta a jóvenes artist
 - [Instalación y Configuración](#instalación-y-configuración)
 - [Ejecución en Desarrollo](#ejecución-en-desarrollo)
 - [Testing y Cobertura](#testing-y-cobertura)
+- [Arquitectura del Sistema](#arquitectura-del-sistema)
+- [Modelo Cliente-Servidor](#modelo-cliente-servidor)
+- [API REST](#api-rest)
+- [Patrón MVC](#patrón-mvc)
+- [Patrones de Organización de Componentes (Frontend)](#patrones-de-organización-de-componentes-frontend)
+- [Atomic Design](#atomic-design)
+- [Comunicación con la API](#comunicación-con-la-api)
 - [Estructura del Repositorio](#estructura-del-repositorio)
 - [Endpoints de la API](#endpoints-de-la-api)
 - [Autores](#autores)
@@ -50,8 +58,10 @@ Hemos completado el backlog al 80%+ implementando:
 - **FastAPI 0.115+** (Framework web asíncrono)
 - **SQLAlchemy 2.0+** (ORM con PostgreSQL)
 - **Alembic** (Migraciones de base de datos)
+- **Pydantic** (Validación de datos con esquemas)
 - **uv** (Gestor de entornos virtuales y paquetes de Astral)
-- **Pytest** (Framework de testing)
+- **Pytest** (Framework de testing — 36/36 unit tests ✅)
+- **Docker** (Contenerización del servicio)
 
 ### Frontend (`fe/`)
 - **React 19** + **TypeScript**
@@ -59,6 +69,8 @@ Hemos completado el backlog al 80%+ implementando:
 - **TailwindCSS 4** (Diseño visual moderno)
 - **Axios** (Comunicaciones HTTP)
 - **Lucide React** (Iconografía)
+- **pnpm** (Gestor de paquetes)
+- **Docker + Nginx** (Despliegue en producción)
 
 ---
 
@@ -186,44 +198,202 @@ graph TD
 
 ---
 
+## 🌐 Modelo Cliente-Servidor
+
+El proyecto sigue una arquitectura **cliente-servidor** de tres capas:
+
+```
+Cliente React (fe/)
+      |
+      |  HTTP/HTTPS (Axios)
+      v
+Servidor FastAPI (be/)
+      |
+      |  SQL / ORM (SQLAlchemy)
+      v
+PostgreSQL (docker-compose)
+```
+
+### ¿Cómo funciona una petición real en nuestro proyecto?
+
+Ejemplo: un artista explora las convocatorias disponibles.
+
+1. El artista abre la página de exploración (`fe/src/pages/ExplorePage.tsx`).
+2. React hace la solicitud HTTP con Axios (`fe/src/api/convocatorias.ts`):
+
+   ```
+   GET /api/v1/convocatorias/
+   ```
+
+3. **FastAPI** recibe la petición en el router `be/app/routers/convocatorias.py`.
+4. FastAPI valida la solicitud (token JWT vía `dependencies.py` y esquemas Pydantic de `schemas/`) y consulta **PostgreSQL** con el ORM **SQLAlchemy**.
+5. PostgreSQL devuelve las convocatorias.
+6. FastAPI responde en formato **JSON**.
+7. React renderiza las tarjetas de convocatorias en la interfaz.
+
+**Ventaja:** el frontend y el backend están desacoplados; cada uno se desarrolla, prueba y despliega por separado. Ambos incluyen su propio `Dockerfile` (y el frontend se sirve con `nginx.conf`), lo que permite contenerizar cada capa de forma independiente.
+
+---
+
+## 🔁 API REST
+
+Una **API REST** es una interfaz que permite que dos sistemas se comuniquen a través de HTTP. En nuestro caso, entre el frontend (**React + TypeScript**) y el backend (**FastAPI**). REST (*Representational State Transfer*) no es un lenguaje ni una librería: es un **estilo arquitectónico** basado en recursos y verbos HTTP.
+
+Nuestra API está versionada bajo el prefijo **`/api/v1/`** y organizada por recursos en `be/app/routers/`.
+
+### Verbos HTTP con endpoints reales del proyecto
+
+| Verbo | Uso principal | Endpoint real en Jóvenes al Ruedo |
+|-------|--------------|-----------------------------------|
+| `GET` | Obtener datos | `GET /api/v1/convocatorias/` — listar convocatorias (público) |
+| `POST` | Crear un recurso | `POST /api/v1/auth/register` — registrar artista o empresa |
+| `PUT` | Actualizar un recurso completo | `PUT /api/v1/convocatorias/{conv_id}` — actualizar convocatoria |
+| `PATCH` | Actualizar parcialmente | `PATCH /api/v1/users/me` — editar mi perfil |
+| `DELETE` | Eliminar un recurso | `DELETE /api/v1/portafolio/{port_id}` — eliminar portafolio |
+
+---
+
+## 🧩 Patrón MVC
+
+**MVC (Modelo–Vista–Controlador)** organiza el código en tres componentes para **separar responsabilidades** y lograr un código más ordenado, mantenible y escalable. Así lo aplicamos:
+
+| Componente | Responsabilidad | En Jóvenes al Ruedo |
+|------------|----------------|---------------------|
+| **Modelo (Model)** | Datos y lógica de base de datos | `be/app/models/` — clases SQLAlchemy: `user.py`, `conv.py`, `portafolio.py`, `chat.py`, `conversacion.py`, `habilidad.py` |
+| **Vista (View)** | Mostrar la información al usuario | `fe/src/pages/` — `LoginPage.tsx`, `ArtistDashboard.tsx`, `CompanyDashboard.tsx`, `ExplorePage.tsx`, `Chat.tsx` |
+| **Controlador (Controller)** | Recibir peticiones, coordinar el modelo y responder | `be/app/routers/` — endpoints FastAPI que validan, consultan los modelos y devuelven JSON |
+
+> 💡 Al ser una arquitectura API + SPA, adaptamos el patrón: la "Vista" vive en React y el backend responde JSON en vez de HTML. Los routers actúan como controladores y `be/app/services/auth_service.py` encapsula la lógica de negocio de autenticación.
+
+---
+
+## 📦 Patrones de Organización de Componentes (Frontend)
+
+En lugar de mezclar todo en una sola carpeta, organizamos el frontend **según el propósito** de cada archivo:
+
+| Patrón | Carpeta real | Ejemplo del proyecto |
+|--------|-------------|----------------------|
+| Componentes reutilizables | `components/ui/` | botones, inputs, tarjetas |
+| Componentes de layout | `components/layout/` | navbar y contenedores de dashboard |
+| Páginas | `pages/` | `ArtistDashboard.tsx`, `CompanyDashboard.tsx`, `Chat.tsx`, `ExplorePage.tsx` |
+| Servicios (API) | `api/` | `convocatorias.ts`, `chat.ts`, `upload.ts` |
+| Hooks | `hooks/` | `useAuth.ts` — sesión del usuario |
+| Estado global | `context/` | `AuthContext`, `AuthModalContext`, `ToastContext` |
+| Tipos | `types/` | interfaces TypeScript compartidas |
+
+---
+
+## ⚛️ Atomic Design
+
+**Atomic Design** (Brad Frost) construye la interfaz desde lo más simple hasta lo más complejo, combinando componentes pequeños para formar componentes más grandes:
+
+```
+atoms → molecules → organisms → templates → pages
+```
+
+### Cómo se ve en Jóvenes al Ruedo
+
+| Nivel | En nuestro proyecto |
+|-------|---------------------|
+| **Átomos** | Botones, inputs e íconos base de `components/ui/` (íconos con Lucide React) |
+| **Moléculas** | Formulario de login, buscador de convocatorias, tarjeta de convocatoria, reproductor de audio/video del portafolio, toasts de notificación |
+| **Organismos** | Navbar (`components/layout/`), tablero **Kanban** de postulaciones, grid multimedia del dashboard del artista, ventana de chat, modal de autenticación |
+| **Templates** | Layouts de dashboard compartidos entre artista, empresa y admin |
+| **Páginas** | `LandingPage.tsx`, `LoginPage.tsx`, `ArtistDashboard.tsx`, `CompanyDashboard.tsx`, `AdminDashboard.tsx`, `Chat.tsx` |
+
+Usamos una variante simplificada (`ui/` + `layout/` + `pages/`) que sigue el mismo principio: **componer lo complejo a partir de piezas simples y reutilizables**.
+
+---
+
+## 📡 Comunicación con la API
+
+De los modelos existentes (REST, GraphQL, WebSocket, SSE, tRPC, RPC, Polling), en Jóvenes al Ruedo usamos:
+
+### 🔹 REST API con Axios — comunicación principal
+
+Todo el CRUD (usuarios, convocatorias, portafolios, uploads) va por REST. En `fe/src/api/axios.ts` centralizamos la configuración:
+
+- **URL base** desde variable de entorno de Vite (`VITE_API_URL`, por defecto `http://localhost:8000`).
+- **Timeout de 10 segundos** por petición.
+- **Interceptores** que adjuntan el token JWT a cada request.
+- Un archivo por recurso: `auth.ts`, `users.ts`, `convocatorias.ts`, `portafolio.ts`, `upload.ts`, `chat.ts`.
+
+### 🔹 WebSocket — chat en tiempo real
+
+El chat entre artistas y empresas usa **WebSockets**: endpoint `WS /api/v1/chat/ws/{id_conversacion}` en `be/app/routers/chat.py`, consumido desde `fe/src/api/chat.ts`.
+
+- Comunicación **bidireccional e instantánea** entre artista y empresa.
+- **Reconexión automática cada 3 segundos** si se cae la conexión.
+- **Fallback automático por HTTP (polling)** cuando el WebSocket no está disponible.
+
+| Modelo | ¿Lo usamos? | ¿Dónde? |
+|--------|------------|---------|
+| REST API | ✅ | CRUD general de toda la app |
+| WebSocket | ✅ | Chat en tiempo real |
+| Polling | ✅ (fallback) | Respaldo del chat si falla el WebSocket |
+| GraphQL / SSE / tRPC / RPC | ❌ | No aplican al alcance actual |
+
+---
+
 ## 📂 Estructura del Repositorio
 
 A continuación se detalla la estructura simplificada de este repositorio:
 
 ```text
 Jovenes-Al-Ruedo/
+├── .vscode/                       # Configuración del editor del equipo
 ├── be/                            # Backend — FastAPI + Python
 │   ├── alembic/                   # Historial de migraciones SQL
 │   ├── app/
-│   │   ├── core/                  # Cookies y privacidad
-│   │   ├── models/                # Modelos SQLAlchemy ORM
-│   │   ├── routers/               # Controladores y Endpoints de la API
-│   │   ├── schemas/               # Modelos de validación Pydantic
-│   │   ├── services/              # Lógica de negocio (auth_service)
-│   │   ├── tests/                 # Unit tests (test_auth, test_chat)
-│   │   ├── utils/                 # Envíos de email y seguridad
+│   │   ├── core/                  # Cookies (cookies.py) y privacidad (privacy.py)
+│   │   ├── models/                # MODELO: SQLAlchemy ORM (user, conv, conversacion,
+│   │   │                          #   chat, habilidad, portafolio, password_reset_token)
+│   │   ├── routers/               # CONTROLADOR: endpoints de la API (auth, users,
+│   │   │                          #   convocatorias, portafolio, upload, chat)
+│   │   ├── schemas/               # Validación Pydantic (user, conv, chat, portafolio...)
+│   │   ├── services/              # Lógica de negocio (auth_service.py)
+│   │   ├── tests/                 # Unit tests — conftest, test_auth, test_chat ✅ 36/36
+│   │   ├── utils/                 # Envío de emails (email.py) y seguridad (security.py)
+│   │   ├── config.py              # Configuración y variables de entorno
 │   │   ├── database.py            # Inicialización de motor de base de datos
 │   │   ├── dependencies.py        # Dependencias inyectadas (current_user, get_db)
 │   │   └── main.py                # Punto de entrada FastAPI y middleware global
+│   ├── uploads/                   # Archivos multimedia subidos por los usuarios
+│   ├── Dockerfile                 # Imagen del backend para contenerización
+│   ├── entrypoint.sh              # Script de arranque del contenedor
+│   ├── alembic.ini                # Configuración de migraciones
 │   ├── pyproject.toml             # Declaración de dependencias del backend para `uv`
 │   └── requirements.txt           # Dependencias compiladas
 ├── db/                            # Scripts SQL puros (seed y schemas)
-├── docs/                          # Carpetas de documentación técnica general
+├── docs/                          # Documentación técnica general
 │   ├── conceptos/                 # Conceptos y glosarios
-│   ├── referencia-tecnica/        # Endpoints, arquitectura, modelo de datos y diseño
-│   └── requisitos/                # Historias de usuario (HUs), funcionales y restricciones
+│   ├── referencia-tecnica/        # Endpoints, arquitectura y diseño
+│   └── requisitos/                # Historias de usuario (HUs)
 ├── fe/                            # Frontend — React + Vite + TS
 │   ├── src/
-│   │   ├── api/                   # Clientes de Axios
-│   │   ├── components/            # Layouts y componentes UI reutilizables
-│   │   ├── context/               # Proveedor de estado de autenticación
-│   │   ├── hooks/                 # Custom react hooks
-│   │   ├── pages/                 # Vistas del dashboard, explore, chat, etc.
-│   │   └── types/                 # Interfaces de tipos de TypeScript
-│   ├── package.json               # Dependencias de npm
+│   │   ├── api/                   # Clientes de Axios (axios, auth, users,
+│   │   │                          #   convocatorias, portafolio, upload, chat)
+│   │   ├── assets/                # Imágenes e íconos (logo.png)
+│   │   ├── components/            # Componentes reutilizables
+│   │   │   ├── ui/                #   elementos base de interfaz
+│   │   │   ├── layout/            #   navbar y contenedores
+│   │   │   └── ProtectedRoute.tsx #   protección de rutas por autenticación
+│   │   ├── context/               # Estado global: AuthContext, AuthModalContext,
+│   │   │                          #   ToastContext
+│   │   ├── hooks/                 # Custom react hooks (useAuth.ts)
+│   │   ├── pages/                 # Vistas: dashboards, explore, chat, login...
+│   │   ├── types/                 # Interfaces de tipos de TypeScript
+│   │   ├── __tests__/             # Pruebas de componentes, hooks y páginas
+│   │   ├── App.tsx                # Componente raíz y rutas
+│   │   └── main.tsx               # Punto de entrada de React
+│   ├── Dockerfile                 # Imagen del frontend
+│   ├── nginx.conf                 # Servidor web para producción
+│   ├── package.json               # Dependencias (gestionadas con pnpm)
 │   └── vite.config.ts             # Configuración de compilador Vite
+├── .gitignore                     # Archivos ignorados por Git
+├── README.md                      # Esta guía
 ├── docker-compose.yml             # Contenedor de base de datos PostgreSQL
-└── README.md                      # Esta guía
+└── generate_all_docs.py           # Script generador de documentación
 ```
 
 ---
@@ -238,6 +408,23 @@ Base URL: `http://localhost:8000/api/v1`
 - `POST /auth/change-password` - Cambio de contraseña con sesión activa
 - `POST /auth/forgot-password` - Envío de código de recuperación por email
 - `POST /auth/reset-password` - Reestablecer contraseña usando token
+
+### Usuarios (`/users`)
+- `GET /users/me` - Mi perfil · `PATCH /users/me` - Editarlo
+- `GET /users/explore/artists` y `GET /users/explore/companies` - Explorar perfiles
+- `GET /users/admin/stats` - Estadísticas para el administrador
+
+### Convocatorias (`/convocatorias`)
+- `GET /convocatorias/` - Listado público · `POST /convocatorias/` - Crear (empresa)
+- `GET /convocatorias/mis-convocatorias` (empresa) · `GET /convocatorias/mis-postulaciones` (artista)
+- `POST /convocatorias/{conv_id}/postularse` - Postulación rápida del artista
+- `GET /convocatorias/{conv_id}/applicants` - Ver postulados (tablero Kanban)
+- `PUT /convocatorias/{conv_id}/applicants/{inscripcion_id}` - Actualizar estado de postulación
+
+### Portafolio y Uploads (`/portafolio`, `/upload`)
+- `GET /portafolio/` · `POST /portafolio/` · `DELETE /portafolio/{port_id}`
+- `POST /portafolio/{port_id}/items` - Agregar ítem multimedia (música, video, PDF)
+- `POST /upload` - Carga de archivos (video 50MB, audio 15MB, otros 10MB)
 
 ### Chat & WebSockets (`/chat`)
 - `GET /chat/conversaciones` - Listado de conversaciones del usuario

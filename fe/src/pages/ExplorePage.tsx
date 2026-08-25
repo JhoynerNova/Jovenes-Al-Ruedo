@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { usersApi } from "@/api/users";
 import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
 import type { UserResponse } from "@/types/auth";
@@ -51,6 +52,7 @@ const JORNADA_ICONS: Record<string, string> = {
 
 export function ExplorePage() {
   const { user, isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const [activeTab, setActiveTab] = useState<FeedTab>("todo");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -61,6 +63,7 @@ export function ExplorePage() {
   const [filterUbicacion, setFilterUbicacion] = useState("");
   const [filterArea, setFilterArea] = useState("");
   const [filterPresupuesto, setFilterPresupuesto] = useState("");
+  const [filterArtistArea, setFilterArtistArea] = useState("");
 
   const [artistas, setArtistas] = useState<UserResponse[]>([]);
   const [empresas, setEmpresas] = useState<UserResponse[]>([]);
@@ -123,9 +126,10 @@ export function ExplorePage() {
     setFilterUbicacion("");
     setFilterArea("");
     setFilterPresupuesto("");
+    setFilterArtistArea("");
   };
 
-  const hasActiveFilters = filterNivel || filterJornada || filterUbicacion || filterArea || filterPresupuesto;
+  const hasActiveFilters = filterNivel || filterJornada || filterUbicacion || filterArea || filterPresupuesto || filterArtistArea;
 
   // Apply client-side filters to convocatorias
   const filteredConvs = convs.filter((c) => {
@@ -134,6 +138,12 @@ export function ExplorePage() {
     if (filterUbicacion && !c.ubicacion?.toLowerCase().includes(filterUbicacion.toLowerCase())) return false;
     if (filterArea && c.empresa_sector?.toLowerCase() !== filterArea.toLowerCase()) return false;
     if (filterPresupuesto && !c.rango_salarial?.toLowerCase().includes(filterPresupuesto.toLowerCase())) return false;
+    return true;
+  });
+
+  // Apply client-side filters to artistas
+  const filteredArtistas = artistas.filter((a) => {
+    if (filterArtistArea && a.artistic_area?.toLowerCase() !== filterArtistArea.toLowerCase()) return false;
     return true;
   });
 
@@ -220,7 +230,7 @@ export function ExplorePage() {
           ))}
         </nav>
 
-        {(activeTab === "todo" || activeTab === "convocatorias") && (
+        {(activeTab === "todo" || activeTab === "convocatorias" || activeTab === "artistas") && (
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
@@ -233,7 +243,7 @@ export function ExplorePage() {
             Filtros
             {hasActiveFilters && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-purple text-[10px] font-bold text-white">
-                {[filterNivel, filterJornada, filterUbicacion, filterArea, filterPresupuesto].filter(Boolean).length}
+                {[filterNivel, filterJornada, filterUbicacion, filterArea, filterPresupuesto, filterArtistArea].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -241,11 +251,11 @@ export function ExplorePage() {
       </div>
 
       {/* ── FILTERS PANEL ── */}
-      {showFilters && (activeTab === "todo" || activeTab === "convocatorias") && (
+      {showFilters && (activeTab === "todo" || activeTab === "convocatorias" || activeTab === "artistas") && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Filter className="h-4 w-4 text-brand-purple" /> Filtrar Convocatorias
+              <Filter className="h-4 w-4 text-brand-purple" /> Filtrar Resultados
             </h3>
             {hasActiveFilters && (
               <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors">
@@ -289,26 +299,54 @@ export function ExplorePage() {
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>
             </div>
-            {/* Área Artística */}
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Área Artística</label>
-              <div className="relative">
-                <select
-                  value={filterArea}
-                  onChange={(e) => setFilterArea(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                >
-                  <option value="">Todas las áreas</option>
-                  <option value="Música">Música</option>
-                  <option value="Artes Visuales">Artes Visuales</option>
-                  <option value="Teatro">Teatro</option>
-                  <option value="Danza">Danza</option>
-                  <option value="Literatura">Literatura</option>
-                  <option value="Cine">Cine</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {/* Área Artística (Convocatorias) */}
+            {(activeTab === "todo" || activeTab === "convocatorias") && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sector Convocatoria</label>
+                <div className="relative">
+                  <select
+                    value={filterArea}
+                    onChange={(e) => setFilterArea(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Todos los sectores</option>
+                    <option value="Música">Música</option>
+                    <option value="Artes Visuales">Artes Visuales</option>
+                    <option value="Teatro">Teatro</option>
+                    <option value="Danza">Danza</option>
+                    <option value="Literatura">Literatura</option>
+                    <option value="Cine">Cine</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Área Artística (Artistas) */}
+            {(activeTab === "todo" || activeTab === "artistas") && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Especialidad Artista</label>
+                <div className="relative">
+                  <select
+                    value={filterArtistArea}
+                    onChange={(e) => setFilterArtistArea(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Todas las áreas</option>
+                    <option value="Música">Música</option>
+                    <option value="Danza">Danza</option>
+                    <option value="Teatro">Teatro</option>
+                    <option value="Artes Plásticas">Artes Plásticas</option>
+                    <option value="Literatura">Literatura</option>
+                    <option value="Audiovisual">Audiovisual</option>
+                    <option value="Fotografía">Fotografía</option>
+                    <option value="Circo">Circo</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+            )}
             {/* Presupuesto */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presupuesto</label>
@@ -359,14 +397,14 @@ export function ExplorePage() {
                   )}
                 </div>
               )}
-              {artistas.length === 0 ? (
+              {filteredArtistas.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-300 p-10 text-center dark:border-gray-700">
                   <Palette className="mx-auto h-10 w-10 text-gray-300 mb-3" />
                   <p className="text-gray-500">No se encontraron artistas</p>
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {(activeTab === "todo" ? artistas.slice(0, 4) : artistas).map((a) => (
+                  {(activeTab === "todo" ? filteredArtistas.slice(0, 4) : filteredArtistas).map((a) => (
                     <Link to={`/perfil/${a.id}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
                       {/* Card gradient top */}
                       <div className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20" />
@@ -402,7 +440,7 @@ export function ExplorePage() {
             </section>
           )}
 
-          {activeTab === "todo" && artistas.length > 0 && empresas.length > 0 && (
+          {activeTab === "todo" && filteredArtistas.length > 0 && empresas.length > 0 && (
             <hr className="border-gray-200 dark:border-gray-700" />
           )}
 
@@ -593,11 +631,12 @@ export function ExplorePage() {
                                   : "Aplicar Ahora"}
                               </button>
                             ) : !isAuthenticated ? (
-                              <Link to="/login" className="block">
-                                <button className="w-full rounded-lg bg-brand-purple py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-purple/90 transition-all">
-                                  Ingresar para postularse
-                                </button>
-                              </Link>
+                              <button
+                                onClick={openLogin}
+                                className="w-full rounded-lg bg-brand-purple py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-purple/90 transition-all cursor-pointer"
+                              >
+                                Ingresar para postularse
+                              </button>
                             ) : null}
                           </div>
                         </div>

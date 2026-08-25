@@ -7,7 +7,7 @@ import { usersApi } from "@/api/users";
 type SettingsTab = "perfil" | "seguridad" | "cuenta";
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
 
   // Perfil
@@ -16,6 +16,7 @@ export function SettingsPage() {
   const [sector, setSector] = useState(user?.sector || "");
   const [bio, setBio] = useState(user?.bio || "");
   const [location, setLocation] = useState(user?.location || "");
+  const [colorPalette, setColorPalette] = useState(user?.color_palette || "blue");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -25,20 +26,30 @@ export function SettingsPage() {
     setSaveMsg("");
     setSaveError("");
     try {
+      // Separar el fullName para enviar al backend
+      const nameParts = fullName.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       const updated = await usersApi.updateProfile({
-        full_name: fullName.trim() || undefined,
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
         artistic_area: artisticArea.trim() || undefined,
         sector: sector.trim() || undefined,
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
+        color_palette: colorPalette,
       });
       setSaveMsg("Perfil actualizado correctamente");
+      // Actualizar el contexto global de auth para que el color se aplique al instante
+      updateUser(updated);
       // Update local display values
       setFullName(updated.full_name);
       setArtisticArea(updated.artistic_area || "");
       setSector(updated.sector || "");
       setBio(updated.bio || "");
       setLocation(updated.location || "");
+      setColorPalette(updated.color_palette || "blue");
       setTimeout(() => setSaveMsg(""), 4000);
     } catch (e: any) {
       setSaveError(e.message || "Error al guardar el perfil");
@@ -57,6 +68,16 @@ export function SettingsPage() {
     "Cultura y Artes", "Educación", "Tecnología", "Medios de Comunicación",
     "Entretenimiento y Eventos", "Publicidad y Marketing", "Moda y Diseño",
     "Fundación / ONG", "Gobierno", "Otro",
+  ];
+
+  const COLOR_PALETTES = [
+    { value: "blue", label: "Azul (Clásico)", hex: "bg-blue-500" },
+    { value: "purple", label: "Morado (Elegante)", hex: "bg-purple-500" },
+    { value: "red", label: "Rojo (Pasión)", hex: "bg-red-500" },
+    { value: "green", label: "Verde (Naturaleza)", hex: "bg-green-500" },
+    { value: "amber", label: "Ámbar (Cálido)", hex: "bg-amber-500" },
+    { value: "pink", label: "Rosa (Creativo)", hex: "bg-pink-500" },
+    { value: "teal", label: "Teal (Moderno)", hex: "bg-teal-500" },
   ];
 
   return (
@@ -162,6 +183,24 @@ export function SettingsPage() {
                   placeholder="Ciudad, País (ej: Bogotá, Colombia)"
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tema de Color</label>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {COLOR_PALETTES.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setColorPalette(color.value)}
+                      type="button"
+                      className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${color.hex} ${
+                        colorPalette === color.value ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2 dark:border-white dark:ring-white dark:ring-offset-gray-900" : "border-transparent"
+                      }`}
+                      title={color.label}
+                    />
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Este color personalizará tu perfil público y tu panel de control.</p>
               </div>
 
               <div>
