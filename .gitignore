@@ -92,3 +92,13 @@ docker-volumes/
 *.log
 *.tmp
 *.bak
+
+# ────────────────────────────
+# 🎓 Estándar taller SENA (añadido, complementa lo anterior)
+# ────────────────────────────
+.env.local
+*.key
+.expo/
+*.apk
+# Nota: .vscode/ NO se ignora por completo a propósito, ya que
+# .vscode/settings.json se versiona como config compartida del equipo.
