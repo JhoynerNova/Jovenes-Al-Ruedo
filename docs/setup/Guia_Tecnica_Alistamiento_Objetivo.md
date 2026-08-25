@@ -73,9 +73,21 @@ python seed_web_db.py
 
 | Categoría | Herramienta Seleccionada | Justificación y Uso en el Proyecto |
 | :--- | :--- | :--- |
-| **Editor de Código (IDE)** | Visual Studio Code | IDE estándar del equipo. Extensiones obligatorias: Python (Microsoft), Pylance, Prettier, ESLint, Docker, GitLens, SQLite Viewer y PostgreSQL Client. |
-| **Pruebas de API HTTP** | Swagger UI & Postman | Swagger UI interactivo integrado en `http://localhost:8000/docs`. Postman / Thunder Client para pruebas de autenticación JWT. |
+| **Editor de Código (IDE)** | Visual Studio Code | IDE estándar del equipo. Extensiones obligatorias: Python, Pylance, Prettier, ESLint, Docker, GitLens, PostgreSQL Client. |
+| **Pruebas de API HTTP** | Swagger UI & Postman | Swagger UI interactivo en `http://localhost:8000/docs`. Postman / Thunder Client para pruebas de autenticación JWT. |
 | **Administración de BD** | DBeaver / pgAdmin 4 | Cliente gráfico para consulta visual de tablas, diagramas Entidad-Relación (ER) y verificación de llaves foráneas. |
+
+---
+
+### Evidencias Fotográficas de Herramientas e Instalación
+
+#### Evidencia 1: Visual Studio Code & Entorno de Desarrollo Backend
+![Visual Studio Code y Terminal Uvicorn](images/captura_vscode.png)
+*Figura 1: Entorno de desarrollo local en VS Code mostrando la estructura del backend en Python FastAPI y la terminal integrada ejecutando Uvicorn en la rama 'develop'.*
+
+#### Evidencia 2: Cliente de Pruebas de API HTTP (Swagger UI)
+![FastAPI Swagger UI Docs](images/captura_swagger.png)
+*Figura 2: Interfaz interactiva de Swagger UI de la API Jóvenes al Ruedo desplegada en http://localhost:8000/docs mostrando los endpoints HTTP.*
 
 ---
 
@@ -89,6 +101,10 @@ El grupo establece las siguientes reglas para la administración del repositorio
 - **`main`**: Código en estado estable y listo para producción.
 - **`develop`**: Rama de integración continua donde se consolidan y prueban los avances del equipo.
 - **`feature/nombre-funcionalidad`**: Ramas independientes derivadas de `develop` para construir nuevos módulos (`feature/auth-jwt`, `feature/portafolio`, `feature/convocatorias`).
+
+#### Evidencia 3: Repositorio Oficial en GitHub & Rama `develop`
+![GitHub Repository Develop Branch](images/captura_github.png)
+*Figura 3: Vista del repositorio oficial en GitHub con la rama 'develop' seleccionada y la estructura de archivos .gitignore, docker-compose.yml y backend.*
 
 ```bash
 # Ejemplo de creación y envío de rama de funcionalidad:
@@ -184,13 +200,9 @@ be/
 └── requirements.txt          # Lista oficial de dependencias Python
 ```
 
-### Detalle de las Capas
-1. **Configuración (`app/config.py`, `database.py`)**: Carga variables de entorno y establece la conexión con PostgreSQL.
-2. **Rutas (`app/routers/`)**: Asocia URIs (`/api/v1/auth`, `/api/v1/users`, `/api/v1/convocatorias`) con métodos HTTP (`GET`, `POST`, `PUT`, `DELETE`).
-3. **Controladores (`app/routers/*_router.py`)**: Procesa peticiones HTTP, delega la lógica a los servicios y retorna JSON con códigos de estado HTTP adecuados (`200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `500 Server Error`).
-4. **Servicios (`app/services/`)**: Reglas de negocio, validaciones complejas, cálculo de postulaciones y hashing de contraseñas.
-5. **Modelos (`app/models/`)**: Definición de la estructura relacional ORM en PostgreSQL.
-6. **Middlewares (`app/main.py`)**: Seguridad HTTP (CORS, TrustedHost, X-Frame-Options, CSP, JWT validation).
+#### Evidencia 4: Cliente Gráfico de Base de Datos (DBeaver / PostgreSQL)
+![DBeaver PostgreSQL Database Connection](images/captura_dbeaver.png)
+*Figura 4: Vista del cliente DBeaver conectado a PostgreSQL 16 mostrando las tablas 'users', 'roles', 'portfolios' y 'convocatorias' con su modelo relacional.*
 
 ---
 
