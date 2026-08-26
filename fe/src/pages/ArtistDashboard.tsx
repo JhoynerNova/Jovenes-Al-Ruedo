@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart3, Image, Briefcase, Send, Settings, Globe,
-  Building2, Users, Calendar, FolderPlus, Trash2, FileText,
+  Building2, Users, Calendar, FolderPlus, Trash2, FileText, Star
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type MiPostulacion } from "@/api/convocatorias";
 import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
 import { uploadApi } from "@/api/upload";
+import { RatingsList } from "@/components/RatingsList";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 type Tab = "resumen" | "portafolio" | "convocatorias" | "mis-postulaciones";
 
@@ -250,6 +252,7 @@ export function ArtistDashboard() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Mi Panel de Artista" }]} />
       {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-purple via-brand-blue to-brand-teal p-6 text-white shadow-lg sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -342,6 +345,16 @@ export function ArtistDashboard() {
               </div>
             )}
           </div>
+
+          {/* Calificaciones y Reseñas de Empresas */}
+          {user?.id && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Star className="h-5 w-5 text-amber-500 fill-amber-500" /> Reputación y Reseñas de Empresas
+              </h2>
+              <RatingsList artistId={user.id} />
+            </div>
+          )}
 
           {misPost.length > 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">

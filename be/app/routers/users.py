@@ -11,6 +11,7 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 
+from pydantic import BaseModel
 from app.dependencies import get_current_user, require_admin, get_db
 from app.models.user import User
 from app.models.conv import Conv, Inscripcion
@@ -176,6 +177,25 @@ def update_profile(
         current_user.location = body.location
     if body.color_palette is not None:
         current_user.color_palette = body.color_palette
+    db.commit()
+    db.refresh(current_user)
+    return UserResponse.model_validate(current_user)
+
+
+class PaletteUpdate(BaseModel):
+    color_palette: str
+
+@router.patch(
+    "/palette",
+    response_model=UserResponse,
+    summary="Cambiar paleta de colores del usuario",
+)
+def update_palette(
+    body: PaletteUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.color_palette = body.color_palette
     db.commit()
     db.refresh(current_user)
     return UserResponse.model_validate(current_user)

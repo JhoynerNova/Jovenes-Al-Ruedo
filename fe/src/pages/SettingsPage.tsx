@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { usersApi } from "@/api/users";
+import { PaletteSelector } from "@/components/PaletteSelector";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 type SettingsTab = "perfil" | "seguridad" | "cuenta";
 
@@ -70,18 +72,9 @@ export function SettingsPage() {
     "Fundación / ONG", "Gobierno", "Otro",
   ];
 
-  const COLOR_PALETTES = [
-    { value: "blue", label: "Azul (Clásico)", hex: "bg-blue-500" },
-    { value: "purple", label: "Morado (Elegante)", hex: "bg-purple-500" },
-    { value: "red", label: "Rojo (Pasión)", hex: "bg-red-500" },
-    { value: "green", label: "Verde (Naturaleza)", hex: "bg-green-500" },
-    { value: "amber", label: "Ámbar (Cálido)", hex: "bg-amber-500" },
-    { value: "pink", label: "Rosa (Creativo)", hex: "bg-pink-500" },
-    { value: "teal", label: "Teal (Moderno)", hex: "bg-teal-500" },
-  ];
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <Breadcrumbs items={[{ label: "Configuración" }]} />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚙️ Configuración</h1>
@@ -186,21 +179,8 @@ export function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tema de Color</label>
-                <div className="mt-2 flex flex-wrap gap-3">
-                  {COLOR_PALETTES.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setColorPalette(color.value)}
-                      type="button"
-                      className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${color.hex} ${
-                        colorPalette === color.value ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2 dark:border-white dark:ring-white dark:ring-offset-gray-900" : "border-transparent"
-                      }`}
-                      title={color.label}
-                    />
-                  ))}
-                </div>
-                <p className="mt-1 text-xs text-gray-500">Este color personalizará tu perfil público y tu panel de control.</p>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tema y Personalización Visual</label>
+                <PaletteSelector value={colorPalette} onChange={setColorPalette} />
               </div>
 
               <div>

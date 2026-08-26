@@ -15,6 +15,7 @@ from app.models.portafolio import Portafolio, DetPortafolio
 from app.models.conv import Conv, DetConv, Inscripcion
 from app.models.conversacion import Conversacion
 from app.models.chat import Mensaje
+from app.models.rating import Calificacion
 
 __all__ = [
     "User",
@@ -28,4 +29,5 @@ __all__ = [
     "Inscripcion",
     "Conversacion",
     "Mensaje",
+    "Calificacion",
 ]

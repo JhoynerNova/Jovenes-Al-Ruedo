@@ -92,3 +92,5 @@ docker-volumes/
 *.log
 *.tmp
 *.bak
+*.db
+*.sqlite
