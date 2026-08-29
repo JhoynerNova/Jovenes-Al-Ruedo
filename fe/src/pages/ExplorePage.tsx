@@ -411,14 +411,17 @@ export function ExplorePage() {
                   {(activeTab === "todo" ? filteredArtistas.slice(0, 4) : filteredArtistas).map((a) => (
                     <Link to={`/perfil/${a.id}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
                       {/* Card gradient top */}
-                      <div className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20" />
+                      <div
+                        className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20 bg-cover bg-center"
+                        style={a.cover_pic_url ? { backgroundImage: `url(${toAbsoluteMediaUrl(a.cover_pic_url)})` } : undefined}
+                      />
                       <div className="p-5 pt-0 -mt-6">
                         <div className="flex items-end gap-3">
                           {a.profile_pic_url ? (
                             <img
                               src={toAbsoluteMediaUrl(a.profile_pic_url)}
                               alt={a.full_name}
-                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800"
+                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800 bg-white"
                             />
                           ) : (
                             <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-lg font-bold text-brand-purple shadow-sm dark:border-gray-800 dark:text-brand-teal">
@@ -485,12 +488,23 @@ export function ExplorePage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(activeTab === "todo" ? empresas.slice(0, 4) : empresas).map((e) => (
                     <Link to={`/perfil/${e.id}`} key={e.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-blue/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
-                      <div className="h-16 bg-gradient-to-r from-brand-blue/20 via-blue-400/10 to-brand-dark/20" />
+                      <div
+                        className="h-16 bg-gradient-to-r from-brand-blue/20 via-blue-400/10 to-brand-dark/20 bg-cover bg-center"
+                        style={e.cover_pic_url ? { backgroundImage: `url(${toAbsoluteMediaUrl(e.cover_pic_url)})` } : undefined}
+                      />
                       <div className="p-5 pt-0 -mt-6">
                         <div className="flex items-end gap-3">
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-blue/30 to-brand-dark/30 text-lg font-bold text-brand-blue shadow-sm dark:border-gray-800 dark:text-blue-300">
-                            {e.full_name.charAt(0).toUpperCase()}
-                          </div>
+                          {e.profile_pic_url ? (
+                            <img
+                              src={toAbsoluteMediaUrl(e.profile_pic_url)}
+                              alt={e.full_name}
+                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800 bg-white"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-blue/30 to-brand-dark/30 text-lg font-bold text-brand-blue shadow-sm dark:border-gray-800 dark:text-blue-300">
+                              {e.full_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{e.full_name}</h3>
                             {e.sector && (
