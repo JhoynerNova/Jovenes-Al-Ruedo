@@ -21,7 +21,12 @@ const SEGMENT_LABELS: Record<string, string> = {
 };
 
 function labelFor(segment: string): string {
-  return SEGMENT_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
+  if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment];
+  // Si el segmento es un UUID o un ID numérico, no mostrar el hash crudo en pantalla
+  if (/^[0-9a-fA-F-]{20,}$/.test(segment) || /^\d+$/.test(segment)) {
+    return "Detalle de Perfil";
+  }
+  return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
