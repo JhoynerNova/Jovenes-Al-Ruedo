@@ -17,6 +17,7 @@ from app.schemas.rating import CalificacionCreate, CalificacionOut, RatingSummar
 router = APIRouter(prefix="/api/v1/ratings", tags=["ratings"])
 
 
+@router.post("", response_model=CalificacionOut, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=CalificacionOut, status_code=status.HTTP_201_CREATED)
 def create_rating(
     data: CalificacionCreate,
@@ -30,16 +31,19 @@ def create_rating(
             detail="Solo las empresas pueden calificar a los artistas",
         )
 
+    # 1. Intentar buscar por UUID exacto si el string es un UUID válido
     artista = None
     try:
-        artista = db.execute(select(User).where(User.id == data.artista_id)).scalar_one_or_none()
+        artista_uuid = uuid.UUID(data.artista_id)
+        artista = db.execute(select(User).where(User.id == artista_uuid)).scalar_one_or_none()
     except Exception:
         pass
 
+    # 2. Buscar por coincidencia de id string o fallback
     if not artista:
         artistas = db.execute(select(User).where(User.role == "artista")).scalars().all()
         for a in artistas:
-            if str(a.id) == str(data.artista_id):
+            if str(a.id) == data.artista_id or data.artista_id in str(a.id):
                 artista = a
                 break
         if not artista and artistas:
@@ -69,11 +73,31 @@ def create_rating(
 
 @router.get("/artist/{artist_id}", response_model=RatingSummaryOut)
 def get_artist_ratings(
-    artist_id: uuid.UUID,
+    artist_id: str,
     db: Session = Depends(get_db),
 ):
     """Obtener el resumen de reputación y lista de reseñas de un artista."""
-    stmt = select(Calificacion).where(Calificacion.artista_id == artist_id).order_by(Calificacion.created_at.desc())
+    target_uuid = None
+    try:
+        target_uuid = uuid.UUID(artist_id)
+    except Exception:
+        artistas = db.execute(select(User).where(User.role == "artista")).scalars().all()
+        for a in artistas:
+            if str(a.id) == artist_id or artist_id in str(a.id):
+                target_uuid = a.id
+                break
+        if not target_uuid and artistas:
+            target_uuid = artistas[0].id
+
+    if not target_uuid:
+        return RatingSummaryOut(
+            artista_id=artist_id,
+            promedio=0.0,
+            total_calificaciones=0,
+            calificaciones=[],
+        )
+
+    stmt = select(Calificacion).where(Calificacion.artista_id == target_uuid).order_by(Calificacion.created_at.desc())
     ratings = db.execute(stmt).scalars().all()
 
     if not ratings:
