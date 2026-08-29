@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  BarChart3, Megaphone, Inbox, Settings, PlusCircle, Pencil, Trash2, Users, X, ExternalLink, MessageSquare
+  BarChart3, Megaphone, Inbox, Settings, PlusCircle, Pencil, Trash2, Users, X, ExternalLink, MessageSquare, Download, Star, Award
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type Applicant } from "@/api/convocatorias";
 import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
 import { chatApi } from "@/api/chat";
+import { RatingModal } from "@/components/RatingModal";
+import { CertificateModal } from "@/components/CertificateModal";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
@@ -45,6 +48,14 @@ export function CompanyDashboard() {
   const [allApplicants, setAllApplicants] = useState<(Applicant & { conv_nombre: string, id_conv: number })[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
+
+  // States for modals & export
+  const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; convId?: number } | null>(null);
+  const [certTarget, setCertTarget] = useState<{ artistaNombre: string; convNombre: string } | null>(null);
+
+  const handleExportCSV = () => {
+    window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/reports/convocatorias/csv`, '_blank');
+  };
 
   // States for viewing artist portfolio in modal
   const [selectedPortfolio, setSelectedPortfolio] = useState<PortafolioResponse | null>(null);
@@ -172,6 +183,7 @@ export function CompanyDashboard() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Panel de Empresa" }]} />
       {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-blue p-6 text-white shadow-lg sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -187,7 +199,8 @@ export function CompanyDashboard() {
               {user?.location && <p className="text-xs text-white/60">{user.location}</p>}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={handleExportCSV}><Download className="mr-1.5 h-4 w-4 inline" /> Exportar Reporte Excel</Button>
             <Button size="sm" onClick={() => { setShowNewConv(true); setActiveTab("convocatorias"); }}><PlusCircle className="mr-1.5 h-4 w-4 inline" /> Nueva convocatoria</Button>
             <Link to="/settings"><Button variant="secondary" size="sm"><Settings className="mr-1.5 h-4 w-4 inline" /> Configuración</Button></Link>
           </div>
@@ -529,7 +542,23 @@ export function CompanyDashboard() {
                             </div>
                           )}
 
-                          <div className="pt-2 border-t border-gray-100 dark:border-gray-850">
+                          <div className="pt-2 border-t border-gray-100 dark:border-gray-850 space-y-1.5">
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => setRatingTarget({ id: a.id_usr, name: a.artista_nombre, convId: a.id_conv })}
+                                className="flex-1 text-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 py-1 font-bold hover:bg-amber-500/20 text-[10px] flex items-center justify-center gap-1"
+                              >
+                                <Star className="h-3 w-3" /> Calificar ⭐
+                              </button>
+                              {a.estado === 'Aceptada' && (
+                                <button
+                                  onClick={() => setCertTarget({ artistaNombre: a.artista_nombre, convNombre: a.conv_nombre })}
+                                  className="flex-1 text-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 py-1 font-bold hover:bg-emerald-500/20 text-[10px] flex items-center justify-center gap-1"
+                                >
+                                  <Award className="h-3 w-3" /> Certificado 📜
+                                </button>
+                              )}
+                            </div>
                             <button
                               onClick={() => handleStartChat(a.id_usr)}
                               disabled={startingChatId === a.id_usr}
@@ -650,6 +679,26 @@ export function CompanyDashboard() {
             </div>
           </div>
         </div>
+      )}
+      {/* Modals para Calificación y Certificados */}
+      {ratingTarget && (
+        <RatingModal
+          isOpen={!!ratingTarget}
+          onClose={() => setRatingTarget(null)}
+          artistaId={ratingTarget.id}
+          artistaNombre={ratingTarget.name}
+          convocatoriaId={ratingTarget.convId}
+        />
+      )}
+
+      {certTarget && (
+        <CertificateModal
+          isOpen={!!certTarget}
+          onClose={() => setCertTarget(null)}
+          artistaNombre={certTarget.artistaNombre}
+          empresaNombre={user?.full_name || 'Empresa Cultural'}
+          convocatoriaTitulo={certTarget.convNombre}
+        />
       )}
     </div>
   );

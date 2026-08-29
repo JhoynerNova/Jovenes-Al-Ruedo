@@ -376,7 +376,10 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     # ¿Qué? Verificar que el token no haya expirado.
     # ¿Para qué? Limitar la ventana de tiempo en que un enlace de recuperación es válido.
     # ¿Impacto? Tokens expiran en 1 hora — después de eso, el usuario debe solicitar otro.
-    if token_record.expires_at < datetime.now(timezone.utc):
+    expires_at = token_record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El token de recuperación ha expirado. Solicite uno nuevo.",
