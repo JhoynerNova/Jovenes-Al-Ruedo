@@ -13,7 +13,7 @@ import re
 import uuid
 from datetime import datetime, date  # datetime usado en UserResponse
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -308,6 +308,13 @@ class UserResponse(BaseModel):
     location: Optional[str] = None
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
+    social_links: Optional[dict] = None
+    artistic_disciplines: Optional[List[str]] = None
+    looking_for_disciplines: Optional[List[str]] = None
+    company_legal_name: Optional[str] = None
+    company_nit: Optional[str] = None
+    company_size: Optional[str] = None
+    onboarding_completed: bool = False
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -370,6 +377,13 @@ class UserUpdate(BaseModel):
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
     color_palette: Optional[str] = None
+    social_links: Optional[dict] = None
+    artistic_disciplines: Optional[List[str]] = None
+    looking_for_disciplines: Optional[List[str]] = None
+    company_legal_name: Optional[str] = None
+    company_nit: Optional[str] = None
+    company_size: Optional[str] = None
+    onboarding_completed: Optional[bool] = None
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -379,6 +393,16 @@ class UserUpdate(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre/apellido debe tener al menos 2 caracteres")
+        return v
+
+    @field_validator("company_size")
+    @classmethod
+    def validate_company_size(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        allowed = {"1-10", "11-50", "51-200", "200+"}
+        if v not in allowed:
+            raise ValueError(f"company_size debe ser uno de: {', '.join(sorted(allowed))}")
         return v
 
 

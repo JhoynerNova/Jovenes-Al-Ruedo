@@ -41,7 +41,24 @@ export const usersApi = {
     return data;
   },
 
-  updateProfile: async (body: { first_name?: string; last_name?: string; artistic_area?: string; sector?: string; bio?: string; location?: string; color_palette?: string }) => {
+  updateProfile: async (body: {
+    first_name?: string;
+    last_name?: string;
+    artistic_area?: string;
+    sector?: string;
+    bio?: string;
+    location?: string;
+    color_palette?: string;
+    profile_pic_url?: string;
+    cover_pic_url?: string;
+    social_links?: Record<string, string>;
+    artistic_disciplines?: string[];
+    looking_for_disciplines?: string[];
+    company_legal_name?: string;
+    company_nit?: string;
+    company_size?: string;
+    onboarding_completed?: boolean;
+  }) => {
     const { data } = await api.patch<UserResponse>("/api/v1/users/me/", body);
     return data;
   },

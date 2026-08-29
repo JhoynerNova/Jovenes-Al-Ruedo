@@ -101,6 +101,13 @@ export interface UserResponse {
   location: string | null;
   profile_pic_url: string | null;
   cover_pic_url: string | null;
+  social_links: Record<string, string> | null;
+  artistic_disciplines: string[] | null;
+  looking_for_disciplines: string[] | null;
+  company_legal_name: string | null;
+  company_nit: string | null;
+  company_size: string | null;
+  onboarding_completed: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;

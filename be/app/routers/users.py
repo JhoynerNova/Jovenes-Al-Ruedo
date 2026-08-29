@@ -179,6 +179,24 @@ def update_profile(
         current_user.location = body.location
     if body.color_palette is not None:
         current_user.color_palette = body.color_palette
+    if body.profile_pic_url is not None:
+        current_user.profile_pic_url = body.profile_pic_url
+    if body.cover_pic_url is not None:
+        current_user.cover_pic_url = body.cover_pic_url
+    if body.social_links is not None:
+        current_user.social_links = body.social_links
+    if body.artistic_disciplines is not None:
+        current_user.artistic_disciplines = body.artistic_disciplines
+    if body.looking_for_disciplines is not None:
+        current_user.looking_for_disciplines = body.looking_for_disciplines
+    if body.company_legal_name is not None:
+        current_user.company_legal_name = body.company_legal_name
+    if body.company_nit is not None:
+        current_user.company_nit = body.company_nit
+    if body.company_size is not None:
+        current_user.company_size = body.company_size
+    if body.onboarding_completed is not None:
+        current_user.onboarding_completed = body.onboarding_completed
     db.commit()
     db.refresh(current_user)
     return UserResponse.model_validate(current_user)

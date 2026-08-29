@@ -188,7 +188,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
       if (isModalMode) {
         closeModal();
       }
-      navigate("/dashboard", { replace: true });
+      navigate("/onboarding", { replace: true });
     } catch (err: any) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
       
@@ -358,17 +358,43 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
             </div>
           </div>
         ) : (
-          <InputField
-            label="Sector de la industria"
-            name="sector"
-            type="text"
-            value={formData.sector}
-            placeholder="Audiovisual, Entretenimiento, Educación..."
-            icon={<Building2 className="h-5 w-5" />}
-            error={errors.sector}
-            onChange={handleChange}
-            onBlur={handleBlur}
-          />
+          <div className="mb-3">
+            <label htmlFor="sector" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Sector de la industria
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <select
+                id="sector"
+                name="sector"
+                value={formData.sector}
+                onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                onBlur={(e) => handleBlur(e as unknown as React.FocusEvent<HTMLInputElement>)}
+                className={`block w-full rounded-lg border pl-10 pr-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 ${
+                  errors.sector
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-400 dark:focus:ring-red-400/20"
+                    : "border-gray-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-brand-purple/40 dark:focus:border-brand-blue dark:focus:ring-brand-blue/20"
+                } ${!formData.sector ? "text-gray-400 dark:text-gray-500" : ""}`}
+              >
+                <option value="" disabled>Selecciona un sector...</option>
+                <option value="Cultura y Artes">Cultura y Artes</option>
+                <option value="Educación">Educación</option>
+                <option value="Tecnología">Tecnología</option>
+                <option value="Medios de Comunicación">Medios de Comunicación</option>
+                <option value="Entretenimiento y Eventos">Entretenimiento y Eventos</option>
+                <option value="Publicidad y Marketing">Publicidad y Marketing</option>
+                <option value="Moda y Diseño">Moda y Diseño</option>
+                <option value="Fundación / ONG">Fundación / ONG</option>
+                <option value="Gobierno">Gobierno</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            {errors.sector && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.sector}</p>
+            )}
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-3">

@@ -4,11 +4,12 @@ import { usersApi } from "@/api/users";
 import { chatApi } from "@/api/chat";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserResponse } from "@/types/auth";
-import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle, Star } from "lucide-react";
+import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle, Star, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { RatingModal } from "@/components/RatingModal";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { detectSocialLink } from "@/lib/social";
 
 interface PortfolioItem {
   id_det_p: number;
@@ -132,8 +133,13 @@ export function PublicProfile() {
 
       {/* ── HERO / COVER ── */}
       <div className="relative overflow-hidden rounded-2xl shadow-lg">
-        <div className={`h-48 sm:h-56 ${isArtist ? "bg-gradient-to-r from-brand-purple via-purple-600 to-brand-teal" : "bg-gradient-to-r from-brand-blue via-blue-600 to-brand-dark"}`}>
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
+        <div
+          className={`h-48 sm:h-56 bg-cover bg-center ${isArtist ? "bg-gradient-to-r from-brand-purple via-purple-600 to-brand-teal" : "bg-gradient-to-r from-brand-blue via-blue-600 to-brand-dark"}`}
+          style={profile.cover_pic_url ? { backgroundImage: `url(${apiUrl}${profile.cover_pic_url})` } : undefined}
+        >
+          {!profile.cover_pic_url && (
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
+          )}
         </div>
         <div className="relative -mt-16 px-6 pb-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
@@ -208,6 +214,37 @@ export function PublicProfile() {
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Sobre {isArtist ? "el artista" : "la empresa"}</h2>
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{profile.bio}</p>
+        </div>
+      )}
+
+      {/* ── REDES SOCIALES / CONTACTO ── */}
+      {profile.social_links && Object.values(profile.social_links).some((v) => !!v) && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Enlaces y contacto</h2>
+          <div className="flex flex-wrap gap-3">
+            {profile.social_links.social && (() => {
+              const detected = detectSocialLink(profile.social_links.social);
+              if (!detected) return null;
+              return (
+                <a
+                  href={detected.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-brand-purple/10 px-3 py-1.5 text-xs font-semibold text-brand-purple hover:underline dark:text-purple-300"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> {detected.platform}
+                </a>
+              );
+            })()}
+            {profile.social_links.phone && (
+              <a
+                href={`tel:${profile.social_links.phone.replace(/\s+/g, "")}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand-teal/10 px-3 py-1.5 text-xs font-semibold text-brand-teal hover:underline"
+              >
+                <Phone className="h-3.5 w-3.5" /> {profile.social_links.phone}
+              </a>
+            )}
+          </div>
         </div>
       )}
 

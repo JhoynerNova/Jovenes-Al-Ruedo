@@ -6,6 +6,7 @@ import { usersApi } from "@/api/users";
 import { logoutAllDevices } from "@/api/auth";
 import { PaletteSelector } from "@/components/PaletteSelector";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 
 type SettingsTab = "perfil" | "seguridad" | "cuenta";
 
@@ -69,6 +70,7 @@ export function SettingsPage() {
   const [bio, setBio] = useState(user?.bio || "");
   const [location, setLocation] = useState(user?.location || "");
   const [colorPalette, setColorPalette] = useState(user?.color_palette || "blue");
+  const [profilePicUrl, setProfilePicUrl] = useState(user?.profile_pic_url || "");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -91,6 +93,7 @@ export function SettingsPage() {
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
         color_palette: colorPalette,
+        profile_pic_url: profilePicUrl || undefined,
       });
       setSaveMsg("Perfil actualizado correctamente");
       // Actualizar el contexto global de auth para que el color se aplique al instante
@@ -102,6 +105,7 @@ export function SettingsPage() {
       setBio(updated.bio || "");
       setLocation(updated.location || "");
       setColorPalette(updated.color_palette || "blue");
+      setProfilePicUrl(updated.profile_pic_url || "");
       setTimeout(() => setSaveMsg(""), 4000);
     } catch (e: any) {
       setSaveError(e.message || "Error al guardar el perfil");
@@ -114,6 +118,13 @@ export function SettingsPage() {
     "Música", "Danza", "Teatro", "Fotografía", "Cine / Audiovisual",
     "Pintura", "Escultura", "Diseño Gráfico", "Ilustración", "Literatura",
     "Poesía", "Circo / Artes Escénicas", "Graffiti / Arte Urbano", "Artesanías", "Otra",
+  ];
+
+  const LOCALIDADES_BOGOTA = [
+    "Usaquén", "Chapinero", "Santa Fe", "San Cristóbal", "Usme", "Tunjuelito",
+    "Bosa", "Kennedy", "Fontibón", "Engativá", "Suba", "Barrios Unidos",
+    "Teusaquillo", "Los Mártires", "Antonio Nariño", "Puente Aranda",
+    "La Candelaria", "Rafael Uribe Uribe", "Ciudad Bolívar", "Sumapaz",
   ];
 
   const SECTORES = [
@@ -159,9 +170,13 @@ export function SettingsPage() {
         <div className="space-y-6">
           {/* Avatar & nombre */}
           <div className="flex items-center gap-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple to-brand-teal text-3xl font-bold text-white shadow-md">
-              {(fullName || user?.full_name || "?").charAt(0).toUpperCase()}
-            </div>
+            <ImageUploadField
+              label="Foto de perfil"
+              value={profilePicUrl}
+              onChange={setProfilePicUrl}
+              shape="circle"
+              onError={(m) => setSaveError(m)}
+            />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{fullName || user?.full_name}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
@@ -218,14 +233,27 @@ export function SettingsPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ubicación</label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Ciudad, País (ej: Bogotá, Colombia)"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {user?.role === "artista" ? "Localidad (Bogotá)" : "Ubicación"}
+                </label>
+                {user?.role === "artista" ? (
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Seleccionar localidad...</option>
+                    {LOCALIDADES_BOGOTA.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ciudad, País (ej: Bogotá, Colombia)"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+                )}
               </div>
 
               <div>

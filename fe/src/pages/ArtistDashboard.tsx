@@ -11,6 +11,7 @@ import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
 import { uploadApi } from "@/api/upload";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { toAbsoluteMediaUrl } from "@/lib/media";
 
 type Tab = "resumen" | "portafolio" | "convocatorias" | "mis-postulaciones";
 
@@ -259,9 +260,17 @@ export function ArtistDashboard() {
         <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur-sm">
-              {user?.full_name?.charAt(0).toUpperCase()}
-            </div>
+            {user?.profile_pic_url ? (
+              <img
+                src={toAbsoluteMediaUrl(user.profile_pic_url)}
+                alt={user.full_name}
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-white/30"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur-sm">
+                {user?.full_name?.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <h1 className="text-xl font-bold sm:text-2xl">{user?.full_name}</h1>
               <p className="text-sm text-white/80">{user?.artistic_area || "Artista"} · {user?.email}</p>

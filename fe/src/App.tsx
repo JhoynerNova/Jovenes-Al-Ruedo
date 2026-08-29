@@ -49,6 +49,7 @@ import { ExplorePage } from "@/pages/ExplorePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { Chat } from "@/pages/Chat";
 import { PublicProfile } from "@/pages/PublicProfile";
+import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 
 /**
  * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
@@ -86,6 +87,7 @@ function App() {
                   </ProtectedRoute>
                 }
               >
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/settings" element={<SettingsPage />} />

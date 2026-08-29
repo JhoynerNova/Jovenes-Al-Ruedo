@@ -7,6 +7,8 @@ import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
 import type { UserResponse } from "@/types/auth";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { toAbsoluteMediaUrl } from "@/lib/media";
+import { detectSocialLink } from "@/lib/social";
 import {
   ExternalLink, Search, MapPin, Briefcase, Clock, Star, Users, Filter,
   ChevronDown, X, Palette, Building2, Sparkles, TrendingUp, Zap, Award
@@ -412,9 +414,17 @@ export function ExplorePage() {
                       <div className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20" />
                       <div className="p-5 pt-0 -mt-6">
                         <div className="flex items-end gap-3">
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-lg font-bold text-brand-purple shadow-sm dark:border-gray-800 dark:text-brand-teal">
-                            {a.full_name.charAt(0).toUpperCase()}
-                          </div>
+                          {a.profile_pic_url ? (
+                            <img
+                              src={toAbsoluteMediaUrl(a.profile_pic_url)}
+                              alt={a.full_name}
+                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-lg font-bold text-brand-purple shadow-sm dark:border-gray-800 dark:text-brand-teal">
+                              {a.full_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{a.full_name}</h3>
                             {a.artistic_area && (
@@ -428,6 +438,13 @@ export function ExplorePage() {
                           {a.location && <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><MapPin className="h-3 w-3" /> {a.location}</p>}
                           {a.birth_date && <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><Clock className="h-3 w-3" /> {calcEdad(a.birth_date)} años</p>}
                           {a.bio && <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">{a.bio}</p>}
+                          {a.social_links?.social && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[10px] font-semibold text-brand-purple dark:text-purple-300">
+                                <ExternalLink className="h-2.5 w-2.5" /> {detectSocialLink(a.social_links.social)?.platform}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
                           <span className="flex items-center gap-1 text-xs font-medium text-brand-purple opacity-0 group-hover:opacity-100 transition-opacity">

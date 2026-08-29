@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, date
 from typing import List
 
-from sqlalchemy import Boolean, Date, DateTime, String, Text, func
+from sqlalchemy import JSON, Boolean, Date, DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -103,6 +103,40 @@ class User(Base):
     location: Mapped[str] = mapped_column(String(100), nullable=True)
     profile_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
     cover_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    # ¿Qué? Enlaces a redes sociales / sitio web del usuario (artista o empresa).
+    # ¿Para qué? Onboarding — permitir compartir instagram, sitio web, etc.
+    # ¿Impacto? Diccionario libre {"instagram": "...", "website": "...", ...}; NULL = sin cargar.
+    social_links: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Disciplinas artísticas adicionales elegidas en el onboarding (artista).
+    # ¿Para qué? Permitir más de una disciplina, sin tocar `artistic_area` (usado en filtros).
+    # ¿Impacto? Lista de strings, ej. ["música", "pintura"]; NULL = no completado.
+    artistic_disciplines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Tipos de talento que busca la empresa, elegidos en el onboarding.
+    # ¿Para qué? Ayudar a mostrarle a la empresa artistas relevantes en el futuro.
+    # ¿Impacto? Lista de strings, ej. ["diseño gráfico", "música"]; NULL = no completado.
+    looking_for_disciplines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Razón social / nombre legal de la empresa.
+    company_legal_name: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    # ¿Qué? NIT o número de registro de la empresa (Colombia).
+    company_nit: Mapped[str] = mapped_column(String(30), nullable=True)
+
+    # ¿Qué? Tamaño de la empresa (rango de empleados), ej. "1-10", "11-50", "51-200", "200+".
+    company_size: Mapped[str] = mapped_column(String(30), nullable=True)
+
+    # ¿Qué? Si el usuario ya completó u omitió el wizard de onboarding post-registro.
+    # ¿Para qué? Evitar mostrar el wizard de nuevo una vez terminado u omitido.
+    # ¿Impacto? Default False — se pone True al terminar o al presionar "Completar más tarde".
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
 
     # ¿Qué? Rol del usuario.
     # ¿Para qué? Diferenciar entre artistas, empresas o administradores.
