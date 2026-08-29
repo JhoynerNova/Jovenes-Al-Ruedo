@@ -4,8 +4,10 @@ import { usersApi } from "@/api/users";
 import { chatApi } from "@/api/chat";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserResponse } from "@/types/auth";
-import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle } from "lucide-react";
+import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle, Star } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { RatingModal } from "@/components/RatingModal";
+import { RatingsList } from "@/components/RatingsList";
 
 interface PortfolioItem {
   id_det_p: number;
@@ -40,6 +42,8 @@ export function PublicProfile() {
   const [activePortfolio, setActivePortfolio] = useState<Portfolio | null>(null);
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [isRatingOpen, setIsRatingOpen] = useState(false);
+  const [ratingsKey, setRatingsKey] = useState(0);
 
   const handleSendMessage = async () => {
     if (!profile || sendingMessage) return;
@@ -112,6 +116,17 @@ export function PublicProfile() {
         </div>
       )}
 
+      {/* Modal de Calificación */}
+      {isArtist && (
+        <RatingModal
+          isOpen={isRatingOpen}
+          onClose={() => setIsRatingOpen(false)}
+          artistaId={profile.id}
+          artistaNombre={profile.full_name}
+          onRatingSuccess={() => setRatingsKey((prev) => prev + 1)}
+        />
+      )}
+
       {/* Back button */}
       <Link to="/explore" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-purple transition-colors">
         <ArrowLeft className="h-4 w-4" /> Volver a explorar
@@ -157,21 +172,33 @@ export function PublicProfile() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {isMe && (
                 <Link to="/settings">
                   <Button variant="secondary" size="sm">Editar perfil</Button>
                 </Link>
               )}
               {!isMe && currentUser?.role === "empresa" && isArtist && (
-                <Button
-                  size="sm"
-                  onClick={handleSendMessage}
-                  disabled={sendingMessage}
-                >
-                  <MessageCircle className="mr-1.5 h-4 w-4 inline" />
-                  {sendingMessage ? "Abriendo..." : "Enviar mensaje"}
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage}
+                  >
+                    <MessageCircle className="mr-1.5 h-4 w-4 inline" />
+                    {sendingMessage ? "Abriendo..." : "Enviar mensaje"}
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsRatingOpen(true)}
+                    className="border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                  >
+                    <Star className="mr-1.5 h-4 w-4 inline fill-amber-400 text-amber-400" />
+                    Calificar Artista
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -183,6 +210,26 @@ export function PublicProfile() {
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Sobre {isArtist ? "el artista" : "la empresa"}</h2>
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{profile.bio}</p>
+        </div>
+      )}
+
+      {/* ── CALIFICACIONES Y REPUTACIÓN (Solo Artista) ── */}
+      {isArtist && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400" /> Reputación y Reseñas
+            </h2>
+            {!isMe && currentUser?.role === "empresa" && (
+              <button
+                onClick={() => setIsRatingOpen(true)}
+                className="text-xs font-semibold text-amber-500 hover:underline flex items-center gap-1"
+              >
+                + Dejar calificación
+              </button>
+            )}
+          </div>
+          <RatingsList key={ratingsKey} artistId={profile.id} />
         </div>
       )}
 

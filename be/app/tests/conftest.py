@@ -11,7 +11,7 @@ Descripción: Fixtures compartidos para todos los tests del backend.
 
 import uuid
 from collections.abc import Generator
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -35,16 +35,16 @@ from app.utils.security import create_access_token, hash_password
 # ¿Impacto? Se usa la misma BD de desarrollo (nn_auth_db) pero las tablas se
 #           crean y destruyen en cada sesión de tests. En un proyecto más grande,
 #           se usaría una BD separada (nn_auth_test_db).
-TEST_DATABASE_URL = settings.DATABASE_URL
+from sqlalchemy.pool import StaticPool
 
-# ¿Qué? Engine de SQLAlchemy exclusivo para tests.
-# ¿Para qué? Crear conexiones independientes a la BD de testing.
-# ¿Impacto? Separar el engine de testing del de la app evita interferencias.
-test_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+TEST_DATABASE_URL = "sqlite:///./test_pytest.db"
 
-# ¿Qué? Fábrica de sesiones para tests.
-# ¿Para qué? Cada test obtiene una sesión de BD limpia y aislada.
-# ¿Impacto? autocommit=False y autoflush=False dan control total sobre las transacciones.
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
 TestSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -128,9 +128,11 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
+    app.state.limiter.enabled = False
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+    app.state.limiter.enabled = True
 
 
 # ────────────────────────────
@@ -141,9 +143,9 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 # ¿Para qué? Reutilizar los mismos datos en múltiples tests sin duplicación.
 # ¿Impacto? Centralizar datos de prueba facilita cambiarlos si los requisitos cambian.
 TEST_USER_EMAIL = "test@nn-company.com"
-TEST_USER_FULL_NAME = "Test User"
+TEST_USER_FULL_NAME = "TEST USER"
 TEST_USER_PASSWORD = "TestPass123"
-TEST_USER_BIRTH_DATE = "2003-01-01"
+TEST_USER_BIRTH_DATE = date(2003, 1, 1)
 TEST_USER_ARTISTIC_AREA = "Música"
 
 @pytest.fixture()
@@ -158,7 +160,9 @@ def test_user(db: Session) -> User:
     """
     user = User(
         email=TEST_USER_EMAIL,
-        full_name=TEST_USER_FULL_NAME,
+        first_name="TEST",
+        last_name="USER",
+        role="artista",
         birth_date=TEST_USER_BIRTH_DATE,
         artistic_area=TEST_USER_ARTISTIC_AREA,
         hashed_password=hash_password(TEST_USER_PASSWORD),

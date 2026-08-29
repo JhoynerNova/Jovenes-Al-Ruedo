@@ -42,7 +42,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "new@nn-company.com",
-                "full_name": "New User",
+                "first_name": "New",
+                "last_name": "User",
                 "birth_date": "2003-01-01",
                 "artistic_area": "Danza",
                 "password": "NewPass123",
@@ -52,7 +53,7 @@ class TestRegister:
         assert response.status_code == 201
         data = response.json()
         assert data["email"] == "new@nn-company.com"
-        assert data["full_name"] == "New User"
+        assert data["full_name"] == "NEW USER"
         assert data["is_active"] is True
         # ¿Qué? Verificar que la contraseña NUNCA se retorna en la respuesta.
         # ¿Para qué? Seguridad — el hash no debe exponerse al cliente.
@@ -76,7 +77,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": TEST_USER_EMAIL,
-                "full_name": "Duplicate User",
+                "first_name": "Duplicate",
+                "last_name": "User",
                 "birth_date": "2003-01-01",
                 "artistic_area": "Teatro",
                 "password": "TestPass123",
@@ -98,7 +100,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "weak@nn-company.com",
-                "full_name": "Weak User",
+                "first_name": "Weak",
+                "last_name": "User",
                 "password": "Ab1",
             },
         )
@@ -111,7 +114,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "weak@nn-company.com",
-                "full_name": "Weak User",
+                "first_name": "Weak",
+                "last_name": "User",
                 "password": "testpass123",
             },
         )
@@ -124,7 +128,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "weak@nn-company.com",
-                "full_name": "Weak User",
+                "first_name": "Weak",
+                "last_name": "User",
                 "password": "TESTPASS123",
             },
         )
@@ -137,7 +142,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "weak@nn-company.com",
-                "full_name": "Weak User",
+                "first_name": "Weak",
+                "last_name": "User",
                 "password": "TestPassword",
             },
         )
@@ -155,7 +161,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "not-an-email",
-                "full_name": "Bad Email",
+                "first_name": "Bad",
+                "last_name": "Email",
                 "password": "TestPass123",
             },
         )
@@ -168,7 +175,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "empty@nn-company.com",
-                "full_name": " ",
+                "first_name": " ",
+                "last_name": " ",
                 "password": "TestPass123",
             },
         )
@@ -186,7 +194,8 @@ class TestRegister:
             self.URL,
             json={
                 "email": "partial@nn-company.com",
-                "full_name": "Partial User",
+                "first_name": "Partial",
+                "last_name": "User",
             },
         )
 

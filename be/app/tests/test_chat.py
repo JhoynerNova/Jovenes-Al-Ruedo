@@ -18,7 +18,8 @@ def test_users(db: Session):
     artista = User(
         id=artista_id,
         email=f"artista_{artista_id.hex[:6]}@test.com",
-        full_name="Artista de Prueba",
+        first_name="Artista",
+        last_name="Prueba",
         role="artista",
         hashed_password="hashedpassword123",
         is_active=True
@@ -27,7 +28,8 @@ def test_users(db: Session):
     empresa = User(
         id=empresa_id,
         email=f"empresa_{empresa_id.hex[:6]}@test.com",
-        full_name="Empresa de Prueba",
+        first_name="Empresa",
+        last_name="Prueba",
         role="empresa",
         sector="Música",
         hashed_password="hashedpassword123",
@@ -56,7 +58,7 @@ def test_crear_conversacion_directa(client: TestClient, db: Session, test_users)
     assert response.status_code == 200
     data = response.json()
     assert data["tipo"] == "directo"
-    assert data["otro_usuario_nombre"] == "Artista de Prueba"
+    assert data["otro_usuario_nombre"] == "Artista Prueba"
 
 
 def test_enviar_y_recibir_mensaje(client: TestClient, db: Session, test_users):

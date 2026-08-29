@@ -6,6 +6,7 @@ import { usersApi } from "@/api/users";
 import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
 import type { UserResponse } from "@/types/auth";
 import { Button } from "@/components/ui/Button";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import {
   ExternalLink, Search, MapPin, Briefcase, Clock, Star, Users, Filter,
   ChevronDown, X, Palette, Building2, Sparkles, TrendingUp, Zap, Award
@@ -154,6 +155,7 @@ export function ExplorePage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
+      <Breadcrumbs items={[{ label: "Explorar Comunidad" }]} />
       {/* ── HERO ── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-teal p-6 text-white shadow-xl sm:p-10">
         <div className="pointer-events-none absolute -right-10 -top-10 h-60 w-60 rounded-full bg-white/10 blur-3xl" />

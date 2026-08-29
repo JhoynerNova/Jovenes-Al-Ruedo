@@ -1,0 +1,525 @@
+========================================================================
+TABLERO DE TRELLO COMPLETO - JÓVENES AL RUEDO (0% AL 100%) - TRES FASES
+========================================================================
+
+INSTRUCCIONES PARA COPIAR A TRELLO:
+----------------------------------
+1. Puedes crear las tarjetas rápidamente en Trello copiando la sección "TÍTULOS DE LAS TARJETAS (Copia y pega esto para crear todas de una vez)" y pegándola en el campo de "Añadir una tarjeta". Trello te preguntará si quieres crear 45 tarjetas individuales. Di que sí.
+2. Luego, entra a cada tarjeta en Trello y copia su Descripción, su Etiqueta y sus Tareas de Checklist correspondientes de este archivo.
+
+========================================================================
+TÍTULOS DE LAS TARJETAS (Copia y pega esto para crear todas de una vez)
+========================================================================
+[REQUISITOS] Documentación de Historias de Usuario y Casos de Uso
+[DISEÑO] Arquitectura de Software y Diagrama de Base de Datos
+[DISEÑO] Wireframes y Flujo de Navegación en Figma (Web)
+[DISEÑO] Wireframes Móviles para Artistas en Figma
+[BD] Contenedores Docker para Postgres y pgAdmin
+[BD] Configuración Inicial de SQLAlchemy y Alembic
+[BE] Modelo de Datos Base para Usuarios (users)
+[BE] Lógica de Autenticación y Criptografía
+[WEB] Inicialización de Proyecto React y Configuración de TailwindCSS
+[MÓVIL] Setup de Proyecto Expo y Navegación Base
+[BD] Refactor de Esquema: Nombres Separados en Mayúsculas
+[WEB] Maquetación de la Landing Page Adaptativa (Responsive)
+[WEB] Bloqueo de Acciones de Copiar/Pegar en Contraseñas
+[BE] Migración Inicial y Esquemas de PostgreSQL
+[BE] API de Registro de Usuarios (Artistas y Empresas)
+[BE] API de Login y Middleware de Autorización
+[MÓVIL] UI Premium de Autenticación (Expo)
+[WEB] Registro y Login en React con Tailwind CSS 4
+[MÓVIL] Integración de Registro y Login con API Local
+[BE] API de Portafolio y Carga de Archivos Multimedia
+[BE] API de Convocatorias y Sistema de Postulación
+[WEB] Vista de Portafolio Multimedia e Integración de Carga
+[WEB] Gestión y Postulación a Convocatorias
+[BE] WebSockets para Chat y Captura Global de Excepciones
+[WEB] Sala de Chat en Vivo y Notificaciones de Error
+[MÓVIL] UI de la Galería de Portafolio
+[MÓVIL] Integración de Picker y Subida de Archivos a la API
+[MÓVIL] UI de Ofertas Laborales y Detalle de Convocatoria
+[MÓVIL] Formulario de Postulación de Artista
+[MÓVIL] Bandeja de Entrada (Chats Activos) y Contador
+[MÓVIL] Conexión WebSocket y UI del Chat Individual
+[BD/BE] Campos de Paleta de Colores en BD y Migración
+[BE] API: Endpoint para Cambiar Paleta de Colores
+[WEB] UI: Selector de Paleta en Configuración de Usuario
+[WEB] CSS: Inyección de Temas Dinámicos en Componentes
+[BD/BE] [NUEVO] API: Tabla de Calificaciones y Migración Alembic
+[BE] [NUEVO] API: Endpoint POST para Calificar (Empresa a Artista)
+[BE] [NUEVO] API: Endpoints GET para Obtener Promedio y Reseñas
+[WEB] [NUEVO] UI: Modal de Calificación con Estrellas (Kanban/Chat)
+[WEB] [NUEVO] UI: Mostrar Calificación en ExplorePage y Perfil
+[MÓVIL] [NUEVO] UI: Visualización de Puntuación del Artista en App
+[BE] Integración de Envío de Email Real para Recuperación de Clave
+[QA] Pruebas Automatizadas y de Integración del Backend (PyTest)
+[DEVOPS] Despliegue del Backend y Frontend Web en Producción
+[DEVOPS] Compilación de la App Móvil (APK) y Manuales de Entrega
+
+========================================================================
+DETALLE DE CADA TARJETA (Para rellenar la información en Trello)
+========================================================================
+
+========================================================================
+FASE 1: Cimientos e Infraestructura (Del 0% al 50% - COMPLETADAS HISTÓRICAMENTE)
+========================================================================
+
+------------------------------------------------------------------------
+Tarjeta 1: [REQUISITOS] Documentación de Historias de Usuario y Casos de Uso
+------------------------------------------------------------------------
+Etiqueta: Planificación
+Descripción: Definir el alcance funcional de la plataforma y el comportamiento de los roles de usuario (Artista, Empresa, Administrador).
+Checklist (Tareas):
+- Documentar requerimientos del módulo de portafolio y convocatorias.
+- Estructurar el comportamiento esperado del chat interactivo y WebSockets.
+- Obtener aprobación del alcance del proyecto.
+
+------------------------------------------------------------------------
+Tarjeta 2: [DISEÑO] Arquitectura de Software y Diagrama de Base de Datos
+------------------------------------------------------------------------
+Etiqueta: Planificación
+Descripción: Diseñar el diagrama lógico de base de datos entidad-relación y seleccionar los patrones de arquitectura.
+Checklist (Tareas):
+- Elaborar el esquema inicial de base de datos en Postgres.
+- Definir la estrategia de autenticación y caducidad de tokens JWT.
+- Diseñar diagrama de flujo de datos del WebSocket.
+
+------------------------------------------------------------------------
+Tarjeta 3: [DISEÑO] Wireframes y Flujo de Navegación en Figma (Web)
+------------------------------------------------------------------------
+Etiqueta: Diseño
+Descripción: Diseñar las vistas web completas incluyendo la Landing Page y los Dashboards de Artistas y Empresas.
+Checklist (Tareas):
+- Crear mockup interactivo de la Landing Page en modo claro y oscuro.
+- Diseñar Dashboard de Artistas (portafolios) y Dashboard de Empresas (Kanban).
+- Diseñar la interfaz del chat interactivo.
+
+------------------------------------------------------------------------
+Tarjeta 4: [DISEÑO] Wireframes Móviles para Artistas en Figma
+------------------------------------------------------------------------
+Etiqueta: Diseño
+Descripción: Crear los wireframes adaptados a pantallas móviles para la aplicación del artista en React Native.
+Checklist (Tareas):
+- Diseñar vistas móviles de Login y Registro.
+- Diseñar visualización de ofertas laborales (convocatorias) en móviles.
+- Diseñar la interfaz del chat móvil y del portafolio personal.
+
+------------------------------------------------------------------------
+Tarjeta 5: [BD] Contenedores Docker para Postgres y pgAdmin
+------------------------------------------------------------------------
+Etiqueta: Base de Datos
+Descripción: Configurar y levantar el entorno local multi-contenedor utilizando Docker Compose.
+Checklist (Tareas):
+- Crear archivos Dockerfile optimizados para backend y frontend.
+- Crear docker-compose.yml con servicios Postgres 17, Backend, Frontend y pgAdmin.
+- Asegurar persistencia de datos mediante volúmenes locales.
+
+------------------------------------------------------------------------
+Tarjeta 6: [BD] Configuración Inicial de SQLAlchemy y Alembic
+------------------------------------------------------------------------
+Etiqueta: Base de Datos
+Descripción: Configurar el ORM de SQLAlchemy para conectarse a PostgreSQL e inicializar Alembic para migraciones.
+Checklist (Tareas):
+- Crear clase base de SQLAlchemy y función de conexión a la BD.
+- Inicializar entorno de Alembic mediante comando alembic init.
+- Configurar env.py de Alembic para enlazar los modelos relacionales del backend.
+
+------------------------------------------------------------------------
+Tarjeta 7: [BE] Modelo de Datos Base para Usuarios (users)
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Crear el modelo relacional User en la API del backend.
+Checklist (Tareas):
+- Escribir clase User en SQLAlchemy con atributos email, contraseñas hash, rol e is_active.
+- Configurar índices de búsqueda rápida por correo electrónico.
+- Generar script de base para la tabla users.
+
+------------------------------------------------------------------------
+Tarjeta 8: [BE] Lógica de Autenticación y Criptografía
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Implementar encriptación segura y generación/verificación de JSON Web Tokens (JWT).
+Checklist (Tareas):
+- Integrar passlib con bcrypt para el hashing de contraseñas de usuarios.
+- Implementar utilitarios para firmar tokens JWT usando python-jose.
+- Escribir middleware get_current_user para autenticación de rutas protegidas.
+
+------------------------------------------------------------------------
+Tarjeta 9: [WEB] Inicialización de Proyecto React y Configuración de TailwindCSS
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Estructurar la app de React en el frontend con TypeScript y configurar el diseño de Tailwind.
+Checklist (Tareas):
+- Crear proyecto React usando Vite y configurar TypeScript.
+- Configurar TailwindCSS instalando fuentes y colores personalizados.
+- Instalar React Router para la navegación entre páginas.
+
+------------------------------------------------------------------------
+Tarjeta 10: [MÓVIL] Setup de Proyecto Expo y Navegación Base
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Configurar el entorno de Expo CLI para la aplicación móvil de artistas.
+Checklist (Tareas):
+- Crear aplicación Expo con TypeScript.
+- Configurar el enrutador principal (Bottom Tabs) usando React Navigation.
+- Integrar la biblioteca de iconos Lucide React Native.
+
+------------------------------------------------------------------------
+Tarjeta 11: [BD] Refactor de Esquema: Nombres Separados en Mayúsculas
+------------------------------------------------------------------------
+Etiqueta: Base de Datos
+Descripción: Modificar estructura de base de datos para almacenar first_name y last_name en mayúsculas sostenidas.
+Checklist (Tareas):
+- Cambiar columna full_name por columnas first_name y last_name en la BD.
+- Escribir migración de Alembic para actualizar la base de datos sin pérdida de registros.
+- Implementar validación en auth_service del backend para aplicar .upper() a los nombres al registrarse.
+
+------------------------------------------------------------------------
+Tarjeta 12: [WEB] Maquetación de la Landing Page Adaptativa (Responsive)
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Crear la interfaz visual de la Landing Page de la plataforma Jóvenes al Ruedo con soporte de Dark Mode.
+Checklist (Tareas):
+- Diseñar secciones interactivas adaptables a móviles, tablets y PCs.
+- Programar paleta de colores artísticos por defecto para el sitio público.
+- Configurar transiciones suaves y alternado dinámico de Dark Mode.
+
+------------------------------------------------------------------------
+Tarjeta 13: [WEB] Bloqueo de Acciones de Copiar/Pegar en Contraseñas
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Desactivar los eventos del portapapeles en los inputs de contraseñas para aumentar la seguridad de la app.
+Checklist (Tareas):
+- Prevenir eventos onPaste, onCopy y onCut en el componente InputField cuando type="password".
+- Verificar que el bloqueo funcione en todos los navegadores principales.
+
+========================================================================
+FASE 2: Desarrollo Intermedio (Del 50% al 80% - LAS 12 TARJETAS QUE YA TIENES EN "TERMINADO")
+========================================================================
+
+------------------------------------------------------------------------
+Tarjeta 14: [BE] Migración Inicial y Esquemas de PostgreSQL
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Sincronizar el esquema de PostgreSQL en Docker con los modelos relacionales de SQLAlchemy.
+Checklist (Tareas):
+- Levantar contenedores de Docker con docker-compose up -d.
+- Generar migración inicial utilizando Alembic: alembic revision --autogenerate -m "init".
+- Ejecutar migración: alembic upgrade head.
+- Verificar conexión a base de datos corriendo el script de prueba check_db.py.
+
+------------------------------------------------------------------------
+Tarjeta 15: [BE] API de Registro de Usuarios (Artistas y Empresas)
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Crear el endpoint /api/v1/auth/register con validaciones de negocio e integridad de datos.
+Checklist (Tareas):
+- Crear el schema Pydantic para validar los datos de entrada (email, password, edad).
+- Implementar validación lógica de edad (estrictamente entre 18 y 28 años para artistas).
+- Encriptar contraseñas utilizando passlib[bcrypt] antes de persistir.
+- Retornar código HTTP 201 Created y manejar excepciones 400 Bad Request en caso de correos duplicados.
+
+------------------------------------------------------------------------
+Tarjeta 16: [BE] API de Login y Middleware de Autorización
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Implementar el endpoint /api/v1/auth/login y el sistema de autenticación basado en JWT.
+Checklist (Tareas):
+- Validar credenciales de usuario contra los hashes de la base de datos.
+- Implementar la generación del token JWT usando python-jose con una expiración de 60 minutos.
+- Crear middleware o dependencia get_current_user para proteger rutas autenticadas.
+
+------------------------------------------------------------------------
+Tarjeta 17: [MÓVIL] UI Premium de Autenticación (Expo)
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Diseñar e implementar las interfaces visuales de Registro y Login en la aplicación móvil con React Native.
+Checklist (Tareas):
+- Crear la pantalla de login con campos de entrada (email, password) y animaciones sutiles.
+- Diseñar el formulario de registro dinámico (con DatePicker para control de edad de 18-28 años).
+- Implementar la navegación entre ambas pantallas usando React Navigation o Expo Router.
+
+------------------------------------------------------------------------
+Tarjeta 18: [WEB] Registro y Login en React con Tailwind CSS 4
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Crear el flujo visual de autenticación para la plataforma web conectado con la API de FastAPI.
+Checklist (Tareas):
+- Crear formularios dinámicos con validaciones de campos (regex de correo, fortaleza de contraseña).
+- Configurar Axios con interceptores para adjuntar el JWT token en las cabeceras.
+- Desarrollar notificaciones visuales (Toasts/Alertas) para indicar registro exitoso o errores del servidor.
+
+------------------------------------------------------------------------
+Tarjeta 19: [MÓVIL] Integración de Registro y Login con API Local
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Conectar las pantallas móviles de React Native al backend local de FastAPI.
+Checklist (Tareas):
+- Configurar la URL base de Axios apuntando a la IP local de la red (no usar localhost para móviles).
+- Guardar de forma segura el token JWT recibido en el dispositivo utilizando expo-secure-store.
+- Redirigir automáticamente al usuario al Dashboard una vez logueado.
+
+------------------------------------------------------------------------
+Tarjeta 20: [BE] API de Portafolio y Carga de Archivos Multimedia
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Desarrollar los endpoints para que los artistas suban fotos, música, videos y PDFs a su portafolio.
+Checklist (Tareas):
+- Crear el modelo Portfolio y PortfolioItem en la base de datos.
+- Implementar el endpoint POST /api/v1/upload con soporte multipart/form-data.
+- Configurar validación de tamaño máximo de archivos (ej: Videos max 50MB, Audios max 15MB).
+- Implementar almacenamiento local de archivos en la carpeta /uploads con rutas seguras.
+
+------------------------------------------------------------------------
+Tarjeta 21: [BE] API de Convocatorias y Sistema de Postulación
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Crear la lógica para que las empresas publiquen ofertas y los artistas apliquen con un botón.
+Checklist (Tareas):
+- Crear endpoints de CRUD para Convocatorias (GET, POST, PUT, DELETE).
+- Desarrollar endpoint de Postulación rápida (POST /api/v1/convocatorias/{id}/postularse).
+- Implementar middleware de restricción para que solo empresas publiquen convocatorias.
+
+------------------------------------------------------------------------
+Tarjeta 22: [WEB] Vista de Portafolio Multimedia e Integración de Carga
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Diseñar la interfaz interactiva del portafolio del artista y conectar la carga de archivos.
+Checklist (Tareas):
+- Diseñar el Grid visual del portafolio (carrusel de imágenes, reproductor de audio y visor de PDF).
+- Conectar el formulario de carga con el endpoint POST /api/v1/upload usando Axios.
+- Añadir barras de progreso de carga y estados de carga (spinners).
+
+------------------------------------------------------------------------
+Tarjeta 23: [WEB] Gestión y Postulación a Convocatorias
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Crear el panel para que las empresas gestionen sus ofertas y los artistas se postulen.
+Checklist (Tareas):
+- Diseñar el buscador con filtros interactivos por área artística y presupuesto.
+- Implementar el botón de postulación interactivo y cambio de estado visual a "Postulado".
+- Crear el panel tipo Kanban para que las empresas califiquen las postulaciones recibidas.
+
+------------------------------------------------------------------------
+Tarjeta 24: [BE] WebSockets para Chat y Captura Global de Excepciones
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Configurar mensajería directa en tiempo real y asegurar la estabilidad de la API.
+Checklist (Tareas):
+- Implementar conexión mediante WebSockets en FastAPI para comunicación bidireccional.
+- Crear middleware de excepciones para capturar errores internos del servidor y retornar códigos HTTP estandarizados.
+- Desarrollar pruebas unitarias en pytest para el flujo de chat y mensajería.
+
+------------------------------------------------------------------------
+Tarjeta 25: [WEB] Sala de Chat en Vivo y Notificaciones de Error
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Crear la interfaz de mensajería directa y notificaciones globales para el usuario ante fallos de red.
+Checklist (Tareas):
+- Crear la sala de chat en tiempo real utilizando la conexión de WebSockets.
+- Integrar toasts dinámicos y modales de error elegantes con animaciones sutiles.
+- Validar flujos de navegación seguros y flujos offline elementales en la app móvil.
+
+========================================================================
+FASE 3: Pulido y Cierre (Del 80% al 100% - PENDIENTES POR PROGRAMAR)
+========================================================================
+
+------------------------------------------------------------------------
+Tarjeta 26: [MÓVIL] UI de la Galería de Portafolio
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Diseñar el Grid y la interfaz visual del portafolio del artista dentro de la app móvil.
+Checklist (Tareas):
+- Crear componente Grid responsive en React Native para mostrar imágenes y PDFs.
+- Diseñar el reproductor de audio móvil integrado para audios de portafolio.
+- Añadir botones y estados interactivos para eliminar piezas del portafolio.
+
+------------------------------------------------------------------------
+Tarjeta 27: [MÓVIL] Integración de Picker y Subida de Archivos a la API
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Conectar la cámara y archivos locales del celular para subir contenido al portafolio mediante la API.
+Checklist (Tareas):
+- Implementar librería expo-image-picker para capturas y selección de fotos/videos.
+- Configurar expo-document-picker para subir archivos PDF.
+- Programar la petición HTTP POST utilizando FormData y Axios.
+
+------------------------------------------------------------------------
+Tarjeta 28: [MÓVIL] UI de Ofertas Laborales y Detalle de Convocatoria
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Desarrollar la lista de convocatorias activas y su vista detallada en la aplicación móvil.
+Checklist (Tareas):
+- Maquetar lista de convocatorias usando FlatList para renderizado eficiente.
+- Implementar filtros interactivos por tags de área artística en la barra de búsqueda.
+- Diseñar la pantalla de detalles con descripción, requisitos y datos de la empresa emisora.
+
+------------------------------------------------------------------------
+Tarjeta 29: [MÓVIL] Formulario de Postulación de Artista
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Implementar el flujo para que un artista aplique a una convocatoria desde su dispositivo móvil.
+Checklist (Tareas):
+- Desarrollar modal interactivo con campo de texto para la carta de presentación.
+- Conectar formulario al endpoint de postulación (POST /api/v1/convocatorias/postularse).
+- Añadir animaciones de éxito al completar el envío.
+
+------------------------------------------------------------------------
+Tarjeta 30: [MÓVIL] Bandeja de Entrada (Chats Activos) y Contador
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Diseñar la pantalla con las conversaciones activas del artista y contar mensajes sin leer.
+Checklist (Tareas):
+- Listar los chats activos mostrando el avatar de la empresa y el último mensaje enviado.
+- Desarrollar la lógica para mostrar el círculo rojo de notificación de mensajes no leídos.
+- Conectar la pantalla al endpoint del historial de chats.
+
+------------------------------------------------------------------------
+Tarjeta 31: [MÓVIL] Conexión WebSocket y UI del Chat Individual
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Integrar la conexión por WebSocket en el móvil para mensajería directa interactiva en tiempo real.
+Checklist (Tareas):
+- Crear la pantalla de conversación individual con burbujas de mensaje adaptadas (izquierda/derecha).
+- Conectar el cliente WebSocket de React Native a la dirección del servidor local.
+- Asegurar persistencia temporal para evitar pérdidas de mensajes por micro-cortes de red.
+
+------------------------------------------------------------------------
+Tarjeta 32: [BD/BE] Campos de Paleta de Colores en BD y Migración
+------------------------------------------------------------------------
+Etiqueta: Base de Datos
+Descripción: Añadir soporte en la base de datos para almacenar la preferencia de paleta de colores del usuario.
+Checklist (Tareas):
+- Agregar columna color_palette al modelo SQLAlchemy de la tabla users.
+- Crear script de migración con Alembic y actualizar base de datos localmente.
+- Configurar la paleta automática por defecto según la disciplina artística en el registro.
+
+------------------------------------------------------------------------
+Tarjeta 33: [BE] API: Endpoint para Cambiar Paleta de Colores
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Desarrollar el servicio en el backend para cambiar y consultar la paleta del usuario.
+Checklist (Tareas):
+- Crear endpoint PATCH /api/v1/users/palette para guardar el color elegido.
+- Validar que el color sea parte de las paletas predefinidas de la plataforma.
+- Añadir el campo de paleta en la respuesta de autenticación y consulta de perfil.
+
+------------------------------------------------------------------------
+Tarjeta 34: [WEB] UI: Selector de Paleta en Configuración de Usuario
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Crear la sección en "Ajustes de Perfil" para que el usuario elija su propia paleta de colores.
+Checklist (Tareas):
+- Diseñar la cuadrícula de previsualización de colores con muestras visuales (cálida, fría, vibrante, etc.).
+- Conectar el selector con el endpoint PATCH /api/v1/users/palette.
+- Añadir confirmaciones visuales de cambio guardado en la configuración.
+
+------------------------------------------------------------------------
+Tarjeta 35: [WEB] CSS: Inyección de Temas Dinámicos en Componentes
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Configurar las variables CSS del frontend para pintar componentes clave según la paleta guardada.
+Checklist (Tareas):
+- Crear script utilitario para inyectar variables de Tailwind en el nodo raíz :root.
+- Reemplazar clases duras de Tailwind por clases de variables CSS dinámicas.
+- Verificar que el tema persista tras recargar la página.
+
+------------------------------------------------------------------------
+Tarjeta 36: [BD/BE] [NUEVO] API: Tabla de Calificaciones y Migración Alembic
+------------------------------------------------------------------------
+Etiqueta: Base de Datos
+Descripción: Estructurar la base de datos para la nueva funcionalidad de valoraciones de artistas.
+Checklist (Tareas):
+- Crear la clase ORM Calificacion en el backend vinculando ID de artista, empresa, estrellas (1-5) y reseña.
+- Generar y correr la migración de Alembic para crear la tabla calificaciones.
+- Definir relaciones en el modelo User para acceder a calificaciones recibidas.
+
+------------------------------------------------------------------------
+Tarjeta 37: [BE] [NUEVO] API: Endpoint POST para Calificar (Empresa a Artista)
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Crear el endpoint de envío de valoraciones asegurando restricciones lógicas de negocio.
+Checklist (Tareas):
+- Desarrollar endpoint POST /api/v1/ratings con validación de rol "empresa".
+- Validar rango de puntuación estricto del 1 al 5.
+- Evitar que una empresa califique múltiples veces al mismo artista sin un contrato/convocatoria activa.
+
+------------------------------------------------------------------------
+Tarjeta 38: [BE] [NUEVO] API: Endpoints GET para Obtener Promedio y Reseñas
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Crear los endpoints para consultar opiniones y estadísticas de calificaciones de un artista.
+Checklist (Tareas):
+- Crear endpoint GET /api/v1/ratings/artist/{id} para listar las opiniones de empresas.
+- Desarrollar endpoint para retornar el promedio de estrellas redondeado a un decimal.
+- Optimizar la consulta SQL para evitar el problema de consultas N+1 en listados.
+
+------------------------------------------------------------------------
+Tarjeta 39: [WEB] [NUEVO] UI: Modal de Calificación con Estrellas (Kanban/Chat)
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Implementar el formulario interactivo en web para que las empresas califiquen a los artistas.
+Checklist (Tareas):
+- Diseñar el modal interactivo con selección hover de 5 estrellas doradas y campo de texto.
+- Integrar la apertura del modal en el Kanban al mover un candidato a la columna "Seleccionado".
+- Habilitar botón para calificar desde el Chat al dar por terminadas las conversaciones.
+
+------------------------------------------------------------------------
+Tarjeta 40: [WEB] [NUEVO] UI: Mostrar Calificación en ExplorePage y Perfil
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Reflejar la reputación del artista en su perfil público y en los buscadores.
+Checklist (Tareas):
+- Mostrar el promedio de estrellas al lado del nombre del artista en las tarjetas del buscador.
+- Diseñar la sección de "Opiniones" en el perfil público del artista con comentarios de las empresas.
+- Implementar la visualización del desglose de calificaciones (porcentaje de 5 estrellas, 4 estrellas, etc.).
+
+------------------------------------------------------------------------
+Tarjeta 41: [MÓVIL] [NUEVO] UI: Visualización de Puntuación del Artista en App
+------------------------------------------------------------------------
+Etiqueta: Frontend/Móvil (Azul)
+Descripción: Mostrar la reputación del artista en la interfaz móvil.
+Checklist (Tareas):
+- Mostrar las estrellas promedio en el perfil del artista en la aplicación móvil.
+- Implementar listado simple de comentarios recibidos por el artista en la pestaña de detalles de la app.
+
+------------------------------------------------------------------------
+Tarjeta 42: [BE] Integración de Envío de Email Real para Recuperación de Clave
+------------------------------------------------------------------------
+Etiqueta: Backend (Morado)
+Descripción: Implementar el envío de correos real utilizando SMTP para el olvido de contraseñas.
+Checklist (Tareas):
+- Configurar variables SMTP (servidor, puerto, credenciales de correo).
+- Implementar módulo email_service.py para envío asíncrono.
+- Configurar plantilla HTML elegante con enlace y token dinámico de reset de clave.
+
+------------------------------------------------------------------------
+Tarjeta 43: [QA] Pruebas Automatizadas y de Integración del Backend (PyTest)
+------------------------------------------------------------------------
+Etiqueta: DevOps (Verde)
+Descripción: Programar e integrar pruebas de código automáticas para la lógica de negocio.
+Checklist (Tareas):
+- Escribir tests unitarios en PyTest para endpoints de autenticación, convocatorias y calificaciones.
+- Configurar entorno de base de datos de test temporal.
+- Validar control de excepciones generales.
+
+------------------------------------------------------------------------
+Tarjeta 44: [DEVOPS] Despliegue del Backend y Frontend Web en Producción
+------------------------------------------------------------------------
+Etiqueta: DevOps (Verde)
+Descripción: Alojar la plataforma web y la API en internet de forma segura.
+Checklist (Tareas):
+- Configurar dominios y SSL (HTTPS) con CORS estrictos y protección HSTS.
+- Desplegar la API FastAPI y la base de datos PostgreSQL en servidores en la nube.
+- Compilar el bundle de producción del frontend de React con Vite y alojarlo.
+
+------------------------------------------------------------------------
+Tarjeta 45: [DEVOPS] Compilación de la App Móvil (APK) y Manuales de Entrega
+------------------------------------------------------------------------
+Etiqueta: DevOps (Verde)
+Descripción: Generar los entregables finales del software y la documentación.
+Checklist (Tareas):
+- Compilar la aplicación móvil y generar el archivo APK instalable para Android.
+- Redactar manual de instalación, manual de usuario y documentación técnica (README.md).
+- Subir el repositorio ordenado a GitHub.
+========================================================================

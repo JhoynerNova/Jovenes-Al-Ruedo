@@ -1,18 +1,16 @@
-/**
- * Archivo: components/layout/Breadcrumbs.tsx
- * Descripción: Migas de pan (breadcrumbs) que muestran la ruta de navegación actual.
- * ¿Para qué? Dar contexto de "dónde estoy" dentro de la app y permitir volver a un
- *           nivel anterior con un clic, sin depender del botón "atrás" del navegador.
- * ¿Impacto? Mejora la usabilidad — regla de UX de que el usuario nunca debe sentirse
- *           perdido dentro de la aplicación.
- */
+import React from 'react';
+import { Home, ChevronRight } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
-import { Link, useLocation } from "react-router-dom";
-import { ChevronRight, Home } from "lucide-react";
+export interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
 
-// ¿Qué? Etiquetas legibles para cada segmento de ruta conocido.
-// ¿Para qué? Traducir el path técnico ("change-password") a un texto claro para el usuario.
-// ¿Impacto? Un segmento sin entrada aquí se muestra tal cual (capitalizado) como fallback.
+interface BreadcrumbsProps {
+  items?: BreadcrumbItem[];
+}
+
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: "Inicio",
   "change-password": "Cambiar contraseña",
@@ -26,19 +24,38 @@ function labelFor(segment: string): string {
   return SEGMENT_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
-/**
- * ¿Qué? Genera las migas de pan a partir del pathname actual.
- * ¿Para qué? Cada segmento de la URL se vuelve un nivel navegable, salvo el último
- *           (la página actual), que se muestra como texto plano sin enlace.
- * ¿Impacto? En rutas de un solo nivel (ej: /dashboard) no se renderiza nada —
- *           las migas solo aportan valor cuando hay más de un nivel de profundidad.
- */
-export function Breadcrumbs() {
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
   const location = useLocation();
-  const segments = location.pathname.split("/").filter(Boolean);
 
-  // ¿Qué? En el dashboard (la home autenticada) no hay nada que "romper en migas".
-  // ¿Para qué? Evitar un breadcrumb redundante ("Inicio > Inicio") en la página raíz.
+  if (items && items.length > 0) {
+    return (
+      <nav aria-label="Ruta de navegación" className="flex items-center gap-2 text-xs font-medium text-slate-400 py-3 px-4 bg-slate-900/60 border border-slate-800/80 rounded-xl mb-6 backdrop-blur-sm">
+        <Link to="/" className="flex items-center gap-1 hover:text-emerald-400 transition-colors">
+          <Home className="w-3.5 h-3.5" />
+          <span>Inicio</span>
+        </Link>
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          return (
+            <React.Fragment key={index}>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              {item.path && !isLast ? (
+                <Link to={item.path} className="hover:text-emerald-400 transition-colors">
+                  {item.label}
+                </Link>
+              ) : (
+                <span className={isLast ? 'text-emerald-400 font-semibold' : 'text-slate-400'}>
+                  {item.label}
+                </span>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </nav>
+    );
+  }
+
+  const segments = location.pathname.split("/").filter(Boolean);
   if (segments.length === 0 || (segments.length === 1 && segments[0] === "dashboard")) {
     return null;
   }
@@ -69,4 +86,4 @@ export function Breadcrumbs() {
       })}
     </nav>
   );
-}
+};

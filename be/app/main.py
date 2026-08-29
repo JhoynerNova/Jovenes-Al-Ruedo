@@ -28,6 +28,8 @@ from app.routers.convocatorias import router as convocatorias_router
 from app.routers.portafolio import router as portafolio_router
 from app.routers.upload import router as upload_router
 from app.routers.chat import router as chat_router
+from app.routers.ratings import router as ratings_router
+from app.routers.reports import router as reports_router
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -60,6 +62,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # --- Startup ---
     logger.info("Jóvenes al Ruedo — Backend iniciando...")
     logger.info(f"CORS habilitado para: {settings.FRONTEND_URL}")
+    from app.database import Base, engine
+    import app.models  # Importar todos los modelos
+    Base.metadata.create_all(bind=engine)
     yield
     # --- Shutdown ---
     logger.info("Jóvenes al Ruedo — Backend cerrando...")
@@ -124,7 +129,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ¿Impacto? OWASP A05 — solo acepta peticiones con hosts conocidos y seguros.
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.jovenes-al-ruedo.com"],
+    allowed_hosts=["localhost", "127.0.0.1", "testserver", "*.jovenes-al-ruedo.com"],
 )
 
 # ¿Qué? Middleware CORS (Cross-Origin Resource Sharing).
@@ -187,6 +192,8 @@ app.include_router(convocatorias_router)
 app.include_router(portafolio_router)
 app.include_router(upload_router)
 app.include_router(chat_router)
+app.include_router(ratings_router)
+app.include_router(reports_router)
 
 # Mount static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
