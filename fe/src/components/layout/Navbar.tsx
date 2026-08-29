@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import logo from "@/assets/logo.png";
 
 /**
@@ -82,6 +83,8 @@ export function Navbar() {
 
           {isAuthenticated && user && (
             <>
+              <NotificationBell />
+
               {/* ¿Qué? Nombre del usuario autenticado. */}
               <span className="hidden text-sm text-purple-200 sm:block">
                 {user.full_name}

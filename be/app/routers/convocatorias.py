@@ -13,6 +13,7 @@ from app.dependencies import get_current_user, get_db, require_admin
 from app.models.conv import Conv, Inscripcion
 from app.models.user import User
 from app.schemas.conv import ConvCreate, ConvResponse, InscripcionResponse, InscripcionCreate, InscripcionUpdateStatus
+from app.services import notification_service
 
 router = APIRouter(prefix="/api/v1/convocatorias", tags=["convocatorias"])
 
@@ -269,6 +270,20 @@ def apply_to_convocatoria(
     db.add(insc)
     db.commit()
     db.refresh(insc)
+
+    try:
+        empresa_uuid = uuid.UUID(str(conv.id_usr))
+        notification_service.create_notification(
+            db,
+            id_usr=empresa_uuid,
+            titulo="Nueva postulación recibida",
+            mensaje=f"{current_user.full_name} se ha postulado a tu convocatoria '{conv.nombre}'",
+            tipo="postulacion",
+            enlace="/dashboard"
+        )
+    except Exception:
+        pass
+
     return {"message": "Postulación registrada", "id_i": insc.id_i}
 
 
@@ -349,6 +364,19 @@ def update_application_status(
         
     insc.estado = body.estado
     db.commit()
+
+    try:
+        artista_uuid = uuid.UUID(str(insc.id_usr))
+        notification_service.create_notification(
+            db,
+            id_usr=artista_uuid,
+            titulo=f"Postulación {body.estado}",
+            mensaje=f"Tu postulación a la convocatoria '{conv.nombre}' ha sido actualizada a '{body.estado}'",
+            tipo="postulacion",
+            enlace="/dashboard"
+        )
+    except Exception:
+        pass
 
     # Si se acepta la postulación, crear conversación automáticamente
     if body.estado == "Aceptada":

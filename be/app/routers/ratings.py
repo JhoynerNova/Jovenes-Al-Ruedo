@@ -78,6 +78,20 @@ def create_rating(
 
     out = CalificacionOut.model_validate(calificacion)
     out.empresa_nombre = current_user.full_name
+
+    try:
+        from app.services import notification_service
+        notification_service.create_notification(
+            db,
+            id_usr=artista.id,
+            titulo="Nueva reseña recibida",
+            mensaje=f"{current_user.full_name} te ha calificado con {data.puntuacion} ⭐",
+            tipo="calificacion",
+            enlace=f"/perfil/{str(artista.id)}"
+        )
+    except Exception:
+        pass
+
     return out
 
 

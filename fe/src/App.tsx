@@ -50,6 +50,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { Chat } from "@/pages/Chat";
 import { PublicProfile } from "@/pages/PublicProfile";
 import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
 
 /**
  * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
@@ -92,6 +93,7 @@ function App() {
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/mensajes" element={<Chat />} />
+                <Route path="/notificaciones" element={<NotificationsPage />} />
               </Route>
 
               {/* Ruta raíz */}

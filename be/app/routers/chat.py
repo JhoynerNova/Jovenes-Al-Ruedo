@@ -244,6 +244,21 @@ def enviar_mensaje(
     db.add(nuevo_mensaje)
     db.commit()
     db.refresh(nuevo_mensaje)
+
+    try:
+        destinatario_id = conv.artista_id if str(conv.empresa_id) == user_id_str else conv.empresa_id
+        from app.services import notification_service
+        notification_service.create_notification(
+            db,
+            id_usr=destinatario_id,
+            titulo=f"Nuevo mensaje de {current_user.full_name}",
+            mensaje=body.contenido[:150],
+            tipo="mensaje",
+            enlace="/mensajes"
+        )
+    except Exception:
+        pass
+
     return nuevo_mensaje
 
 
