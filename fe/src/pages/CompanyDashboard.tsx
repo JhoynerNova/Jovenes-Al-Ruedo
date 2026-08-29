@@ -545,7 +545,7 @@ export function CompanyDashboard() {
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-850 space-y-1.5">
                             <div className="flex gap-1.5">
                               <button
-                                onClick={() => setRatingTarget({ id: a.id_usr, name: a.artista_nombre, convId: a.id_conv })}
+                                onClick={() => setRatingTarget({ id: a.id_usr, name: a.artista_nombre, convId: conv.id_conv })}
                                 className="flex-1 text-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 py-1 font-bold hover:bg-amber-500/20 text-[10px] flex items-center justify-center gap-1"
                               >
                                 <Star className="h-3 w-3" /> Calificar ⭐

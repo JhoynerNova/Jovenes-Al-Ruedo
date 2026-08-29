@@ -46,7 +46,10 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al enviar la calificación.');
+      const msg = typeof err.response?.data === 'string'
+        ? err.response.data
+        : err.response?.data?.detail || err.message || 'Error al enviar la calificación.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

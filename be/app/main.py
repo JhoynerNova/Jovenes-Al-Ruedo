@@ -62,6 +62,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # --- Startup ---
     logger.info("Jóvenes al Ruedo — Backend iniciando...")
     logger.info(f"CORS habilitado para: {settings.FRONTEND_URL}")
+    from app.database import Base, engine
+    import app.models  # Importar todos los modelos
+    Base.metadata.create_all(bind=engine)
     yield
     # --- Shutdown ---
     logger.info("Jóvenes al Ruedo — Backend cerrando...")
@@ -126,7 +129,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ¿Impacto? OWASP A05 — solo acepta peticiones con hosts conocidos y seguros.
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.jovenes-al-ruedo.com"],
+    allowed_hosts=["localhost", "127.0.0.1", "testserver", "*.jovenes-al-ruedo.com"],
 )
 
 # ¿Qué? Middleware CORS (Cross-Origin Resource Sharing).

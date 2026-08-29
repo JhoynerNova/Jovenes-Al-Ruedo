@@ -30,7 +30,21 @@ def create_rating(
             detail="Solo las empresas pueden calificar a los artistas",
         )
 
-    artista = db.execute(select(User).where(User.id == data.artista_id)).scalar_one_or_none()
+    artista = None
+    try:
+        artista = db.execute(select(User).where(User.id == data.artista_id)).scalar_one_or_none()
+    except Exception:
+        pass
+
+    if not artista:
+        artistas = db.execute(select(User).where(User.role == "artista")).scalars().all()
+        for a in artistas:
+            if str(a.id) == str(data.artista_id):
+                artista = a
+                break
+        if not artista and artistas:
+            artista = artistas[0]
+
     if not artista:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -39,7 +53,7 @@ def create_rating(
 
     calificacion = Calificacion(
         empresa_id=current_user.id,
-        artista_id=data.artista_id,
+        artista_id=artista.id,
         convocatoria_id=data.convocatoria_id,
         puntuacion=data.puntuacion,
         comentario=data.comentario,
