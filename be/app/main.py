@@ -143,7 +143,7 @@ app.add_middleware(
 #           peticiones autenticadas contra la API — riesgo crítico de CSRF/robo de datos).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
     allow_headers=["*"],  # Permitir todos los headers (incluyendo Authorization)

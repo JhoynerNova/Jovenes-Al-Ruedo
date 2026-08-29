@@ -8,6 +8,7 @@ import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, M
 import { Button } from "@/components/ui/Button";
 import { RatingModal } from "@/components/RatingModal";
 import { RatingsList } from "@/components/RatingsList";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 interface PortfolioItem {
   id_det_p: number;
@@ -127,10 +128,7 @@ export function PublicProfile() {
         />
       )}
 
-      {/* Back button */}
-      <Link to="/explore" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-purple transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Volver a explorar
-      </Link>
+      <Breadcrumbs items={[{ label: "Explorar", path: "/explore" }, { label: profile?.full_name || "Perfil de Artista" }]} />
 
       {/* ── HERO / COVER ── */}
       <div className="relative overflow-hidden rounded-2xl shadow-lg">
