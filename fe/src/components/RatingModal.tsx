@@ -32,13 +32,15 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    console.log('[RatingModal v2] Enviando calificación a /api/v1/ratings para artista:', artistaId);
     try {
-      await axios.post('/api/v1/ratings', {
+      const response = await axios.post('/api/v1/ratings', {
         artista_id: artistaId,
         convocatoria_id: convocatoriaId,
         puntuacion,
         comentario: comentario.trim() || undefined,
       });
+      console.log('[RatingModal v2] Respuesta exitosa:', response.status, response.data);
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
@@ -46,17 +48,24 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
+      console.error('[RatingModal v2] Error completo:', err);
+      console.error('[RatingModal v2] URL solicitada:', err.config?.url);
+      console.error('[RatingModal v2] Status:', err.response?.status);
+      console.error('[RatingModal v2] Data:', err.response?.data);
       let msg = 'Error al enviar la calificación.';
+      if (err.response?.status) {
+        msg = `Error ${err.response.status}: `;
+      }
       if (err.response?.data?.detail) {
         if (Array.isArray(err.response.data.detail)) {
-          msg = err.response.data.detail.map((d: any) => d.msg || d.detail || String(d)).join('. ');
+          msg += err.response.data.detail.map((d: any) => d.msg || d.detail || String(d)).join('. ');
         } else if (typeof err.response.data.detail === 'string') {
-          msg = err.response.data.detail;
+          msg += err.response.data.detail;
         }
       } else if (typeof err.response?.data === 'string') {
-        msg = err.response.data;
+        msg += err.response.data;
       } else if (err.message) {
-        msg = err.message;
+        msg += err.message;
       }
       setError(msg);
     } finally {
