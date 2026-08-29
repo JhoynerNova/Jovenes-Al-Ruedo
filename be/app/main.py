@@ -31,6 +31,7 @@ from app.routers.chat import router as chat_router
 from app.routers.ratings import router as ratings_router
 from app.routers.reports import router as reports_router
 from app.routers.notificaciones import router as notificaciones_router
+from app.routers.analytics import router as analytics_router
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -196,6 +197,7 @@ app.include_router(chat_router)
 app.include_router(ratings_router)
 app.include_router(reports_router)
 app.include_router(notificaciones_router)
+app.include_router(analytics_router)
 
 # Mount static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

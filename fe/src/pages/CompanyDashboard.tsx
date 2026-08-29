@@ -12,12 +12,20 @@ import { RatingModal } from "@/components/RatingModal";
 import { CertificateModal } from "@/components/CertificateModal";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { toAbsoluteMediaUrl } from "@/lib/media";
+import { UserBadges } from "@/components/ui/UserBadges";
+import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
+import { analyticsApi, type UserStats } from "@/api/analytics";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
 export function CompanyDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("resumen");
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+
+  useEffect(() => {
+    analyticsApi.getMyStats().then(setUserStats).catch(() => {});
+  }, []);
   const navigate = useNavigate();
   const [startingChatId, setStartingChatId] = useState<string | null>(null);
 
@@ -208,7 +216,8 @@ export function CompanyDashboard() {
             <div>
               <h1 className="text-xl font-bold sm:text-2xl">{user?.full_name}</h1>
               <p className="text-sm text-white/80">{user?.sector || "Empresa"} · {user?.email}</p>
-              {user?.location && <p className="text-xs text-white/60">{user.location}</p>}
+              {user?.location && <p className="text-xs text-white/60 mb-2">{user.location}</p>}
+              {userStats?.badges && <UserBadges badges={userStats.badges} size="sm" />}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -246,6 +255,7 @@ export function CompanyDashboard() {
       {/* ── TAB: RESUMEN ── */}
       {activeTab === "resumen" && (
         <div className="space-y-6">
+          {userStats && <AnalyticsCard stats={userStats} role="empresa" />}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: "Convocatorias activas", valor: String(convs.length), cambio: "Total publicadas", color: "border-l-brand-purple" },

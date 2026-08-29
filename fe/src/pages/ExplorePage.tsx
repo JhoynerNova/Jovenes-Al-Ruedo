@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { toAbsoluteMediaUrl } from "@/lib/media";
 import { detectSocialLink } from "@/lib/social";
+import { UserBadges } from "@/components/ui/UserBadges";
 import {
   ExternalLink, Search, MapPin, Briefcase, Clock, Star, Users, Filter,
   ChevronDown, X, Palette, Building2, Sparkles, TrendingUp, Zap, Award
@@ -430,11 +431,14 @@ export function ExplorePage() {
                           )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{a.full_name}</h3>
-                            {a.artistic_area && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[11px] font-semibold text-brand-purple dark:text-purple-300">
-                                <Palette className="h-3 w-3" /> {a.artistic_area}
-                              </span>
-                            )}
+                            <div className="mt-0.5 flex flex-wrap gap-1 items-center">
+                              {a.artistic_area && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[11px] font-semibold text-brand-purple dark:text-purple-300">
+                                  <Palette className="h-3 w-3" /> {a.artistic_area}
+                                </span>
+                              )}
+                              <UserBadges userId={a.id} size="sm" />
+                            </div>
                           </div>
                         </div>
                         <div className="mt-3 space-y-1.5">
@@ -507,11 +511,14 @@ export function ExplorePage() {
                           )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{e.full_name}</h3>
-                            {e.sector && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue dark:text-blue-300">
-                                <Briefcase className="h-3 w-3" /> {e.sector}
-                              </span>
-                            )}
+                            <div className="mt-0.5 flex flex-wrap gap-1 items-center">
+                              {e.sector && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue dark:text-blue-300">
+                                  <Briefcase className="h-3 w-3" /> {e.sector}
+                                </span>
+                              )}
+                              <UserBadges userId={e.id} size="sm" />
+                            </div>
                           </div>
                         </div>
                         <div className="mt-3">

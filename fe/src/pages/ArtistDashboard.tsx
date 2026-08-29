@@ -13,6 +13,9 @@ import { uploadApi } from "@/api/upload";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { toAbsoluteMediaUrl } from "@/lib/media";
+import { UserBadges } from "@/components/ui/UserBadges";
+import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
+import { analyticsApi, type UserStats } from "@/api/analytics";
 
 type Tab = "resumen" | "portafolio" | "convocatorias" | "mis-postulaciones";
 type MediaFilter = "todas" | "imagenes" | "videos" | "audios" | "documentos";
@@ -148,10 +151,13 @@ export function ArtistDashboard() {
     }
   }, []);
 
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+
   useEffect(() => {
     loadPortafolios();
     loadMisPostulaciones();
     loadConvocatorias();
+    analyticsApi.getMyStats().then(setUserStats).catch(() => {});
   }, [loadPortafolios, loadMisPostulaciones, loadConvocatorias]);
 
   useEffect(() => {
@@ -331,8 +337,9 @@ export function ArtistDashboard() {
               <h1 className="text-xl font-bold sm:text-2xl">{user?.full_name}</h1>
               <p className="text-sm text-white/80">{user?.artistic_area || "Artista"} · {user?.email}</p>
               {user?.birth_date && (
-                <p className="text-xs text-white/60">{calcularEdad(user.birth_date)} años{user.location ? ` · ${user.location}` : ""}</p>
+                <p className="text-xs text-white/60 mb-2">{calcularEdad(user.birth_date)} años{user.location ? ` · ${user.location}` : ""}</p>
               )}
+              {userStats?.badges && <UserBadges badges={userStats.badges} size="sm" />}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -371,6 +378,7 @@ export function ArtistDashboard() {
       {/* ── TAB: RESUMEN ── */}
       {activeTab === "resumen" && (
         <div className="space-y-6">
+          {userStats && <AnalyticsCard stats={userStats} role="artista" />}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: "Portafolios", valor: String(portafolios.length), cambio: `${totalItems} obras`, color: "border-l-brand-purple" },

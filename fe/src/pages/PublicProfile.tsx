@@ -10,6 +10,7 @@ import { RatingModal } from "@/components/RatingModal";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { detectSocialLink } from "@/lib/social";
+import { UserBadges } from "@/components/ui/UserBadges";
 
 interface PortfolioItem {
   id_det_p: number;
@@ -183,6 +184,7 @@ export function PublicProfile() {
                     <Calendar className="h-3.5 w-3.5" /> {calcEdad(profile.birth_date)} años
                   </span>
                 )}
+                <UserBadges userId={profile.id} size="md" />
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
