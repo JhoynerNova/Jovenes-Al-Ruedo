@@ -11,6 +11,7 @@ import { chatApi } from "@/api/chat";
 import { RatingModal } from "@/components/RatingModal";
 import { CertificateModal } from "@/components/CertificateModal";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { toAbsoluteMediaUrl } from "@/lib/media";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
@@ -185,14 +186,25 @@ export function CompanyDashboard() {
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: "Panel de Empresa" }]} />
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-blue p-6 text-white shadow-lg sm:p-8">
+      <div
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-blue p-6 text-white shadow-lg sm:p-8 bg-cover bg-center transition-all"
+        style={user?.cover_pic_url ? { backgroundImage: `linear-gradient(to right, rgba(15,10,30,0.85), rgba(30,15,60,0.75)), url(${toAbsoluteMediaUrl(user.cover_pic_url)})` } : undefined}
+      >
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold backdrop-blur-sm">
-              {user?.full_name?.charAt(0).toUpperCase()}
-            </div>
+            {user?.profile_pic_url ? (
+              <img
+                src={toAbsoluteMediaUrl(user.profile_pic_url)}
+                alt={user.full_name}
+                className="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/30 shadow-md bg-white"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold backdrop-blur-sm shadow-md">
+                {user?.full_name?.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <h1 className="text-xl font-bold sm:text-2xl">{user?.full_name}</h1>
               <p className="text-sm text-white/80">{user?.sector || "Empresa"} · {user?.email}</p>
