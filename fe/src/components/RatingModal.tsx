@@ -33,7 +33,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      await axios.post('/api/v1/ratings/', {
+      await axios.post('/api/v1/ratings', {
         artista_id: artistaId,
         convocatoria_id: convocatoriaId,
         puntuacion,
