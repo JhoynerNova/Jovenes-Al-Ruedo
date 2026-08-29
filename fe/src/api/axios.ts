@@ -11,7 +11,7 @@ import axios from "axios";
 // ¿Qué? URL base de la API leída desde variables de entorno de Vite.
 // ¿Para qué? Permite cambiar la URL sin tocar código (dev: localhost:8000, prod: dominio real).
 // ¿Impacto? Si VITE_API_URL no está definida, las peticiones irán a la URL relativa (fallará).
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 /**
  * ¿Qué? Instancia de Axios preconfigurada con URL base, headers y timeout.
