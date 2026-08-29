@@ -33,7 +33,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      await axios.post('/ratings/', {
+      await axios.post('/api/v1/ratings/', {
         artista_id: artistaId,
         convocatoria_id: convocatoriaId,
         puntuacion,
@@ -46,9 +46,18 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      const msg = typeof err.response?.data === 'string'
-        ? err.response.data
-        : err.response?.data?.detail || err.message || 'Error al enviar la calificación.';
+      let msg = 'Error al enviar la calificación.';
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          msg = err.response.data.detail.map((d: any) => d.msg || d.detail || String(d)).join('. ');
+        } else if (typeof err.response.data.detail === 'string') {
+          msg = err.response.data.detail;
+        }
+      } else if (typeof err.response?.data === 'string') {
+        msg = err.response.data;
+      } else if (err.message) {
+        msg = err.message;
+      }
       setError(msg);
     } finally {
       setLoading(false);
