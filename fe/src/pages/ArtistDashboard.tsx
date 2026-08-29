@@ -2,18 +2,20 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart3, Image, Briefcase, Send, Settings, Globe,
-  Building2, Users, Calendar, FolderPlus, Trash2, FileText, Star
+  Building2, Users, Calendar, FolderPlus, Trash2, FileText, Star,
+  X, Eye, Music
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type MiPostulacion } from "@/api/convocatorias";
-import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
+import { portafolioApi, type PortafolioResponse, type DetPortafolioResponse } from "@/api/portafolio";
 import { uploadApi } from "@/api/upload";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { toAbsoluteMediaUrl } from "@/lib/media";
 
 type Tab = "resumen" | "portafolio" | "convocatorias" | "mis-postulaciones";
+type MediaFilter = "todas" | "imagenes" | "videos" | "audios" | "documentos";
 
 export function ArtistDashboard() {
   const { user } = useAuth();
@@ -24,16 +26,30 @@ export function ArtistDashboard() {
   const [loadingPort, setLoadingPort] = useState(false);
   const [showNewPort, setShowNewPort] = useState(false);
   const [newPortNombre, setNewPortNombre] = useState("");
+  const [newPortDesc, setNewPortDesc] = useState("");
+  const [newPortVisibilidad, setNewPortVisibilidad] = useState<string>("Publico");
+  const [newPortFirstItemTitle, setNewPortFirstItemTitle] = useState("");
+  const [newPortFirstItemDesc, setNewPortFirstItemDesc] = useState("");
+  const [newPortFirstItemTags, setNewPortFirstItemTags] = useState("");
+  const [newPortFirstItemFile, setNewPortFirstItemFile] = useState<File | null>(null);
+  const [newPortFirstItemPreview, setNewPortFirstItemPreview] = useState<string | null>(null);
+  const [creatingPort, setCreatingPort] = useState(false);
   const [portError, setPortError] = useState("");
   
   // Detalle de Portafolio
   const [viewingPort, setViewingPort] = useState<PortafolioResponse | null>(null);
   const [newItemTitle, setNewItemTitle] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
+  const [newItemTags, setNewItemTags] = useState("");
+  const [newItemEstado, setNewItemEstado] = useState<"P" | "G">("P");
   const [newItemFile, setNewItemFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [itemError, setItemError] = useState("");
   const [uploadingItem, setUploadingItem] = useState(false);
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("todas");
+
+  // Visor Modal Lightbox
+  const [activeMediaModal, setActiveMediaModal] = useState<DetPortafolioResponse | null>(null);
 
   // Convocatorias
   const [convs, setConvs] = useState<ConvResponse[]>([]);
@@ -143,15 +159,52 @@ export function ArtistDashboard() {
   }, [activeTab, loadConvocatorias]);
 
   const handleCreatePortafolio = async () => {
-    if (!newPortNombre.trim()) return;
+    if (!newPortNombre.trim()) {
+      setPortError("El nombre del portafolio es obligatorio");
+      return;
+    }
+    if (newPortFirstItemFile && !newPortFirstItemTitle.trim()) {
+      setPortError("Escribe un título para la primera obra seleccionada");
+      return;
+    }
     setPortError("");
+    setCreatingPort(true);
     try {
-      await portafolioApi.create({ nombre: newPortNombre.trim() });
+      const createdPort = await portafolioApi.create({
+        nombre: newPortNombre.trim(),
+        descripcion: newPortDesc.trim() || undefined,
+        visibilidad: newPortVisibilidad,
+      });
+
+      if (newPortFirstItemFile) {
+        const url = await uploadApi.uploadFile(newPortFirstItemFile);
+        await portafolioApi.addItem(createdPort.id_port, {
+          archivo: url,
+          titulo: newPortFirstItemTitle.trim() || newPortNombre.trim(),
+          descripcion: newPortFirstItemDesc.trim() || undefined,
+          etiquetas: newPortFirstItemTags.trim() || undefined,
+          estado: "P",
+        });
+      }
+
       setNewPortNombre("");
+      setNewPortDesc("");
+      setNewPortVisibilidad("Publico");
+      setNewPortFirstItemTitle("");
+      setNewPortFirstItemDesc("");
+      setNewPortFirstItemTags("");
+      setNewPortFirstItemFile(null);
+      setNewPortFirstItemPreview(null);
       setShowNewPort(false);
-      loadPortafolios();
+
+      const updatedList = await portafolioApi.list();
+      setPortafolios(updatedList);
+      const freshCreated = updatedList.find(p => p.id_port === createdPort.id_port);
+      if (freshCreated) setViewingPort(freshCreated);
     } catch (e: any) {
       setPortError(e.message || "Error al crear portafolio");
+    } finally {
+      setCreatingPort(false);
     }
   };
 
@@ -179,10 +232,13 @@ export function ArtistDashboard() {
         archivo: url,
         titulo: newItemTitle.trim(),
         descripcion: newItemDesc.trim() || undefined,
-        estado: "P", // Publicado directamente
+        etiquetas: newItemTags.trim() || undefined,
+        estado: newItemEstado,
       });
       setNewItemTitle("");
       setNewItemDesc("");
+      setNewItemTags("");
+      setNewItemEstado("P");
       setNewItemFile(null);
       setPreviewUrl(null);
       // Recargar lista
@@ -471,21 +527,210 @@ export function ArtistDashboard() {
           </div>
 
           {showNewPort && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Nuevo portafolio</h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newPortNombre}
-                  onChange={(e) => setNewPortNombre(e.target.value)}
-                  placeholder="Nombre del portafolio"
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                  onKeyDown={(e) => e.key === "Enter" && handleCreatePortafolio()}
-                />
-                <Button size="sm" onClick={handleCreatePortafolio}>Crear</Button>
-                <Button variant="secondary" size="sm" onClick={() => { setShowNewPort(false); setPortError(""); }}>Cancelar</Button>
+            <div className="rounded-2xl border border-brand-purple/30 bg-white p-6 shadow-xl dark:border-brand-teal/30 dark:bg-gray-900 space-y-6 animate-fade-in-up">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-purple/10 text-brand-purple dark:bg-brand-teal/10 dark:text-brand-teal">
+                    <FolderPlus className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Crear nuevo portafolio</h3>
+                    <p className="text-xs text-gray-500">Crea tu colección y añade tu primera obra de una vez</p>
+                  </div>
+                </div>
+                <button onClick={() => { setShowNewPort(false); setPortError(""); }} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              {portError && <p className="mt-2 text-xs text-red-500">{portError}</p>}
+
+              {/* Sección 1: Información del Portafolio */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-brand-purple dark:text-brand-teal">1. Datos del Portafolio</h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Nombre del portafolio <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newPortNombre}
+                      onChange={(e) => setNewPortNombre(e.target.value)}
+                      placeholder="Ej. Fotografía Urbana 2025, Ilustraciones Digitales..."
+                      className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Visibilidad
+                    </label>
+                    <select
+                      value={newPortVisibilidad}
+                      onChange={(e) => setNewPortVisibilidad(e.target.value)}
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="Publico">🌐 Público (Visible en perfil)</option>
+                      <option value="Postulaciones">💼 Solo Postulaciones</option>
+                      <option value="Privado">🔒 Privado</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Descripción del portafolio <span className="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <textarea
+                      value={newPortDesc}
+                      onChange={(e) => setNewPortDesc(e.target.value)}
+                      placeholder="Explica la temática o concepto artístico de esta colección..."
+                      rows={2}
+                      className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Primera Obra Integrada */}
+              <div className="space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-brand-purple dark:text-brand-teal flex items-center gap-1.5">
+                    <Image className="h-4 w-4" /> 2. Añadir primera obra a este portafolio <span className="text-gray-400 font-normal lowercase">(opcional)</span>
+                  </h4>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        Título de la obra
+                      </label>
+                      <input
+                        type="text"
+                        value={newPortFirstItemTitle}
+                        onChange={(e) => setNewPortFirstItemTitle(e.target.value)}
+                        placeholder="Ej: Obra Nro 1 - Atardecer"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        Categoría / Etiqueta <span className="text-gray-400 font-normal">(Opcional)</span>
+                      </label>
+                      <select
+                        value={newPortFirstItemTags}
+                        onChange={(e) => setNewPortFirstItemTags(e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      >
+                        <option value="">-- Selecciona una Categoría --</option>
+                        <option value="Teatro y Artes Escénicas">🎭 Teatro y Artes Escénicas</option>
+                        <option value="Música y Producción Sonora">🎵 Música y Producción Sonora</option>
+                        <option value="Danza y Expresión Corporal">💃 Danza y Expresión Corporal</option>
+                        <option value="Fotografía y Medios Digitales">📷 Fotografía y Medios Digitales</option>
+                        <option value="Pintura, Dibujo e Ilustración">🎨 Pintura, Dibujo e Ilustración</option>
+                        <option value="Audiovisual y Cine">🎬 Audiovisual y Cine</option>
+                        <option value="Escultura y Artes Plásticas">🗿 Escultura y Artes Plásticas</option>
+                        <option value="Literatura y Escritura Creativa">✍️ Literatura y Escritura Creativa</option>
+                        <option value="Diseño, Moda y Vestuario">👗 Diseño, Moda y Vestuario</option>
+                        <option value="Circo y Artes Callejeras">🎪 Circo y Artes Callejeras</option>
+                        <option value="Otra Categoría">✨ Otra Categoría</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        Descripción de la obra
+                      </label>
+                      <textarea
+                        value={newPortFirstItemDesc}
+                        onChange={(e) => setNewPortFirstItemDesc(e.target.value)}
+                        placeholder="Detalles sobre esta obra inicial..."
+                        rows={2}
+                        className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Archivo de la obra
+                    </label>
+                    <div className="relative group flex flex-1 w-full min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:border-brand-purple hover:bg-brand-purple/5 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-brand-teal dark:hover:bg-brand-teal/5 transition-all overflow-hidden text-center p-4">
+                      <input
+                        type="file" accept="image/*,.pdf,audio/*,video/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setNewPortFirstItemFile(file);
+                          if (file && file.type.startsWith('image/')) {
+                            const url = URL.createObjectURL(file);
+                            setNewPortFirstItemPreview(url);
+                          } else {
+                            setNewPortFirstItemPreview(null);
+                          }
+                        }}
+                        className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                      />
+                      {newPortFirstItemPreview ? (
+                        <div className="absolute inset-0 z-0">
+                          <img src={newPortFirstItemPreview} alt="Preview" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNewPortFirstItemPreview(null);
+                              setNewPortFirstItemFile(null);
+                            }}
+                            className="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-transform hover:scale-110"
+                            title="Quitar archivo"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : newPortFirstItemFile ? (
+                        <div className="z-10 flex flex-col items-center justify-center p-4">
+                          <div className="relative">
+                            <span className="text-4xl mb-2 block">📄</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewPortFirstItemFile(null);
+                              }}
+                              className="absolute -top-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+                              title="Quitar archivo"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[200px] truncate">{newPortFirstItemFile.name}</p>
+                        </div>
+                      ) : (
+                        <div className="z-0 flex flex-col items-center pointer-events-none">
+                          <div className="mb-2 rounded-full bg-white p-2.5 shadow-md dark:bg-gray-800 text-brand-purple dark:text-brand-teal">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                          </div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Haz clic o arrastra un archivo</p>
+                          <p className="mt-1 flex items-center justify-center gap-1 text-[10px] text-gray-500">
+                            <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700">IMG</span>
+                            <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700">PDF</span>
+                            <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700">AUDIO</span>
+                            <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700">VIDEO</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {portError && <p className="text-xs font-medium text-red-500 animate-pulse">{portError}</p>}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <Button variant="secondary" size="sm" onClick={() => { setShowNewPort(false); setPortError(""); }}>Cancelar</Button>
+                <Button size="sm" onClick={handleCreatePortafolio} disabled={creatingPort || !newPortNombre.trim()} className="px-6 shadow-md">
+                  {creatingPort ? "Creando y Guardando..." : "Crear Portafolio y Publicar"}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -498,11 +743,35 @@ export function ArtistDashboard() {
             </div>
           ) : viewingPort ? (
             <div className="space-y-4 animate-fade-in-up">
-              <div className="flex items-center gap-3 mb-6">
-                <Button variant="secondary" size="sm" onClick={() => { setViewingPort(null); setItemError(""); setNewItemTitle(""); setNewItemDesc(""); setNewItemFile(null); setPreviewUrl(null); }}>← Volver a mis portafolios</Button>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{viewingPort.nombre}</h2>
-                  <p className="text-sm font-medium text-gray-500">{viewingPort.archivos.length} obras en esta colección</p>
+              <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <Button variant="secondary" size="sm" onClick={() => { setViewingPort(null); setItemError(""); setNewItemTitle(""); setNewItemDesc(""); setNewItemFile(null); setPreviewUrl(null); }}>← Volver a mis portafolios</Button>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      {viewingPort.nombre}
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                        {viewingPort.visibilidad === "Publico" ? "🌐 Público" : viewingPort.visibilidad === "Privado" ? "🔒 Privado" : "💼 Postulaciones"}
+                      </span>
+                    </h2>
+                    <p className="text-sm font-medium text-gray-500">{viewingPort.descripcion || `${viewingPort.archivos.length} obras en esta colección`}</p>
+                  </div>
+                </div>
+
+                {/* Filtros por tipo de archivo */}
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl text-xs font-medium">
+                  {(["todas", "imagenes", "videos", "audios", "documentos"] as const).map((filterKey) => (
+                    <button
+                      key={filterKey}
+                      onClick={() => setMediaFilter(filterKey)}
+                      className={`px-3 py-1.5 rounded-lg capitalize transition-all ${
+                        mediaFilter === filterKey
+                          ? "bg-white dark:bg-gray-900 text-brand-purple dark:text-brand-teal font-semibold shadow-sm"
+                          : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {filterKey}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -515,19 +784,59 @@ export function ArtistDashboard() {
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Título de la obra <span className="text-red-500">*</span></label>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">Título de la obra <span className="text-red-500">*</span></label>
                       <input
                         type="text" value={newItemTitle} onChange={(e) => setNewItemTitle(e.target.value)}
                         placeholder="Ej: Retrato Urbano Nocturno"
                         className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all"
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                          Categoría / Etiqueta <span className="text-gray-400 font-normal">(Opcional)</span>
+                        </label>
+                        <select
+                          value={newItemTags}
+                          onChange={(e) => setNewItemTags(e.target.value)}
+                          className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="">-- Seleccionar --</option>
+                          <option value="Teatro y Artes Escénicas">🎭 Teatro y Escénicas</option>
+                          <option value="Música y Producción Sonora">🎵 Música y Sonido</option>
+                          <option value="Danza y Expresión Corporal">💃 Danza y Expresión</option>
+                          <option value="Fotografía y Medios Digitales">📷 Fotografía</option>
+                          <option value="Pintura, Dibujo e Ilustración">🎨 Pintura e Ilustración</option>
+                          <option value="Audiovisual y Cine">🎬 Audiovisual y Cine</option>
+                          <option value="Escultura y Artes Plásticas">🗿 Escultura y Plásticas</option>
+                          <option value="Literatura y Escritura Creativa">✍️ Literatura</option>
+                          <option value="Diseño, Moda y Vestuario">👗 Diseño y Moda</option>
+                          <option value="Circo y Artes Callejeras">🎪 Circo y Callejera</option>
+                          <option value="Otra Categoría">✨ Otra Categoría</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                          Estado
+                        </label>
+                        <select
+                          value={newItemEstado}
+                          onChange={(e) => setNewItemEstado(e.target.value as "P" | "G")}
+                          className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="P">✅ Publicado</option>
+                          <option value="G">📝 Borrador / Guardado</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción <span className="text-gray-400 font-normal">(Opcional)</span></label>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">Descripción <span className="text-gray-400 font-normal">(Opcional)</span></label>
                       <textarea
                         value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)}
-                        placeholder="Detalles sobre técnica, contexto o inspiración tras de esta obra..." rows={4}
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all resize-none"
+                        placeholder="Detalles sobre técnica, contexto o inspiración tras de esta obra..." rows={3}
+                        className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all resize-none"
                       />
                     </div>
                   </div>
@@ -552,12 +861,36 @@ export function ArtistDashboard() {
                       {previewUrl ? (
                         <div className="absolute inset-0 z-0">
                           <img src={previewUrl} alt="Preview" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
-                            <span className="rounded-full bg-white/20 p-3 backdrop-blur-md mb-2">
-                              <Image className="h-6 w-6 text-white" />
-                            </span>
-                            <span className="text-xs font-semibold text-white drop-shadow-md">Cambiar Imagen</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewUrl(null);
+                              setNewItemFile(null);
+                            }}
+                            className="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-transform hover:scale-110"
+                            title="Quitar archivo"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : newItemFile ? (
+                        <div className="z-10 flex flex-col items-center justify-center p-4">
+                          <div className="relative">
+                            <span className="text-4xl mb-2 block">📄</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewItemFile(null);
+                              }}
+                              className="absolute -top-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+                              title="Quitar archivo"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
                           </div>
+                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[200px] truncate">{newItemFile.name}</p>
                         </div>
                       ) : (
                         <div className="z-0 flex flex-col items-center pointer-events-none">
@@ -571,7 +904,6 @@ export function ArtistDashboard() {
                             <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">AUDIO</span>
                             <span className="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700">VIDEO</span>
                           </p>
-                          {newItemFile && !previewUrl && <div className="mt-4 px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-xs font-medium text-teal-700 dark:text-teal-400 max-w-[80%] truncate">📄 {newItemFile.name}</div>}
                         </div>
                       )}
                     </div>
@@ -597,28 +929,47 @@ export function ArtistDashboard() {
                 <p className="text-gray-500 text-sm text-center py-8">No hay obras en este portafolio aún.</p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {viewingPort.archivos.map(a => {
+                  {viewingPort.archivos
+                    .filter((a) => {
+                      if (mediaFilter === "imagenes") return a.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
+                      if (mediaFilter === "videos") return a.archivo.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
+                      if (mediaFilter === "audios") return a.archivo.match(/\.(mp3|wav|ogg|m4a)$/i);
+                      if (mediaFilter === "documentos") return a.archivo.match(/\.(pdf|doc|docx)$/i);
+                      return true;
+                    })
+                    .map((a) => {
                     const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.archivo}`;
                     return (
-                      <div key={a.id_det_p} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col group">
-                        <div className="h-40 bg-gray-100 dark:bg-gray-800 relative">
+                      <div key={a.id_det_p} onClick={() => setActiveMediaModal(a)} className="cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all dark:border-gray-800 dark:bg-gray-900 flex flex-col group">
+                        <div className="h-44 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
                           {a.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                            <img src={fileUrl} alt={a.titulo || "Obra"} className="h-full w-full object-cover" />
+                            <img src={fileUrl} alt={a.titulo || "Obra"} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           ) : a.archivo.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
-                            <video src={fileUrl} controls className="h-full w-full object-cover" />
+                            <video src={fileUrl} className="h-full w-full object-cover" />
                           ) : a.archivo.match(/\.(mp3|wav|ogg|m4a)$/i) ? (
-                            <div className="flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/80 p-2">
-                              <span className="text-3xl mb-1">🎵</span>
-                              <audio src={fileUrl} controls className="w-full scale-90" />
+                            <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-brand-purple/10 to-brand-teal/10 p-2">
+                              <Music className="h-10 w-10 text-brand-purple dark:text-brand-teal mb-1" />
+                              <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Audio / Música</span>
                             </div>
                           ) : (
-                            <a href={fileUrl} target="_blank" rel="noreferrer" className="flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/80 p-2 text-xs text-gray-500 hover:text-brand-purple transition-colors">
-                              <span className="text-3xl mb-1">📄</span>
+                            <div className="flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/80 p-2 text-xs text-gray-500">
+                              <FileText className="h-10 w-10 text-gray-400 mb-1" />
                               <span className="font-semibold">Documento PDF</span>
-                            </a>
+                            </div>
                           )}
-                          <div className="absolute top-2 right-2 z-25 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleDeleteItem(a.id_det_p)} className="rounded bg-red-600 p-2 text-white hover:bg-red-700 transition-colors shadow-md"><Trash2 className="h-4 w-4" /></button>
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <span className="rounded-full bg-white/30 backdrop-blur-md p-2 text-white">
+                              <Eye className="h-5 w-5" />
+                            </span>
+                          </div>
+                          <div className="absolute top-2 right-2 z-20">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteItem(a.id_det_p); }}
+                              className="rounded-full bg-red-600 p-1.5 text-white hover:bg-red-700 transition-colors shadow-md opacity-0 group-hover:opacity-100"
+                              title="Eliminar obra"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                         <div className="p-3">
@@ -637,8 +988,14 @@ export function ArtistDashboard() {
                 <div key={port.id_port} onClick={() => setViewingPort(port)} className="cursor-pointer animate-scale-in card-hover rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{port.nombre}</h3>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        {port.nombre}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 font-normal text-gray-600 dark:text-gray-400">
+                          {port.visibilidad === "Publico" ? "🌐 Público" : port.visibilidad === "Privado" ? "🔒 Privado" : "💼 Postulaciones"}
+                        </span>
+                      </h3>
+                      {port.descripcion && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{port.descripcion}</p>}
+                      <p className="mt-2 text-xs text-gray-400">
                         {port.archivos.length} obras · {new Date(port.created_at).toLocaleDateString("es-CO")}
                       </p>
                     </div>
@@ -649,11 +1006,11 @@ export function ArtistDashboard() {
                     ><Trash2 className="h-4 w-4" /></button>
                   </div>
                   {port.archivos.length > 0 && (
-                    <ul className="mt-3 space-y-1">
+                    <ul className="mt-3 space-y-1 border-t border-gray-100 dark:border-gray-800 pt-2">
                       {port.archivos.slice(0, 3).map((a) => (
                         <li key={a.id_det_p} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                           <span className={`h-1.5 w-1.5 rounded-full ${a.estado === "P" ? "bg-green-400" : "bg-yellow-400"}`} />
-                          <span className="truncate">{a.archivo}</span>
+                          <span className="truncate">{a.titulo || a.archivo}</span>
                           <span className="ml-auto text-gray-400">{a.estado === "P" ? "Pub." : "Bor."}</span>
                         </li>
                       ))}
@@ -840,6 +1197,74 @@ export function ArtistDashboard() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Lightbox / Visor de Obra Modal */}
+      {activeMediaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{activeMediaModal.titulo || "Detalle de la obra"}</h3>
+                {activeMediaModal.created_at && (
+                  <p className="text-xs text-gray-500">Publicado el {new Date(activeMediaModal.created_at).toLocaleDateString("es-CO")}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setActiveMediaModal(null)}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center bg-gray-950/5 dark:bg-gray-950">
+              {activeMediaModal.archivo.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
+                <img
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${activeMediaModal.archivo}`}
+                  alt={activeMediaModal.titulo || "Obra"}
+                  className="max-h-[60vh] w-auto max-w-full rounded-xl object-contain shadow-lg"
+                />
+              ) : activeMediaModal.archivo.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                <video
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${activeMediaModal.archivo}`}
+                  controls
+                  autoPlay
+                  className="max-h-[60vh] w-full rounded-xl shadow-lg"
+                />
+              ) : activeMediaModal.archivo.match(/\.(mp3|wav|ogg|m4a)$/i) ? (
+                <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg text-center space-y-4">
+                  <span className="text-6xl block">🎵</span>
+                  <audio
+                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${activeMediaModal.archivo}`}
+                    controls
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-8 shadow-lg text-center space-y-4">
+                  <span className="text-6xl block">📄</span>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Archivo de documento PDF</p>
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${activeMediaModal.archivo}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-purple px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-purple/90 shadow-md transition-all"
+                  >
+                    Abrir documento en ventana nueva
+                  </a>
+                </div>
+              )}
+
+              {activeMediaModal.descripcion && (
+                <div className="mt-6 w-full max-w-2xl rounded-xl bg-white p-4 shadow dark:bg-gray-800">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Descripción / Detalles</h4>
+                  <p className="mt-1 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">{activeMediaModal.descripcion}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -8,8 +8,8 @@
  *           reimplementar el manejo de archivo + FormData + preview.
  */
 
-import { useRef, useState } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Camera, Loader2, X } from "lucide-react";
 import { uploadApi } from "../../api/upload";
 import { toAbsoluteMediaUrl } from "../../lib/media";
 
@@ -34,6 +34,17 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(value ? toAbsoluteMediaUrl(value) : null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setPreview(value ? toAbsoluteMediaUrl(value) : null);
+  }, [value]);
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
+    onChange("");
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,24 +83,37 @@ export function ImageUploadField({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={isUploading}
-        className={`relative flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-brand-purple transition-colors ${shapeClasses}`}
-      >
-        {preview ? (
-          <img src={preview} alt={label} className="h-full w-full object-cover" />
-        ) : (
-          <Camera className="h-6 w-6 text-gray-400" />
-        )}
+      <div className="relative group">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={isUploading}
+          className={`relative flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-brand-purple transition-colors ${shapeClasses}`}
+        >
+          {preview ? (
+            <img src={preview} alt={label} className="h-full w-full object-cover" />
+          ) : (
+            <Camera className="h-6 w-6 text-gray-400" />
+          )}
 
-        {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <Loader2 className="h-5 w-5 animate-spin text-white" />
-          </div>
+          {isUploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            </div>
+          )}
+        </button>
+
+        {preview && !isUploading && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 focus:outline-none transition-transform hover:scale-110"
+            title="Quitar imagen"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         )}
-      </button>
+      </div>
 
       <input
         ref={inputRef}

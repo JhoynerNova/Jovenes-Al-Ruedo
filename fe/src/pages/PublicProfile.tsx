@@ -4,7 +4,7 @@ import { usersApi } from "@/api/users";
 import { chatApi } from "@/api/chat";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserResponse } from "@/types/auth";
-import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle, Star, Phone } from "lucide-react";
+import { MapPin, Calendar, Briefcase, Palette, ArrowLeft, ExternalLink, Image, MessageCircle, Star, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { RatingModal } from "@/components/RatingModal";
 import { RatingsList } from "@/components/RatingsList";
@@ -113,8 +113,17 @@ export function PublicProfile() {
     <div className="space-y-6 animate-fade-in-up">
       {/* Lightbox */}
       {lightboxImg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setLightboxImg(null)}>
-          <img src={lightboxImg} alt="Obra ampliada" className="max-h-[90vh] max-w-[90vw] rounded-xl shadow-2xl object-contain" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setLightboxImg(null)}>
+          <div className="relative max-h-[90vh] max-w-[90vw]">
+            <img src={lightboxImg} alt="Obra ampliada" className="max-h-[85vh] max-w-[90vw] rounded-xl shadow-2xl object-contain" />
+            <button
+              onClick={() => setLightboxImg(null)}
+              className="absolute -top-3 -right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-xl hover:bg-red-700 transition-transform hover:scale-110"
+              title="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
 
