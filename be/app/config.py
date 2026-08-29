@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     #           y las peticiones del frontend serán bloqueadas por CORS.
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # ¿Qué? Entorno de ejecución actual ("development" o "production").
+    # ¿Para qué? Ajustar comportamientos sensibles al entorno: cookies "secure" (solo HTTPS)
+    #            deben estar activas en producción pero no bloquean el desarrollo local en HTTP.
+    # ¿Impacto? Si se despliega en producción sin cambiar esta variable, las cookies
+    #           seguirán marcadas como inseguras (riesgo de robo por sniffing).
+    ENVIRONMENT: str = "development"
+
     # ¿Qué? Configuración del modelo Pydantic Settings.
     # ¿Para qué? Indicar que las variables se cargan desde el archivo .env en la carpeta be/.
     # ¿Impacto? Sin esto, Pydantic no lee el archivo .env y solo busca variables del sistema.

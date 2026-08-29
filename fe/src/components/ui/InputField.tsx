@@ -27,6 +27,10 @@ interface InputFieldProps {
    *  ¿Impacto? Un icono de sobre para email, candado para password, etc. */
   icon?: ReactNode;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** ¿Qué? Handler opcional que se dispara al perder el foco del campo.
+   *  ¿Para qué? Validar en tiempo real sin esperar al submit — el usuario ve el
+   *            error apenas termina de escribir un campo, no al final del formulario. */
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -45,6 +49,7 @@ export function InputField({
   autoComplete,
   icon,
   onChange,
+  onBlur,
 }: InputFieldProps) {
   // ¿Qué? Estado para mostrar/ocultar contraseña.
   // ¿Para qué? Permitir al usuario verificar lo que escribió en campos de password.
@@ -81,6 +86,7 @@ export function InputField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           onChange={onChange}
+          onBlur={onBlur}
           onPaste={isPassword ? (e) => e.preventDefault() : undefined}
           onCopy={isPassword ? (e) => e.preventDefault() : undefined}
           aria-invalid={!!error}

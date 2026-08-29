@@ -33,6 +33,7 @@ from app.utils.security import (
     hash_password,
     verify_password,
 )
+from app.utils.token_blacklist import exp_to_datetime, is_token_revoked, revoke_token
 
 
 def register_user(db: Session, user_data: UserCreate) -> User:
@@ -93,6 +94,9 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         birth_date=user_data.birth_date,
         artistic_area=user_data.artistic_area,
         hashed_password=hash_password(user_data.password),
+        # ¿Qué? user_data.accepted_terms ya fue validado como True por el schema —
+        #        aquí queda registrado EL MOMENTO del consentimiento, no solo el hecho.
+        privacy_accepted_at=datetime.now(timezone.utc),
     )
 
     db.add(new_user)
@@ -185,6 +189,18 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # ¿Qué? Verificar que este refresh token no haya sido revocado (logout o uso previo).
+    # ¿Para qué? Detectar reutilización de un refresh token ya rotado o invalidado por logout.
+    # ¿Impacto? Sin esto, un refresh token robado seguiría funcionando hasta expirar (7 días),
+    #           incluso después de que el dueño legítimo cerró sesión o ya lo usó para refrescar.
+    old_jti = payload.get("jti")
+    if old_jti and is_token_revoked(db, old_jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     email: str | None = payload.get("sub")
     if not email:
         raise HTTPException(
@@ -205,12 +221,33 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             detail="Usuario no encontrado o cuenta desactivada",
         )
 
+    # ¿Qué? Verificar que este refresh token no sea anterior a un "cerrar sesión en
+    #        todos los dispositivos". Ver la misma lógica en dependencies.get_current_user.
+    # ¿Impacto? Sin esto, un refresh token emitido antes del logout-all seguiría
+    #           pudiendo generar nuevos access tokens durante 7 días.
+    iat = payload.get("iat")
+    if user.sessions_invalidated_at and iat:
+        issued_at = datetime.fromtimestamp(iat, tz=timezone.utc)
+        if issued_at < user.sessions_invalidated_at:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token inválido o expirado",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     # ¿Qué? Rotación de tokens — generar NUEVOS access y refresh tokens.
     # ¿Para qué? Si el refresh token anterior fue comprometido, el nuevo lo invalida
     #            (el antiguo ya no se puede usar porque se regenera).
     # ¿Impacto? Mejora la seguridad: cada refresh genera un nuevo par de tokens.
     new_access = create_access_token(data={"sub": user.email})
     new_refresh = create_refresh_token(data={"sub": user.email})
+
+    # ¿Qué? Revocar explícitamente el refresh token que se acaba de usar.
+    # ¿Para qué? Sin esto, "rotación" era solo cosmética — el refresh token viejo
+    #            seguía siendo válido (misma firma, misma expiración) y podía reutilizarse.
+    # ¿Impacto? Si alguien roba un refresh token ya usado, esta revocación lo detiene.
+    if old_jti and (exp := payload.get("exp")):
+        revoke_token(db, old_jti, exp_to_datetime(exp))
 
     return TokenResponse(
         access_token=new_access,

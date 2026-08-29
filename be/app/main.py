@@ -15,6 +15,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import IntegrityError
+
+from app.core.limiter import limiter
 
 from app.config import settings
 from app.routers.auth import router as auth_router
@@ -78,6 +83,33 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ¿Qué? Registro del limiter (definido en app.core.limiter) en el estado de la app.
+# ¿Para qué? slowapi necesita `app.state.limiter` para poder aplicar los límites
+#            declarados con @limiter.limit() en cada router.
+# ¿Impacto? Sin este registro, los decoradores @limiter.limit() lanzarían un error en runtime.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    """Traduce violaciones de integridad de la BD (unique/FK) a un 409 coherente.
+
+    ¿Qué? Sin este handler, un IntegrityError (ej: dos registros simultáneos con el
+          mismo email, o una FK apuntando a un registro ya eliminado) caía en el
+          handler genérico de Exception y devolvía un 500 "error interno" engañoso.
+    ¿Para qué? Un conflicto de datos no es un fallo del servidor — es un 409, con un
+              mensaje que el frontend puede mostrar directamente al usuario.
+    ¿Impacto? La sesión de BD (creada por get_db) se cierra en su bloque `finally`
+              al terminar el request, descartando la transacción fallida automáticamente.
+    """
+    logger.warning(f"Violación de integridad en BD: {exc}")
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "El registro ya existe o entra en conflicto con datos relacionados."},
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Captura cualquier excepción no manejada y retorna un error 500 estandarizado."""
@@ -92,7 +124,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ¿Impacto? OWASP A05 — solo acepta peticiones con hosts conocidos y seguros.
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.jovenes-al-ruedo.com", "*"],
+    allowed_hosts=["localhost", "127.0.0.1", "*.jovenes-al-ruedo.com"],
 )
 
 # ¿Qué? Middleware CORS (Cross-Origin Resource Sharing).
@@ -101,9 +133,12 @@ app.add_middleware(
 # ¿Impacto? Sin CORS, el navegador BLOQUEA todas las peticiones del frontend al backend
 #           por política de seguridad del mismo origen (Same-Origin Policy).
 #           allow_credentials=True permite enviar cookies/headers de autenticación.
+#           allow_origins restringido a FRONTEND_URL: con allow_credentials=True, el navegador
+#           NUNCA permite allow_origins=["*"] (y si lo hiciera, cualquier sitio podría hacer
+#           peticiones autenticadas contra la API — riesgo crítico de CSRF/robo de datos).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
     allow_headers=["*"],  # Permitir todos los headers (incluyendo Authorization)

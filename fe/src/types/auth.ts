@@ -27,6 +27,7 @@ export interface RegisterRequest {
   birth_date?: string;
   artistic_area?: string;
   password: string;
+  accepted_terms: boolean;
 }
 /**
  * ¿Qué? Credenciales para iniciar sesión.

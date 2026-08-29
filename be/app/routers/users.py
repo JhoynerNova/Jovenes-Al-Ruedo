@@ -9,13 +9,15 @@ Descripción: Endpoints de usuario — perfil del usuario autenticado.
 from typing import Optional
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, Response, status
 
+from app.core.cookies import clear_auth_cookies
 from app.dependencies import get_current_user, require_admin, get_db
 from app.models.user import User
 from app.models.conv import Conv, Inscripcion
 from app.models.portafolio import Portafolio
-from app.schemas.user import UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate
+from app.schemas.user import DeleteAccountRequest, UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate
+from app.utils.security import verify_password
 
 # ¿Qué? Router de FastAPI para endpoints de usuario.
 # ¿Para qué? Agrupar endpoints relacionados con el perfil del usuario bajo /api/v1/users.
@@ -179,6 +181,44 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return UserResponse.model_validate(current_user)
+
+
+@router.delete(
+    "/me",
+    response_model=MessageResponse,
+    summary="Eliminar la propia cuenta",
+)
+def delete_own_account(
+    body: DeleteAccountRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Elimina (desactiva) la cuenta del usuario autenticado.
+
+    ¿Qué? Requiere la contraseña actual como confirmación y desactiva la cuenta
+          (is_active=False) — el mismo mecanismo de soft-delete que ya usa un admin
+          para desactivar usuarios (ver change_user_status).
+    ¿Para qué? Dar cumplimiento al "derecho al olvido" (Ley 1581/2012) permitiendo que
+              el usuario mismo elimine su cuenta, sin depender de un administrador.
+    ¿Impacto? Soft-delete, no borrado físico: se preservan datos relacionales
+              (postulaciones, convocatorias) por integridad histórica, pero la cuenta
+              queda inaccesible — get_current_user ya rechaza usuarios con is_active=False
+              en cualquier request futuro, incluyendo intentos de login.
+              La confirmación "doble" es: (1) contraseña + (2) diálogo de confirmación
+              en el frontend antes de llamar este endpoint.
+    """
+    if not verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña es incorrecta",
+        )
+
+    current_user.is_active = False
+    db.commit()
+
+    clear_auth_cookies(response)
+    return MessageResponse(message="Tu cuenta ha sido eliminada")
 
 
 @router.get(

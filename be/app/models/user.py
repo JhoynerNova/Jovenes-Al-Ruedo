@@ -139,6 +139,27 @@ class User(Base):
         nullable=False,
     )
 
+    # ¿Qué? Marca de tiempo del último "cerrar sesión en todos los dispositivos".
+    # ¿Para qué? Los JWT son stateless — para invalidar TODAS las sesiones activas de un
+    #            usuario a la vez (sin conocer cada token individual), comparamos el "iat"
+    #            (issued at) de cada token contra esta fecha: cualquier token emitido antes
+    #            de sessions_invalidated_at se rechaza, sin importar que no haya expirado.
+    # ¿Impacto? NULL = nunca se ha usado esta función, todos los tokens existentes son válidos.
+    sessions_invalidated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # ¿Qué? Fecha y hora en que el usuario aceptó la Política de Privacidad y Términos.
+    # ¿Para qué? Registrar el consentimiento informado exigido por la Ley 1581 de 2012
+    #            (Habeas Data) — no basta con mostrar un checkbox en el frontend, hay que
+    #            poder demostrar CUÁNDO y QUE un usuario específico lo aceptó.
+    # ¿Impacto? Se establece una sola vez, en el registro — es la prueba de consentimiento.
+    privacy_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     # ¿Qué? Fecha y hora de creación del registro.
     # ¿Para qué? Trazabilidad — saber cuándo se registró cada usuario.
     # ¿Impacto? server_default=func.now() hace que PostgreSQL genere la fecha,

@@ -9,6 +9,7 @@ Descripción: Dependencias inyectables de FastAPI — funciones reutilizables qu
 """
 
 from collections.abc import Generator
+from datetime import datetime, timezone
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -18,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.user import User
 from app.utils.security import decode_token
+from app.utils.token_blacklist import is_token_revoked
 
 # ¿Qué? Esquema OAuth2 que indica a FastAPI dónde obtener el token del request.
 # ¿Para qué? FastAPI extrae automáticamente el token del header "Authorization: Bearer <token>"
@@ -94,6 +96,15 @@ def get_current_user(
     if payload.get("type") != "access":
         raise credentials_exception
 
+    # ¿Qué? Verificar que el token no haya sido revocado manualmente (logout).
+    # ¿Para qué? Un JWT sigue siendo válido por firma/expiración aunque el usuario haya
+    #            cerrado sesión — este chequeo contra la blacklist lo rechaza igualmente.
+    # ¿Impacto? Sin esto, un access token robado antes del logout seguiría funcionando
+    #           hasta expirar (15 min), sin importar que el usuario ya cerró sesión.
+    jti = payload.get("jti")
+    if jti and is_token_revoked(db, jti):
+        raise credentials_exception
+
     email: str | None = payload.get("sub")
     if not email:
         raise credentials_exception
@@ -117,6 +128,19 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta desactivada",
         )
+
+    # ¿Qué? Verificar que el token no haya sido emitido antes de un "cerrar sesión en
+    #        todos los dispositivos" (User.sessions_invalidated_at).
+    # ¿Para qué? Rechazar TODOS los tokens antiguos de una sola vez sin tener que conocer
+    #            cada uno individualmente — a diferencia de la blacklist por jti, que
+    #            revoca un token a la vez.
+    # ¿Impacto? Sin esto, "cerrar sesión en todos los dispositivos" no tendría efecto
+    #           real: los access tokens ya emitidos seguirían funcionando hasta expirar.
+    iat = payload.get("iat")
+    if user.sessions_invalidated_at and iat:
+        issued_at = datetime.fromtimestamp(iat, tz=timezone.utc)
+        if issued_at < user.sessions_invalidated_at:
+            raise credentials_exception
 
     return user
 

@@ -142,13 +142,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   /**
-   * ¿Qué? Acción de logout — cierra sesión y limpia tokens.
-   * ¿Para qué? El usuario quiere salir de su cuenta.
-   * ¿Impacto? Navegar a la página de login después de llamar esto.
+   * ¿Qué? Acción de logout — revoca los tokens en el backend y limpia el estado local.
+   * ¿Para qué? El usuario quiere salir de su cuenta de forma segura, no solo en este navegador.
+   * ¿Impacto? Si la llamada al backend falla (red caída, token ya vencido), igual se limpia
+   *           el estado local — el usuario nunca debe quedar "atascado" logueado en la UI.
    */
   const logout = useCallback(() => {
-    clearAuth();
-  }, [clearAuth]);
+    authApi.logoutUser(refreshToken).catch(() => {
+      // Best-effort: si el backend no responde, igual cerramos sesión localmente.
+    }).finally(() => {
+      clearAuth();
+    });
+  }, [refreshToken, clearAuth]);
 
   /**
    * ¿Qué? Acción de cambiar contraseña.

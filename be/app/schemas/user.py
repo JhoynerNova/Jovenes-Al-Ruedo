@@ -63,6 +63,21 @@ class UserCreate(BaseModel):
     # ¿Impacto? El validador exige mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número.
     password: str
 
+    # ¿Qué? Confirmación de que el usuario aceptó la Política de Privacidad y Términos.
+    # ¿Para qué? Ley 1581 de 2012 (Habeas Data) exige consentimiento informado explícito
+    #            para el tratamiento de datos personales — no basta con un checkbox visual
+    #            en el frontend si el backend no lo valida ni lo registra.
+    # ¿Impacto? El validador rechaza el registro si llega en False — el checkbox del
+    #           frontend ya bloquea el submit, pero esta es la garantía del lado del servidor.
+    accepted_terms: bool = False
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def validate_accepted_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Debes aceptar la Política de Privacidad y los Términos y Condiciones")
+        return v
+
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
@@ -225,6 +240,31 @@ class ResetPasswordRequest(BaseModel):
         if not re.search(r"\d", v):
             raise ValueError("La contraseña debe contener al menos un número")
         return v
+
+
+class DeleteAccountRequest(BaseModel):
+    """Schema para eliminar la propia cuenta (usuario autenticado).
+
+    ¿Qué? Requiere la contraseña actual como confirmación.
+    ¿Para qué? Es una acción irreversible desde la perspectiva del usuario — pedir la
+              contraseña evita que alguien con la sesión abierta (pero sin la contraseña)
+              elimine la cuenta por error o malicia.
+    """
+
+    password: str
+
+
+class LogoutRequest(BaseModel):
+    """Schema para cerrar sesión revocando el refresh token.
+
+    ¿Qué? Contiene opcionalmente el refresh_token para invalidarlo del lado del servidor.
+    ¿Para qué? El access token se revoca a partir del header Authorization; el refresh
+              token no viaja en headers, así que el cliente lo envía en el body.
+    ¿Impacto? Si no se envía, el logout solo revoca el access token actual (el refresh
+              token quedaría vigente hasta expirar, aunque las cookies ya se borraron).
+    """
+
+    refresh_token: Optional[str] = None
 
 
 class RefreshTokenRequest(BaseModel):

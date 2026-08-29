@@ -65,4 +65,9 @@ export const usersApi = {
     const { data } = await api.get<any>(`/api/v1/users/profile/${userId}/`);
     return data;
   },
+
+  deleteAccount: async (password: string) => {
+    const { data } = await api.delete<MessageResponse>("/api/v1/users/me/", { data: { password } });
+    return data;
+  },
 };

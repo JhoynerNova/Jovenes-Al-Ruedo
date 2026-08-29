@@ -2,13 +2,14 @@
 
 import math
 import uuid
+from datetime import date, datetime, time, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_user, get_db
+from app.dependencies import get_current_user, get_db, require_admin
 from app.models.conv import Conv, Inscripcion
 from app.models.user import User
 from app.schemas.conv import ConvCreate, ConvResponse, InscripcionResponse, InscripcionCreate, InscripcionUpdateStatus
@@ -96,6 +97,71 @@ def my_applications(
                 "created_at": i.created_at.isoformat(),
             })
     return result
+
+
+# ── Reporte parametrizado de postulaciones (admin) ──
+@router.get("/admin/reporte", summary="Reporte de postulaciones (admin)")
+def reporte_postulaciones(
+    fecha_desde: Optional[date] = Query(None, description="Filtra postulaciones creadas desde esta fecha (inclusive)"),
+    fecha_hasta: Optional[date] = Query(None, description="Filtra postulaciones creadas hasta esta fecha (inclusive)"),
+    estado: Optional[str] = Query(None, description="Filtra por estado: Pendiente, Aceptada, Rechazada"),
+    conv_id: Optional[int] = Query(None, description="Filtra por una convocatoria específica"),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Reporte parametrizado de postulaciones para el panel de administración.
+
+    ¿Qué? Filtra postulaciones por rango de fechas, estado y/o convocatoria, y retorna
+          tanto el detalle como un resumen agregado por estado.
+    ¿Para qué? Permitir a un admin auditar la actividad de la plataforma sin tener que
+              revisar convocatoria por convocatoria (ej: "¿cuántas postulaciones
+              rechazadas hubo en marzo?").
+    ¿Impacto? fecha_hasta se interpreta como fin del día (23:59:59) para que incluya
+              todas las postulaciones de esa fecha, no solo las de las 00:00.
+    """
+    stmt = select(Inscripcion)
+
+    if fecha_desde:
+        stmt = stmt.where(
+            Inscripcion.created_at >= datetime.combine(fecha_desde, time.min, tzinfo=timezone.utc)
+        )
+    if fecha_hasta:
+        stmt = stmt.where(
+            Inscripcion.created_at <= datetime.combine(fecha_hasta, time.max, tzinfo=timezone.utc)
+        )
+    if estado:
+        stmt = stmt.where(Inscripcion.estado == estado)
+    if conv_id:
+        stmt = stmt.where(Inscripcion.id_conv == conv_id)
+
+    inscripciones = db.execute(stmt.order_by(Inscripcion.created_at.desc())).scalars().all()
+
+    detalle = []
+    resumen_por_estado: dict[str, int] = {}
+    for i in inscripciones:
+        resumen_por_estado[i.estado] = resumen_por_estado.get(i.estado, 0) + 1
+        conv = db.get(Conv, i.id_conv)
+        artista = db.execute(select(User).where(User.id == uuid.UUID(str(i.id_usr)))).scalar_one_or_none()
+        detalle.append({
+            "id_i": i.id_i,
+            "id_conv": i.id_conv,
+            "conv_nombre": conv.nombre if conv else None,
+            "artista_nombre": artista.full_name if artista else None,
+            "estado": i.estado,
+            "created_at": i.created_at.isoformat(),
+        })
+
+    return {
+        "filtros_aplicados": {
+            "fecha_desde": fecha_desde.isoformat() if fecha_desde else None,
+            "fecha_hasta": fecha_hasta.isoformat() if fecha_hasta else None,
+            "estado": estado,
+            "conv_id": conv_id,
+        },
+        "total": len(detalle),
+        "resumen_por_estado": resumen_por_estado,
+        "detalle": detalle,
+    }
 
 
 # ── Crear convocatoria (empresa) ──

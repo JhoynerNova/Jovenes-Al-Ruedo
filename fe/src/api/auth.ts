@@ -57,6 +57,31 @@ export async function refreshToken(data: RefreshTokenRequest): Promise<TokenResp
 }
 
 /**
+ * ¿Qué? Cierra la sesión revocando los tokens del lado del servidor.
+ * ¿Para qué? Enviar POST /api/v1/auth/logout con el refresh_token en el body (el access
+ *           token viaja solo en el header Authorization, agregado por el interceptor).
+ * ¿Impacto? A diferencia de solo borrar sessionStorage, esto invalida los tokens en el
+ *           backend — si alguien capturó el token antes del logout, deja de funcionar.
+ */
+export async function logoutUser(refreshToken: string | null): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout/`, {
+    refresh_token: refreshToken,
+  });
+  return response.data;
+}
+
+/**
+ * ¿Qué? Cierra la sesión en TODOS los dispositivos donde el usuario esté logueado.
+ * ¿Para qué? Enviar POST /api/v1/auth/logout-all-devices — el backend invalida todos
+ *           los tokens emitidos hasta ahora (ver User.sessions_invalidated_at).
+ * ¿Impacto? También cierra la sesión actual — el usuario deberá loguearse de nuevo.
+ */
+export async function logoutAllDevices(): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout-all-devices/`);
+  return response.data;
+}
+
+/**
  * ¿Qué? Cambia la contraseña del usuario autenticado.
  * ¿Para qué? Enviar POST /api/v1/auth/change-password con la contraseña actual y la nueva.
  * ¿Impacto? Requiere que el usuario conozca su contraseña actual (seguridad adicional).

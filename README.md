@@ -441,3 +441,4 @@ Base URL: `http://localhost:8000/api/v1`
 - **Jhoyner Nova** - Desarrollador
 
 **SENA — Ficha 3171599 | Junio 2026**
+                        
