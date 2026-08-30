@@ -517,17 +517,20 @@ export function LandingPage() {
               </p>
               <div className="flex gap-3">
                 {[
-                  { label: "Instagram", Icono: Instagram },
-                  { label: "Facebook", Icono: Facebook },
-                  { label: "YouTube", Icono: Youtube },
+                  { label: "Instagram", href: "https://www.instagram.com/jovenes_al_ruedo/", Icono: Instagram },
+                  { label: "Facebook", href: "https://web.facebook.com/profile.php?id=61580351439961", Icono: Facebook },
+                  { label: "YouTube", href: "https://www.youtube.com/@JovenesALRuedo", Icono: Youtube },
                 ].map((red) => (
-                  <button
+                  <a
                     key={red.label}
+                    href={red.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     title={red.label}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-purple/30 text-purple-200 transition-colors hover:bg-brand-purple hover:text-white"
                   >
                     <red.Icono className="h-4 w-4" />
-                  </button>
+                  </a>
                 ))}
               </div>
             </div>
