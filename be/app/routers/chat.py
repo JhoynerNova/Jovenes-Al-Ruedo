@@ -37,38 +37,55 @@ def _build_conversacion_response(
 ) -> ConversacionResponse:
     """Construye la respuesta de una conversación para el usuario actual."""
     current_id_str = str(current_user_id)
-    es_empresa = str(conv.empresa_id) == current_id_str
-    otro_uid = conv.artista_id if es_empresa else conv.empresa_id
-
-    # Obtener datos del otro usuario
-    try:
-        target_uid = uuid.UUID(str(otro_uid)) if isinstance(otro_uid, (str, uuid.UUID)) else otro_uid
-        otro_user = db.execute(
-            select(User).where(User.id == target_uid)
-        ).scalar_one_or_none()
-    except Exception:
-        otro_user = None
-
-    # Nombre de la conversación/usuario
-    otro_nombre = otro_user.full_name if otro_user else "Usuario"
-    
-    # Si la conversación es de soporte y quien consulta es un Admin
     curr_user = db.execute(select(User).where(User.id == current_user_id)).scalar_one_or_none()
+
     if conv.tipo == "soporte":
         if curr_user and curr_user.role == "admin":
-            # Para el admin, mostrar el nombre del cliente (sea artista o empresa)
-            cliente_id = conv.artista_id if str(conv.empresa_id) == current_id_str else conv.empresa_id
-            if str(cliente_id) == current_id_str:
-                cliente_id = conv.artista_id if str(conv.artista_id) != current_id_str else conv.empresa_id
+            # Para el admin, buscar al usuario que solicitó soporte (el que NO sea este admin o no sea admin)
             try:
-                cl_uid = uuid.UUID(str(cliente_id))
-                cl_user = db.execute(select(User).where(User.id == cl_uid)).scalar_one_or_none()
-                if cl_user and cl_user.id != current_user_id:
-                    otro_nombre = f"Soporte: {cl_user.full_name}"
+                p1 = db.execute(select(User).where(User.id == conv.artista_id)).scalar_one_or_none()
+                p2 = db.execute(select(User).where(User.id == conv.empresa_id)).scalar_one_or_none()
+                
+                cliente = None
+                if p1 and p1.role != "admin":
+                    cliente = p1
+                elif p2 and p2.role != "admin":
+                    cliente = p2
+                elif p1 and str(p1.id) != current_id_str:
+                    cliente = p1
+                elif p2 and str(p2.id) != current_id_str:
+                    cliente = p2
+
+                if cliente:
+                    otro_user = cliente
+                    otro_uid = cliente.id
+                    otro_nombre = f"Soporte: {cliente.full_name}"
+                else:
+                    otro_user = None
+                    otro_uid = conv.artista_id
+                    otro_nombre = "Solicitud de Soporte"
             except Exception:
-                pass
+                otro_user = None
+                otro_uid = conv.artista_id
+                otro_nombre = "Solicitud de Soporte"
         else:
+            es_empresa = str(conv.empresa_id) == current_id_str
+            otro_uid = conv.artista_id if es_empresa else conv.empresa_id
+            try:
+                target_uid = uuid.UUID(str(otro_uid)) if isinstance(otro_uid, (str, uuid.UUID)) else otro_uid
+                otro_user = db.execute(select(User).where(User.id == target_uid)).scalar_one_or_none()
+            except Exception:
+                otro_user = None
             otro_nombre = "Soporte Oficial"
+    else:
+        es_empresa = str(conv.empresa_id) == current_id_str
+        otro_uid = conv.artista_id if es_empresa else conv.empresa_id
+        try:
+            target_uid = uuid.UUID(str(otro_uid)) if isinstance(otro_uid, (str, uuid.UUID)) else otro_uid
+            otro_user = db.execute(select(User).where(User.id == target_uid)).scalar_one_or_none()
+        except Exception:
+            otro_user = None
+        otro_nombre = otro_user.full_name if otro_user else "Usuario"
 
     # Nombre de la convocatoria (solo para tipo postulacion)
     conv_nombre = None

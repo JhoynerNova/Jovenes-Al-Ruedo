@@ -8,6 +8,7 @@ from sqlalchemy import select, func, update, delete
 from sqlalchemy.orm import Session
 
 from app.models.notificacion import Notificacion
+from app.models.user import User
 
 
 def create_notification(
@@ -18,9 +19,35 @@ def create_notification(
     tipo: str = "sistema",
     enlace: Optional[str] = None,
 ) -> Notificacion:
-    """Crea y guarda una notificación para un usuario."""
+    """Crea y guarda una notificación para un usuario (o todos los admins si es soporte)."""
+    try:
+        uid = uuid.UUID(str(id_usr)) if isinstance(id_usr, (str, uuid.UUID)) else id_usr
+    except Exception:
+        uid = id_usr
+
+    # Si la notificación es para un admin (o de soporte), notificar a todos los administradores activos
+    target_user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if target_user and target_user.role == "admin":
+        admins = db.execute(select(User).where(User.role == "admin", User.is_active == True)).scalars().all()
+        created_notif = None
+        for adm in admins:
+            n = Notificacion(
+                id_usr=adm.id,
+                titulo=titulo,
+                mensaje=mensaje,
+                tipo=tipo,
+                enlace=enlace,
+                leida=False,
+            )
+            db.add(n)
+            created_notif = n
+        db.commit()
+        if created_notif:
+            db.refresh(created_notif)
+            return created_notif
+
     notif = Notificacion(
-        id_usr=id_usr,
+        id_usr=uid,
         titulo=titulo,
         mensaje=mensaje,
         tipo=tipo,
