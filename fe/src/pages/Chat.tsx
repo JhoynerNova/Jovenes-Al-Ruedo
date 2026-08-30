@@ -77,22 +77,32 @@ export function Chat() {
     };
   }, []);
 
+  // Mantener ref actualizada de activeConvId para evitar cierres obsoletos (stale closures)
+  const activeConvIdRef = useRef<number | null>(activeConvId);
+  useEffect(() => {
+    activeConvIdRef.current = activeConvId;
+  }, [activeConvId]);
+
   // Cargar mensajes y conectar WebSocket
   useEffect(() => {
     if (!activeConvId) return;
-    
+    const currentConvId = activeConvId;
+    let isCancelled = false;
+
     // 1. Cargar historial por HTTP
     setLoadingMsgs(true);
     const fetchMsgs = async () => {
       try {
-        const data = await chatApi.getMensajes(activeConvId);
-        setMensajes(data);
-        scrollToBottom();
+        const data = await chatApi.getMensajes(currentConvId);
+        if (!isCancelled) {
+          setMensajes(data);
+          scrollToBottom();
+        }
       } catch (e) {
         console.error(e);
-        addToast("Error al cargar el historial de mensajes", "error");
+        if (!isCancelled) addToast("Error al cargar el historial de mensajes", "error");
       } finally {
-        setLoadingMsgs(false);
+        if (!isCancelled) setLoadingMsgs(false);
       }
     };
     fetchMsgs();
@@ -100,31 +110,38 @@ export function Chat() {
     // 2. Conectar WebSocket
     let reconnectTimeout: any;
     const connectWs = () => {
+      if (isCancelled) return;
+
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const wsProtocol = apiUrl.startsWith("https") ? "wss" : "ws";
       const wsHost = apiUrl.replace(/^https?:\/\//, "");
-      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws/${activeConvId}`;
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws/${currentConvId}`;
 
       setConnectionStatus("connecting");
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setConnectionStatus("connected");
+        if (!isCancelled) setConnectionStatus("connected");
       };
 
       ws.onmessage = (event) => {
+        if (isCancelled) return;
         try {
           const data = JSON.parse(event.data);
-          setMensajes((prev) => {
-            if (prev.some((m) => m.id_msg === data.id_msg)) return prev;
-            return [...prev, data];
-          });
-          scrollToBottom();
-          
+          // Filtrar estrictamente por la conversación actualmente activa en pantalla
+          if (data.id_conversacion === activeConvIdRef.current) {
+            setMensajes((prev) => {
+              if (prev.some((m) => m.id_msg === data.id_msg)) return prev;
+              return [...prev, data];
+            });
+            scrollToBottom();
+          }
+
+          // Actualizar preview en la lista
           setConversaciones((prev) =>
             prev.map((c) =>
-              c.id_conversacion === activeConvId
+              c.id_conversacion === data.id_conversacion
                 ? { ...c, ultimo_mensaje_texto: data.contenido, ultimo_mensaje_fecha: data.created_at }
                 : c
             )
@@ -136,12 +153,12 @@ export function Chat() {
 
       ws.onerror = (error) => {
         console.error("Error WS:", error);
-        setConnectionStatus("disconnected");
+        if (!isCancelled) setConnectionStatus("disconnected");
       };
 
       ws.onclose = () => {
+        if (isCancelled) return; // ¡CRUCIAL! No reconectar si la conversación cambió o se desmontó
         setConnectionStatus("disconnected");
-        // Reintentar conectar en 3 segundos
         reconnectTimeout = setTimeout(connectWs, 3000);
       };
     };
@@ -149,8 +166,10 @@ export function Chat() {
     connectWs();
 
     return () => {
+      isCancelled = true;
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
       clearTimeout(reconnectTimeout);
     };
@@ -166,36 +185,43 @@ export function Chat() {
 
   const handleSend = async () => {
     if (!nuevoMensaje.trim() || !activeConvId) return;
+    const targetConvId = activeConvId;
     const text = nuevoMensaje.trim();
     setNuevoMensaje("");
 
-    if (wsRef.current && connectionStatus === "connected") {
-      try {
-        wsRef.current.send(
-          JSON.stringify({
-            remitente_id: user?.id,
-            contenido: text,
-          })
-        );
-      } catch (err) {
-        console.error(err);
-        addToast("Error al enviar, reintentando por canal alterno...", "info");
+    // Enviar por API HTTP para garantizar destino exacto de la conversación activa
+    try {
+      const msg = await chatApi.enviarMensaje(targetConvId, text);
+      setMensajes((prev) => {
+        if (prev.some((m) => m.id_msg === msg.id_msg)) return prev;
+        return [...prev, msg];
+      });
+      scrollToBottom();
+
+      // Actualizar preview en la lista
+      setConversaciones((prev) =>
+        prev.map((c) =>
+          c.id_conversacion === targetConvId
+            ? { ...c, ultimo_mensaje_texto: msg.contenido, ultimo_mensaje_fecha: msg.created_at }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("Error enviando mensaje por HTTP:", err);
+      // Fallback WS si HTTP falla por alguna razón
+      if (wsRef.current && connectionStatus === "connected") {
         try {
-          const msg = await chatApi.enviarMensaje(activeConvId, text);
-          setMensajes((prev) => [...prev, msg]);
-          scrollToBottom();
+          wsRef.current.send(
+            JSON.stringify({
+              remitente_id: user?.id,
+              contenido: text,
+            })
+          );
         } catch {
           addToast("No se pudo enviar el mensaje", "error");
         }
-      }
-    } else {
-      // Fallback HTTP
-      try {
-        const msg = await chatApi.enviarMensaje(activeConvId, text);
-        setMensajes((prev) => [...prev, msg]);
-        scrollToBottom();
-      } catch {
-        addToast("Error de red. No se pudo enviar el mensaje.", "error");
+      } else {
+        addToast("Error al enviar el mensaje", "error");
       }
     }
   };
