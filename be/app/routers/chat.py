@@ -351,7 +351,7 @@ def enviar_mensaje(
     db.refresh(nuevo_mensaje)
 
     try:
-        destinatario_id = conv.artista_id if str(conv.empresa_id) == user_id_str else conv.empresa_id
+        destinatario_id = _get_destinatario_id(conv, current_user, db)
         from app.services import notification_service
         notification_service.create_notification(
             db,
@@ -359,7 +359,7 @@ def enviar_mensaje(
             titulo=f"Nuevo mensaje de {current_user.full_name}",
             mensaje=body.contenido[:150],
             tipo="mensaje",
-            enlace="/mensajes"
+            enlace=f"/mensajes?convId={id_conversacion}"
         )
     except Exception as e:
         print(f"[Chat] Error al crear notificacion: {e}")
@@ -427,21 +427,21 @@ async def websocket_endpoint(
                 # Generar notificación para el destinatario
                 conv = db.get(Conversacion, id_conversacion)
                 if conv:
-                    dest_uid = conv.artista_id if str(conv.empresa_id) == str(remitente_uuid) else conv.empresa_id
                     rem_user = db.execute(select(User).where(User.id == remitente_uuid)).scalar_one_or_none()
-                    rem_nombre = rem_user.full_name if rem_user else "Usuario"
-                    try:
-                        from app.services import notification_service
-                        notification_service.create_notification(
-                            db,
-                            id_usr=dest_uid,
-                            titulo=f"Nuevo mensaje de {rem_nombre}",
-                            mensaje=contenido[:150],
-                            tipo="mensaje",
-                            enlace="/mensajes"
-                        )
-                    except Exception as e:
-                        print(f"[WS Chat] Error creando notificación: {e}")
+                    if rem_user:
+                        dest_uid = _get_destinatario_id(conv, rem_user, db)
+                        try:
+                            from app.services import notification_service
+                            notification_service.create_notification(
+                                db,
+                                id_usr=dest_uid,
+                                titulo=f"Nuevo mensaje de {rem_user.full_name}",
+                                mensaje=contenido[:150],
+                                tipo="mensaje",
+                                enlace=f"/mensajes?convId={id_conversacion}"
+                            )
+                        except Exception as e:
+                            print(f"[WS Chat] Error creando notificación: {e}")
                 
                 # Transmitir a todos los conectados
                 broadcast_data = {
@@ -454,4 +454,6 @@ async def websocket_endpoint(
                 }
                 await manager.broadcast(broadcast_data, id_conversacion)
     except WebSocketDisconnect:
+        manager.disconnect(websocket, id_conversacion)
+    except Exception as e:
         manager.disconnect(websocket, id_conversacion)
