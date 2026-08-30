@@ -7,6 +7,8 @@ import { usersApi } from "@/api/users";
 import { uploadApi } from "@/api/upload";
 import type { UserResponse } from "@/types/auth";
 
+import { PaletteSelector, applyThemePalette } from "@/components/PaletteSelector";
+
 interface CustomizationStudioProps {
   user: UserResponse;
   onUpdate: (updatedUser: UserResponse) => void;
@@ -21,6 +23,7 @@ export function CustomizationStudio({ user, onUpdate }: CustomizationStudioProps
   const [audioTitle, setAudioTitle] = useState<string>(currentCust.audio_signature_title || "Reel de Presentación");
   const [layoutMode, setLayoutMode] = useState<string>(currentCust.layout_mode || "masonry");
   const [headline, setHeadline] = useState<string>(currentCust.headline || "🎨 Creando nuevo contenido artístico");
+  const [colorPalette, setColorPalette] = useState<string>(user.color_palette || "default");
 
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,7 +60,12 @@ export function CustomizationStudio({ user, onUpdate }: CustomizationStudioProps
         headline,
       };
 
-      const updated = await usersApi.updateProfile({ customization: newCustomization });
+      applyThemePalette(colorPalette);
+
+      const updated = await usersApi.updateProfile({
+        color_palette: colorPalette,
+        customization: newCustomization,
+      });
       onUpdate(updated);
       setMsg("✨ ¡Estudio de personalización guardado exitosamente!");
       setTimeout(() => setMsg(""), 4000);
@@ -125,6 +133,15 @@ export function CustomizationStudio({ user, onUpdate }: CustomizationStudioProps
           </div>
         </div>
       </div>
+
+      {/* ── PALETA DE COLORES GLOBAL ── */}
+      <PaletteSelector
+        value={colorPalette}
+        onChange={(p) => {
+          setColorPalette(p);
+          applyThemePalette(p);
+        }}
+      />
 
       {/* ── CONTROLES DEL ESTUDIO ── */}
       <div className="grid gap-6 md:grid-cols-2">

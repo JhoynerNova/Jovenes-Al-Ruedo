@@ -122,6 +122,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     verifySession();
   }, [clearAuth, saveTokens]);
 
+  // Aplicar paleta de colores del usuario automáticamente al cargar o actualizar
+  useEffect(() => {
+    if (user?.color_palette) {
+      import("@/components/PaletteSelector").then(({ applyThemePalette }) => {
+        applyThemePalette(user.color_palette);
+      });
+    }
+  }, [user?.color_palette]);
+
   /**
    * ¿Qué? Acción de login — autentica al usuario y guarda tokens.
    * ¿Para qué? Llamada desde el formulario de login.

@@ -32,7 +32,7 @@ const USERS_PREFIX = "/api/v1/users";
  * ¿Impacto? Si el registro es exitoso, retorna los datos del usuario creado (sin password).
  */
 export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
-  const response = await api.post<UserResponse>(`${AUTH_PREFIX}/register/`, data);
+  const response = await api.post<UserResponse>(`${AUTH_PREFIX}/register`, data);
   return response.data;
 }
 
@@ -42,7 +42,7 @@ export async function registerUser(data: RegisterRequest): Promise<UserResponse>
  * ¿Impacto? Retorna access_token + refresh_token que se usan para acceder a endpoints protegidos.
  */
 export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
-  const response = await api.post<TokenResponse>(`${AUTH_PREFIX}/login/`, data);
+  const response = await api.post<TokenResponse>(`${AUTH_PREFIX}/login`, data);
   return response.data;
 }
 
@@ -52,7 +52,7 @@ export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
  * ¿Impacto? Si el refresh token también expiró (7 días), el usuario debe hacer login de nuevo.
  */
 export async function refreshToken(data: RefreshTokenRequest): Promise<TokenResponse> {
-  const response = await api.post<TokenResponse>(`${AUTH_PREFIX}/refresh/`, data);
+  const response = await api.post<TokenResponse>(`${AUTH_PREFIX}/refresh`, data);
   return response.data;
 }
 
@@ -64,7 +64,7 @@ export async function refreshToken(data: RefreshTokenRequest): Promise<TokenResp
  *           backend — si alguien capturó el token antes del logout, deja de funcionar.
  */
 export async function logoutUser(refreshToken: string | null): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout/`, {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout`, {
     refresh_token: refreshToken,
   });
   return response.data;
@@ -77,7 +77,7 @@ export async function logoutUser(refreshToken: string | null): Promise<MessageRe
  * ¿Impacto? También cierra la sesión actual — el usuario deberá loguearse de nuevo.
  */
 export async function logoutAllDevices(): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout-all-devices/`);
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout-all-devices`);
   return response.data;
 }
 
@@ -87,7 +87,7 @@ export async function logoutAllDevices(): Promise<MessageResponse> {
  * ¿Impacto? Requiere que el usuario conozca su contraseña actual (seguridad adicional).
  */
 export async function changePassword(data: ChangePasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/change-password/`, data);
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/change-password`, data);
   return response.data;
 }
 
@@ -98,7 +98,7 @@ export async function changePassword(data: ChangePasswordRequest): Promise<Messa
  *           La respuesta siempre es la misma para no revelar si el email está registrado.
  */
 export async function forgotPassword(data: ForgotPasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/forgot-password/`, data);
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/forgot-password`, data);
   return response.data;
 }
 
@@ -108,7 +108,7 @@ export async function forgotPassword(data: ForgotPasswordRequest): Promise<Messa
  * ¿Impacto? El token se marca como usado — no puede reutilizarse.
  */
 export async function resetPassword(data: ResetPasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/reset-password/`, data);
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/reset-password`, data);
   return response.data;
 }
 
@@ -118,6 +118,6 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<Message
  * ¿Impacto? Se usa al cargar la app para verificar si el usuario está logueado.
  */
 export async function getMe(): Promise<UserResponse> {
-  const response = await api.get<UserResponse>(`${USERS_PREFIX}/me/`);
+  const response = await api.get<UserResponse>(`${USERS_PREFIX}/me`);
   return response.data;
 }

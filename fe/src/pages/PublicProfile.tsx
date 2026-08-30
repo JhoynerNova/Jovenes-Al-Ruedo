@@ -117,7 +117,7 @@ export function PublicProfile() {
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div data-theme={profile.color_palette || "default"} className="space-y-6 animate-fade-in-up">
       {/* Lightbox */}
       {lightboxImg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setLightboxImg(null)}>
