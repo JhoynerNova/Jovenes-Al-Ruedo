@@ -9,14 +9,15 @@ export function Chat() {
   const [conversaciones, setConversaciones] = useState<ConversacionResponse[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
 
-  // Leer convId de la URL al inicializar (?convId=5)
+  // convId desde la URL (?convId=5)
   const urlConvId = (() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get("convId");
-    return raw ? parseInt(raw, 10) : null;
+    const parsed = raw ? parseInt(raw, 10) : null;
+    return parsed && !isNaN(parsed) && parsed > 0 ? parsed : null;
   })();
 
-  const [activeConvId, setActiveConvId] = useState<number | null>(urlConvId);
+  const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [mensajes, setMensajes] = useState<MensajeResponse[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
 
@@ -40,28 +41,40 @@ export function Chat() {
 
   // Cargar conversaciones
   useEffect(() => {
+    let isMounted = true;
     const fetchConvs = async () => {
       try {
         const data = await chatApi.getConversaciones();
+        if (!isMounted) return;
         setConversaciones(data);
-        if (data.length > 0 && !activeConvId) {
-          // Si había convId en la URL, verificar que exista en la lista
-          if (urlConvId && data.some((c) => c.id_conversacion === urlConvId)) {
-            setActiveConvId(urlConvId);
-          } else {
-            setActiveConvId(data[0].id_conversacion);
-          }
+        
+        if (data.length > 0) {
+          setActiveConvId((currentActive) => {
+            // 1. Si el usuario ya seleccionó una conversación válida en la lista, conservarla
+            if (currentActive && data.some((c) => c.id_conversacion === currentActive)) {
+              return currentActive;
+            }
+            // 2. Si vino un convId por URL y existe en mis conversaciones, seleccionarlo
+            if (urlConvId && data.some((c) => c.id_conversacion === urlConvId)) {
+              return urlConvId;
+            }
+            // 3. Fallback a la primera conversación disponible
+            return data[0].id_conversacion;
+          });
         }
       } catch (e) {
         console.error(e);
-        addToast("Error al cargar la lista de conversaciones", "error");
+        if (isMounted) addToast("Error al cargar la lista de conversaciones", "error");
       } finally {
-        setLoadingConvs(false);
+        if (isMounted) setLoadingConvs(false);
       }
     };
     fetchConvs();
     const interval = setInterval(fetchConvs, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Cargar mensajes y conectar WebSocket
