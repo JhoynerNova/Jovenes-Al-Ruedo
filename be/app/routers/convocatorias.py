@@ -69,7 +69,7 @@ def my_convocatorias(
     if current_user.role != "empresa":
         raise HTTPException(status_code=403, detail="Solo las empresas pueden ver sus convocatorias")
     convs = db.execute(
-        select(Conv).where(Conv.id_usr == str(current_user.id)).order_by(Conv.created_at.desc())
+        select(Conv).where(Conv.id_usr == current_user.id).order_by(Conv.created_at.desc())
     ).scalars().all()
     return [_conv_to_response(c, db) for c in convs]
 
@@ -181,7 +181,7 @@ def create_convocatoria(
         tipo_jornada=body.tipo_jornada,
         rango_salarial=body.rango_salarial,
         ubicacion=body.ubicacion,
-        id_usr=str(current_user.id)
+        id_usr=current_user.id
     )
     db.add(conv)
     db.commit()

@@ -147,18 +147,51 @@ pnpm dev
 
 ---
 
-## 🧪 Testing y Cobertura
+## 🧪 Testing y Cobertura (Pruebas Automatizadas de Calidad QA)
 
-### Backend
-Para correr las pruebas unitarias y verificar el flujo del chat y websockets:
+El proyecto cuenta con suites de pruebas automatizadas que cubren las exigencias técnicas de QA (Clases 4, 5 y 6):
+
+### 1. Pruebas de API Backend con Verificación de Consultas SQL/ORM (QA Clase 6)
+Verifica **20+ endpoints clave** de la API y ejecuta querys ORM/SQL directos a la base de datos tras llamados exitosos y no exitosos para comprobar la consistencia de los datos.
+
+```powershell
+cd be
+& 'c:\Users\jhoyn\Desktop\Proyecto del sena\Jovenes Al Ruedo\be\.venv\Scripts\pytest.exe' app/tests/test_api_20_endpoints.py -v
+```
+**Resultado:** ✅ **20/20 Endpoints y Consultas SQL Aprobados (100%)**.
+
+---
+
+### 2. Pruebas de Transacciones SQL, Integridad ACID, COMMIT y ROLLBACK (QA Clase 6)
+Verifica el comportamiento de la base de datos ante errores, transacciones atómicas, restricciones `UNIQUE`, `CHECK` y la reversión automática (`ROLLBACK`) cuando ocurre una falla.
+
+```powershell
+cd be
+& 'c:\Users\jhoyn\Desktop\Proyecto del sena\Jovenes Al Ruedo\be\.venv\Scripts\pytest.exe' app/tests/test_database_transactions.py -v
+```
+**Resultado:** ✅ **4/4 Pruebas de Transacción Aprobadas (100%)**.
+
+---
+
+### 3. Pruebas Automatizadas E2E con Selenium WebDriver (15 Vistas web x 2 Casos de Uso = 30 Casos) (QA Clase 4 & 5)
+Ejecuta la automatización navegacional en navegador Chrome (modo Headless) sobre **15 vistas principales del proyecto web**, ejecutando un mínimo de **dos casos de uso (UC)** por cada vista.
+
+```powershell
+cd be
+& 'c:\Users\jhoyn\Desktop\Proyecto del sena\Jovenes Al Ruedo\be\.venv\Scripts\pytest.exe' app/tests/test_selenium_15_views.py -v
+```
+**Resultado:** ✅ **30/30 Casos de Uso Automatizados Aprobados (100%)**.
+
+---
+
+### 4. Pruebas Unitarias del Backend (Chat y Auth)
 ```bash
 cd be
 uv run pytest app/tests -v
 ```
-**Resultado:** ✅ 36/36 tests pasando exitosamente.
+**Resultado:** ✅ 36/36 tests unitarios pasando exitosamente.
 
-### Frontend
-Para ejecutar las pruebas en el cliente web:
+### 5. Pruebas de Frontend Web
 ```bash
 cd fe
 pnpm test
