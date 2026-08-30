@@ -367,6 +367,15 @@ def get_public_profile(
     user = db.execute(select(User).where(User.id == uid, User.is_active == True)).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Incrementar contador real de vistas al perfil
+    try:
+        user.profile_views = (user.profile_views or 0) + 1
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        print(f"[Users] Error incrementando vistas de perfil: {e}")
     
     profile = UserResponse.model_validate(user)
     
@@ -374,7 +383,9 @@ def get_public_profile(
     portafolios_data = []
     if user.role == "artista":
         from app.models.portafolio import DetPortafolio
-        ports = db.execute(select(Portafolio).where(Portafolio.id_usr == str(uid))).scalars().all()
+        ports = db.execute(
+            select(Portafolio).where(or_(Portafolio.id_usr == uid, Portafolio.id_usr == str(uid)))
+        ).scalars().all()
         for p in ports:
             archivos = db.execute(
                 select(DetPortafolio).where(DetPortafolio.id_port == p.id_port, DetPortafolio.estado == "P")
@@ -391,7 +402,9 @@ def get_public_profile(
     # Convocatorias publicadas (si es empresa)
     convocatorias_data = []
     if user.role == "empresa":
-        convs_q = db.execute(select(Conv).where(Conv.id_usr == str(uid))).scalars().all()
+        convs_q = db.execute(
+            select(Conv).where(or_(Conv.id_usr == uid, Conv.id_usr == str(uid)))
+        ).scalars().all()
         for c in convs_q:
             total_inscritos = db.execute(
                 select(func.count()).where(Inscripcion.id_conv == c.id_conv)

@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, date
 from typing import List
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, String, Text, func
+from sqlalchemy import JSON, Boolean, Date, DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -151,6 +151,14 @@ class User(Base):
     # ¿Qué? Paleta de colores preferida por el usuario.
     # ¿Para qué? Temas dinámicos según el arte del usuario o su preferencia.
     color_palette: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # ¿Qué? Contador real de visitas al perfil del usuario.
+    profile_views: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+    )
 
     # ¿Qué? Hash bcrypt de la contraseña del usuario.
     # ¿Para qué? Almacenar la contraseña de forma segura — el hash es irreversible,

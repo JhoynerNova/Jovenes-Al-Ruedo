@@ -112,11 +112,12 @@ def get_user_stats(db: Session, user: User) -> Dict[str, Any]:
         avg_rating, total_ratings = db.execute(rating_stmt).first() or (0.0, 0)
         avg_rating = round(float(avg_rating or 0), 1)
 
-        # Vistas estimadas basadas en actividad
-        vistas_estimadas = (total_obras * 14) + (total_postulaciones * 8) + (total_ratings * 25) + 32
+        # Vistas reales acumuladas + estimación activa
+        real_views = getattr(user, "profile_views", 0) or 0
+        vistas_totales = real_views + (total_obras * 14) + (total_postulaciones * 8) + (total_ratings * 25) + 32
 
         return {
-            "vistas_perfil": vistas_estimadas,
+            "vistas_perfil": vistas_totales,
             "total_obras": total_obras,
             "total_postulaciones": total_postulaciones,
             "postulaciones_aceptadas": postulaciones_aceptadas,
@@ -138,10 +139,11 @@ def get_user_stats(db: Session, user: User) -> Dict[str, Any]:
             post_recibidas_stmt = select(func.count()).select_from(Inscripcion).where(Inscripcion.id_conv.in_(conv_ids))
             total_postulaciones_recibidas = db.execute(post_recibidas_stmt).scalar() or 0
 
-        vistas_estimadas = (total_convs * 45) + (total_postulaciones_recibidas * 12) + 50
+        real_views = getattr(user, "profile_views", 0) or 0
+        vistas_totales = real_views + (total_convs * 45) + (total_postulaciones_recibidas * 12) + 50
 
         return {
-            "vistas_perfil": vistas_estimadas,
+            "vistas_perfil": vistas_totales,
             "total_convocatorias": total_convs,
             "postulaciones_recibidas": total_postulaciones_recibidas,
             "postulantes_promedio": round(total_postulaciones_recibidas / total_convs, 1) if total_convs > 0 else 0.0,

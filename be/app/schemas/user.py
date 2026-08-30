@@ -315,6 +315,7 @@ class UserResponse(BaseModel):
     company_nit: Optional[str] = None
     company_size: Optional[str] = None
     onboarding_completed: bool = False
+    profile_views: int = 0
     is_active: bool
     created_at: datetime
     updated_at: datetime
