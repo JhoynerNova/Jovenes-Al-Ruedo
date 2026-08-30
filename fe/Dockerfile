@@ -19,7 +19,7 @@ FROM node:20-alpine AS builder
 # ¿Para qué? El proyecto usa pnpm de forma obligatoria según las instrucciones del proyecto.
 # ¿Impacto? Sin pnpm, no se pueden instalar las dependencias correctamente.
 #           pnpm es más rápido y eficiente que npm gracias a su store de paquetes compartido.
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # ¿Qué? Define /app como el directorio de trabajo dentro del contenedor builder.
 # ¿Para qué? Organizar todos los archivos del frontend en un directorio predecible.
@@ -37,7 +37,7 @@ COPY package.json pnpm-lock.yaml ./
 # ¿Impacto? --frozen-lockfile FALLA si pnpm-lock.yaml no está sincronizado con package.json.
 #           Esto es intencional: alerta de inconsistencias antes de que causen bugs en runtime.
 #           En CI/CD, este comportamiento previene que versiones inesperadas rompan el build.
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ¿Qué? Copia todo el código fuente del frontend.
 # ¿Para qué? Tener los archivos .tsx, .ts, .css disponibles para el proceso de build.
