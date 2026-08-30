@@ -83,6 +83,22 @@ export function Navbar() {
 
           {isAuthenticated && user && (
             <>
+              <button
+                onClick={async () => {
+                  try {
+                    const { chatApi } = await import("@/api/chat");
+                    const conv = await chatApi.startSupportChat();
+                    navigate(`/mensajes?convId=${conv.id_conversacion}`);
+                  } catch {
+                    navigate("/mensajes");
+                  }
+                }}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition-all"
+                title="Chat directo con Soporte Oficial SENA"
+              >
+                🛠️ Soporte SENA
+              </button>
+
               <NotificationBell />
 
               {/* ¿Qué? Nombre del usuario autenticado. */}

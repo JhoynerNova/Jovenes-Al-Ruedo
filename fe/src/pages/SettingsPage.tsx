@@ -365,6 +365,29 @@ export function SettingsPage() {
             </Button>
           </div>
 
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 shadow-sm dark:border-amber-500/20 dark:bg-gray-900">
+            <h3 className="mb-2 text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              🛠️ ¿Necesitas ayuda o cambio de clave por Soporte?
+            </h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Si no puedes cambiar tu clave o requieres asistencia personalizada, abre un chat directo con el Administrador de la plataforma.
+            </p>
+            <Button
+              onClick={async () => {
+                try {
+                  const { chatApi } = await import("@/api/chat");
+                  const conv = await chatApi.startSupportChat();
+                  navigate(`/mensajes?convId=${conv.id_conversacion}`);
+                } catch {
+                  navigate("/mensajes");
+                }
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
+            >
+              💬 Iniciar Chat con Soporte SENA
+            </Button>
+          </div>
+
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white">🚨 Recuperación de acceso</h3>
             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">

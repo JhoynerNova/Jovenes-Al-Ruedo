@@ -174,6 +174,55 @@ def crear_conversacion_directa(
     return _build_conversacion_response(nueva, current_user.id, db)
 
 
+# ── POST /conversaciones/soporte ──────────────────────
+@router.post("/soporte", response_model=ConversacionResponse)
+def iniciar_chat_soporte(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Crea o recupera la conversación de soporte directo entre el usuario y el Administrador."""
+    # Buscar un usuario admin
+    admin = db.execute(select(User).where(User.role == "admin")).scalars().first()
+    if not admin:
+        admin = db.execute(select(User).where(User.is_active == True)).scalars().first()
+
+    admin_uid = admin.id if admin else current_user.id
+
+    # Verificar si ya existe conversación de soporte para este usuario
+    existing = db.execute(
+        select(Conversacion).where(
+            Conversacion.tipo == "soporte",
+            or_(
+                and_(Conversacion.empresa_id == current_user.id, Conversacion.artista_id == admin_uid),
+                and_(Conversacion.artista_id == current_user.id, Conversacion.empresa_id == admin_uid),
+            )
+        )
+    ).scalars().first()
+
+    if existing:
+        return _build_conversacion_response(existing, current_user.id, db)
+
+    nueva = Conversacion(
+        tipo="soporte",
+        empresa_id=admin_uid,
+        artista_id=current_user.id,
+    )
+    db.add(nueva)
+    db.commit()
+    db.refresh(nueva)
+
+    # Mensaje automático de bienvenida del soporte
+    msg_bienvenida = Mensaje(
+        id_conversacion=nueva.id_conversacion,
+        remitente_id=admin_uid,
+        contenido="👋 ¡Hola! Bienvenido al canal de Soporte Oficial SENA — Jóvenes al Ruedo. ¿En qué te podemos ayudar hoy? (Cambio de clave, dudas, reportes, etc.)"
+    )
+    db.add(msg_bienvenida)
+    db.commit()
+
+    return _build_conversacion_response(nueva, current_user.id, db)
+
+
 # ── GET /conversacion/{id}/mensajes ──────────────────
 @router.get(
     "/conversacion/{id_conversacion}/mensajes",
