@@ -94,6 +94,7 @@ export interface UserResponse {
   full_name: string;
   role: string;
   color_palette?: string;
+  customization?: Record<string, any> | null;
   sector: string | null;
   birth_date: string | null;
   artistic_area: string | null;

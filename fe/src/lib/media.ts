@@ -5,7 +5,8 @@
  *            el navegador necesita la URL absoluta del backend para poder cargarlas.
  */
 
-export function toAbsoluteMediaUrl(url: string): string {
+export function toAbsoluteMediaUrl(url: string | null | undefined): string {
+  if (!url) return "";
   if (url.startsWith("http") || url.startsWith("blob:")) return url;
   const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000";
   return `${apiBase}${url}`;

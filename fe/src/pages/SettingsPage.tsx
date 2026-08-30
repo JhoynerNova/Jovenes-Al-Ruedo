@@ -8,8 +8,9 @@ import { PaletteSelector } from "@/components/PaletteSelector";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { CustomizationStudio } from "@/components/customization/CustomizationStudio";
 
-type SettingsTab = "perfil" | "seguridad" | "cuenta";
+type SettingsTab = "perfil" | "estudio" | "seguridad" | "cuenta";
 
 export function SettingsPage() {
   const { user, updateUser, logout } = useAuth();
@@ -169,6 +170,7 @@ export function SettingsPage() {
         <nav className="flex gap-6">
           {([
             { key: "perfil" as SettingsTab, label: "👤 Mi Perfil" },
+            { key: "estudio" as SettingsTab, label: "🎨 Estudio Creativo" },
             { key: "seguridad" as SettingsTab, label: "🔒 Seguridad" },
             { key: "cuenta" as SettingsTab, label: "📋 Cuenta" },
           ]).map((tab) => (
@@ -186,6 +188,11 @@ export function SettingsPage() {
           ))}
         </nav>
       </div>
+
+      {/* ── TAB: ESTUDIO CREATIVO ── */}
+      {activeTab === "estudio" && user && (
+        <CustomizationStudio user={user} onUpdate={updateUser} />
+      )}
 
       {/* ── TAB: PERFIL ── */}
       {activeTab === "perfil" && (

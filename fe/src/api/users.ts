@@ -49,6 +49,7 @@ export const usersApi = {
     bio?: string;
     location?: string;
     color_palette?: string;
+    customization?: Record<string, any>;
     profile_pic_url?: string;
     cover_pic_url?: string;
     social_links?: Record<string, string>;

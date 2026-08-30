@@ -179,6 +179,8 @@ def update_profile(
         current_user.location = body.location
     if body.color_palette is not None:
         current_user.color_palette = body.color_palette
+    if body.customization is not None:
+        current_user.customization = body.customization
     if body.profile_pic_url is not None:
         current_user.profile_pic_url = body.profile_pic_url
     if body.cover_pic_url is not None:

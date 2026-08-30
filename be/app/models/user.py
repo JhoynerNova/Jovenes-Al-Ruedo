@@ -152,6 +152,9 @@ class User(Base):
     # ¿Para qué? Temas dinámicos según el arte del usuario o su preferencia.
     color_palette: Mapped[str] = mapped_column(String(50), nullable=True)
 
+    # ¿Qué? Configuración avanzada de personalización visual (marcos, audio, banners, layouts).
+    customization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     # ¿Qué? Contador real de visitas al perfil del usuario.
     profile_views: Mapped[int] = mapped_column(
         Integer,

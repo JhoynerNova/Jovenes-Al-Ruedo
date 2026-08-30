@@ -300,6 +300,7 @@ class UserResponse(BaseModel):
     last_name: str
     full_name: str
     color_palette: Optional[str] = None
+    customization: Optional[dict] = None
     role: str
     sector: Optional[str] = None
     birth_date: Optional[date] = None
@@ -378,6 +379,7 @@ class UserUpdate(BaseModel):
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
     color_palette: Optional[str] = None
+    customization: Optional[dict] = None
     social_links: Optional[dict] = None
     artistic_disciplines: Optional[List[str]] = None
     looking_for_disciplines: Optional[List[str]] = None

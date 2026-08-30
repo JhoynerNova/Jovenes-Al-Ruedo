@@ -11,6 +11,10 @@ import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { detectSocialLink } from "@/lib/social";
 import { UserBadges } from "@/components/ui/UserBadges";
+import { AvatarFrame } from "@/components/customization/AvatarFrame";
+import { AudioSignaturePlayer } from "@/components/customization/AudioSignaturePlayer";
+import { ArtistDigitalCardModal } from "@/components/customization/ArtistDigitalCardModal";
+import { QrCode, Sparkles } from "lucide-react";
 
 interface PortfolioItem {
   id_det_p: number;
@@ -110,6 +114,8 @@ export function PublicProfile() {
   const isCompany = profile.role === "empresa";
   const isMe = currentUser?.id === profile.id;
 
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Lightbox */}
@@ -139,31 +145,69 @@ export function PublicProfile() {
         />
       )}
 
+      {/* Modal de Tarjeta 3D & QR */}
+      <ArtistDigitalCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        user={profile}
+      />
+
       <Breadcrumbs items={[{ label: "Explorar", path: "/explore" }, { label: profile?.full_name || "Perfil de Artista" }]} />
 
-      {/* ── HERO / COVER ── */}
-      <div className="relative overflow-hidden rounded-2xl shadow-lg">
+      {/* ── HERO / COVER VIVO ── */}
+      <div className="relative overflow-hidden rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div
-          className={`h-48 sm:h-56 bg-cover bg-center ${isArtist ? "bg-gradient-to-r from-brand-purple via-purple-600 to-brand-teal" : "bg-gradient-to-r from-brand-blue via-blue-600 to-brand-dark"}`}
+          className={`relative h-48 sm:h-60 bg-cover bg-center transition-all ${
+            profile.customization?.banner_fx === "mesh-gradient"
+              ? "bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-950 animate-pulse"
+              : profile.customization?.banner_fx === "cyber-particles"
+              ? "bg-gradient-to-r from-cyan-950 via-slate-900 to-fuchsia-950"
+              : profile.customization?.banner_fx === "retro-wave"
+              ? "bg-gradient-to-r from-pink-900 via-purple-900 to-indigo-950"
+              : isArtist
+              ? "bg-gradient-to-r from-brand-purple via-purple-600 to-brand-teal"
+              : "bg-gradient-to-r from-brand-blue via-blue-600 to-brand-dark"
+          }`}
           style={profile.cover_pic_url ? { backgroundImage: `url(${apiUrl}${profile.cover_pic_url})` } : undefined}
         >
           {!profile.cover_pic_url && (
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
           )}
+
+          {/* Reproductor Audio Signature en la esquina del banner */}
+          {profile.customization?.audio_signature_url && (
+            <div className="absolute top-3 right-3 z-10">
+              <AudioSignaturePlayer
+                audioUrl={profile.customization.audio_signature_url}
+                title={profile.customization.audio_signature_title || "Audio Signature"}
+                artistName={profile.full_name}
+              />
+            </div>
+          )}
         </div>
+
         <div className="relative -mt-16 px-6 pb-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
-            {/* Avatar */}
-            <div className="flex h-28 w-28 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-4xl font-bold text-brand-purple shadow-lg dark:border-gray-800 dark:text-brand-teal">
-              {profile.profile_pic_url ? (
-                <img src={`${apiUrl}${profile.profile_pic_url}`} alt={profile.full_name} className="h-full w-full rounded-xl object-cover" />
-              ) : (
-                profile.full_name.charAt(0).toUpperCase()
-              )}
-            </div>
+            {/* Avatar con Marco Neón / Holográfico */}
+            <AvatarFrame
+              src={profile.profile_pic_url}
+              alt={profile.full_name}
+              frameStyle={profile.customization?.avatar_frame || "holo-glow"}
+              size="2xl"
+              className="z-10 shadow-2xl"
+            />
+
             <div className="flex-1 pt-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">{profile.full_name}</h1>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">{profile.full_name}</h1>
+                {profile.customization?.headline && (
+                  <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-400 border border-purple-500/20">
+                    <Sparkles className="h-3 w-3" /> {profile.customization.headline}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                 {isArtist && profile.artistic_area && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-3 py-1 text-xs font-semibold text-brand-purple dark:text-purple-300">
                     <Palette className="h-3.5 w-3.5" /> {profile.artistic_area}
@@ -187,10 +231,21 @@ export function PublicProfile() {
                 <UserBadges userId={profile.id} size="md" />
               </div>
             </div>
+
+            {/* BOTONES DE ACCIÓN */}
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsCardModalOpen(true)}
+                className="border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10"
+              >
+                <QrCode className="mr-1.5 h-4 w-4 inline" /> Tarjeta 3D & QR
+              </Button>
+
               {isMe && (
                 <Link to="/settings">
-                  <Button variant="secondary" size="sm">Editar perfil</Button>
+                  <Button variant="secondary" size="sm">Editar Perfil</Button>
                 </Link>
               )}
               {!isMe && currentUser?.role === "empresa" && isArtist && (
