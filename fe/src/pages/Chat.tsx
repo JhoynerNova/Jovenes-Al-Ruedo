@@ -9,7 +9,14 @@ export function Chat() {
   const [conversaciones, setConversaciones] = useState<ConversacionResponse[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
 
-  const [activeConvId, setActiveConvId] = useState<number | null>(null);
+  // Leer convId de la URL al inicializar (?convId=5)
+  const urlConvId = (() => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("convId");
+    return raw ? parseInt(raw, 10) : null;
+  })();
+
+  const [activeConvId, setActiveConvId] = useState<number | null>(urlConvId);
   const [mensajes, setMensajes] = useState<MensajeResponse[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
 
@@ -38,7 +45,12 @@ export function Chat() {
         const data = await chatApi.getConversaciones();
         setConversaciones(data);
         if (data.length > 0 && !activeConvId) {
-          setActiveConvId(data[0].id_conversacion);
+          // Si había convId en la URL, verificar que exista en la lista
+          if (urlConvId && data.some((c) => c.id_conversacion === urlConvId)) {
+            setActiveConvId(urlConvId);
+          } else {
+            setActiveConvId(data[0].id_conversacion);
+          }
         }
       } catch (e) {
         console.error(e);

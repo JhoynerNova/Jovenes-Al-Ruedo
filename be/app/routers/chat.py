@@ -112,10 +112,8 @@ def _get_destinatario_id(conv: Conversacion, remitente: User, db: Session) -> uu
                 return p2.id
             return conv.artista_id
         else:
-            # Cliente envía → notificar al admin
-            admin = db.execute(select(User).where(User.role == "admin")).scalars().first()
-            if admin:
-                return admin.id
+            # Cliente envía → notificar al admin que participa en esta conversación
+            # empresa_id en soporte siempre es el admin
             return conv.empresa_id
     else:
         # Directo/postulación: el otro participante
