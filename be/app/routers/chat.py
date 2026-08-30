@@ -215,7 +215,7 @@ def iniciar_chat_soporte(
     msg_bienvenida = Mensaje(
         id_conversacion=nueva.id_conversacion,
         remitente_id=admin_uid,
-        contenido="👋 ¡Hola! Bienvenido al canal de Soporte Oficial SENA — Jóvenes al Ruedo. ¿En qué te podemos ayudar hoy? (Cambio de clave, dudas, reportes, etc.)"
+        contenido="👋 ¡Hola! Bienvenido al canal de Soporte Oficial — Jóvenes al Ruedo. ¿En qué te podemos ayudar hoy? (Cambio de clave, dudas, reportes, etc.)"
     )
     db.add(msg_bienvenida)
     db.commit()

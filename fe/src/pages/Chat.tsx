@@ -301,7 +301,7 @@ export function Chat() {
                         </span>
                       ) : c.tipo === "soporte" ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                          🛡️ Soporte Oficial SENA
+                          🛡️ Soporte Oficial
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-brand-teal/10 px-2 py-0.5 text-[10px] font-semibold text-brand-teal">

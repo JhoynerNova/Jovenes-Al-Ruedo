@@ -94,9 +94,9 @@ export function Navbar() {
                   }
                 }}
                 className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition-all"
-                title="Chat directo con Soporte Oficial SENA"
+                title="Chat directo con Soporte Oficial"
               >
-                🛠️ Soporte SENA
+                🛠️ Soporte
               </button>
 
               <NotificationBell />

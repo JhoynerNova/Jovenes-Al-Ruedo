@@ -384,7 +384,7 @@ export function SettingsPage() {
               }}
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
             >
-              💬 Iniciar Chat con Soporte SENA
+              💬 Iniciar Chat con Soporte
             </Button>
           </div>
 
