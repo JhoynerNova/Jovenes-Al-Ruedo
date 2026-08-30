@@ -51,6 +51,7 @@ export function PublicProfile() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [ratingsKey, setRatingsKey] = useState(0);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
   const handleSendMessage = async () => {
     if (!profile || sendingMessage) return;
@@ -113,8 +114,6 @@ export function PublicProfile() {
   const isArtist = profile.role === "artista";
   const isCompany = profile.role === "empresa";
   const isMe = currentUser?.id === profile.id;
-
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
   return (
     <div data-theme={profile.color_palette || "default"} className="space-y-6 animate-fade-in-up">
