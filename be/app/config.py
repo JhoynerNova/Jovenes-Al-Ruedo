@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     MAIL_PORT: int = 587
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
-    MAIL_FROM: str = "noreply@nn-company.com"
+    MAIL_FROM: str = "jovenesalruedo.contacto@gmail.com"
     MAIL_FROM_NAME: str = "NN Auth System"
 
     # ────────────────────────────

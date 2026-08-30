@@ -19,7 +19,7 @@ const secciones = [
     titulo: "1. Responsable del Tratamiento",
     contenido: [
       "Jóvenes al Ruedo, proyecto educativo SENA Ficha 3171599, actúa como responsable del tratamiento de los datos personales recolectados a través de esta plataforma.",
-      "Para ejercer sus derechos o realizar consultas, comuníquese a: privacidad@jovenes-al-ruedo.com",
+      "Para ejercer sus derechos o realizar consultas, comuníquese a: jovenesalruedo.contacto@gmail.com",
     ],
   },
   {
@@ -60,7 +60,7 @@ const secciones = [
       "• Revocar la autorización y/o solicitar la supresión de sus datos",
       "• Acceder gratuitamente a sus datos personales tratados",
       "",
-      "Para ejercer cualquiera de estos derechos, contáctenos en: privacidad@jovenes-al-ruedo.com",
+      "Para ejercer cualquiera de estos derechos, contáctenos en: jovenesalruedo.contacto@gmail.com",
     ],
   },
   {
@@ -212,10 +212,10 @@ export function PrivacyPolicyPage() {
             Para ejercer sus derechos o resolver dudas sobre el tratamiento de sus datos:
           </p>
           <a
-            href="mailto:privacidad@jovenes-al-ruedo.com"
+            href="mailto:jovenesalruedo.contacto@gmail.com"
             className="inline-block rounded-lg bg-brand-teal px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
-            privacidad@jovenes-al-ruedo.com
+            jovenesalruedo.contacto@gmail.com
           </a>
         </div>
 
