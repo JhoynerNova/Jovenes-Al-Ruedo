@@ -139,21 +139,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ¿Impacto? OWASP A05 — solo acepta peticiones con hosts conocidos y seguros.
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "testserver", "*.jovenes-al-ruedo.com"],
+    allowed_hosts=["*"],
 )
 
-# ¿Qué? Middleware CORS (Cross-Origin Resource Sharing).
-# ¿Para qué? Permitir que el frontend (http://localhost:5173) haga peticiones HTTP al backend
-#            (http://localhost:8000), que técnicamente está en un "origen" diferente.
-# ¿Impacto? Sin CORS, el navegador BLOQUEA todas las peticiones del frontend al backend
-#           por política de seguridad del mismo origen (Same-Origin Policy).
-#           allow_credentials=True permite enviar cookies/headers de autenticación.
-#           allow_origins restringido a FRONTEND_URL: con allow_credentials=True, el navegador
-#           NUNCA permite allow_origins=["*"] (y si lo hiciera, cualquier sitio podría hacer
-#           peticiones autenticadas contra la API — riesgo crítico de CSRF/robo de datos).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        settings.FRONTEND_URL,
+        "http://204.48.26.96",
+        "http://204.48.26.96:8000",
+        "http://localhost",
+        "http://localhost:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
     allow_headers=["*"],  # Permitir todos los headers (incluyendo Authorization)
