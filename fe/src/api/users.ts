@@ -87,4 +87,19 @@ export const usersApi = {
     const { data } = await api.delete<MessageResponse>("/api/v1/users/me/", { data: { password } });
     return data;
   },
+
+  resetUserPassword: async (userId: string, new_password: string) => {
+    const { data } = await api.post<MessageResponse>(`/api/v1/users/${userId}/reset-password`, { new_password });
+    return data;
+  },
+
+  getAllConvocatoriasAdmin: async () => {
+    const { data } = await api.get<any[]>("/api/v1/users/admin/all-convocatorias");
+    return data;
+  },
+
+  deleteConvocatoriaAdmin: async (convId: number) => {
+    const { data } = await api.delete<MessageResponse>(`/api/v1/users/admin/convocatoria/${convId}`);
+    return data;
+  },
 };

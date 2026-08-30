@@ -416,3 +416,15 @@ class UserRoleUpdate(BaseModel):
         if v not in ("artista", "empresa", "admin"):
             raise ValueError("Rol inválido. Debe ser artista, empresa o admin")
         return v
+
+
+class AdminResetPasswordRequest(BaseModel):
+    """Schema para que un administrador cambie la contraseña de un usuario."""
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("La nueva contraseña debe tener al menos 6 caracteres")
+        return v

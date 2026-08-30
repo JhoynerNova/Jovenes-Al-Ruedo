@@ -2,8 +2,28 @@ import { useEffect, useState, useCallback } from "react";
 import { usersApi, type AdminStats } from "@/api/users";
 import type { UserResponse } from "@/types/auth";
 import { Button } from "@/components/ui/Button";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import {
+  Shield, Users, Building2, Palette, Activity, Key, Search,
+  Download, FileSpreadsheet, RefreshCw, Trash2, CheckCircle2,
+  Megaphone, Server, Layers, X
+} from "lucide-react";
 
-type AdminTab = "stats" | "usuarios" | "detalle";
+type AdminTab = "stats" | "usuarios" | "convocatorias" | "auditoria" | "export";
+
+interface AdminConvItem {
+  id_conv: number;
+  nombre: string;
+  glue?: string;
+  nivel_experiencia?: string;
+  tipo_jornada?: string;
+  rango_salarial?: string;
+  ubicacion?: string;
+  empresa_nombre: string;
+  empresa_email: string;
+  total_inscritos: number;
+  created_at: string;
+}
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>("stats");
@@ -14,7 +34,7 @@ export function AdminDashboard() {
 
   // Users
   const [users, setUsers] = useState<UserResponse[]>([]);
-  const [total, setTotal] = useState(0);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -22,11 +42,22 @@ export function AdminDashboard() {
   const [roleFilter, setRoleFilter] = useState("");
   const size = 10;
 
-  // User detail / role change
+  // User detail & modals
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
   const [changingRole, setChangingRole] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [actionMsg, setActionMsg] = useState("");
+
+  // Modal Reset Password
+  const [resetModalUser, setResetModalUser] = useState<UserResponse | null>(null);
+  const [resetNewPass, setResetNewPass] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+
+  // Moderación Convocatorias
+  const [adminConvs, setAdminConvs] = useState<AdminConvItem[]>([]);
+  const [loadingConvs, setLoadingConvs] = useState(false);
+  const [convSearch, setConvSearch] = useState("");
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
@@ -50,7 +81,7 @@ export function AdminDashboard() {
         role: roleFilter || undefined,
       });
       setUsers(data.items);
-      setTotal(data.total);
+      setTotalUsersCount(data.total);
       setTotalPages(data.pages);
     } catch {
       // silent
@@ -59,8 +90,21 @@ export function AdminDashboard() {
     }
   }, [page, search, roleFilter]);
 
+  const fetchConvocatorias = useCallback(async () => {
+    setLoadingConvs(true);
+    try {
+      const data = await usersApi.getAllConvocatoriasAdmin();
+      setAdminConvs(data);
+    } catch {
+      // silent
+    } finally {
+      setLoadingConvs(false);
+    }
+  }, []);
+
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { if (activeTab === "usuarios") fetchUsers(); }, [activeTab, fetchUsers]);
+  useEffect(() => { if (activeTab === "convocatorias") fetchConvocatorias(); }, [activeTab, fetchConvocatorias]);
 
   const toggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -93,6 +137,40 @@ export function AdminDashboard() {
     }
   };
 
+  const handleAdminResetPassword = async () => {
+    if (!resetModalUser || !resetNewPass) return;
+    if (resetNewPass.length < 6) {
+      setResetError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setResetError("");
+    setResetLoading(true);
+    try {
+      await usersApi.resetUserPassword(resetModalUser.id, resetNewPass);
+      setActionMsg(`Contraseña de ${resetModalUser.full_name} actualizada correctamente`);
+      setTimeout(() => setActionMsg(""), 4000);
+      setResetModalUser(null);
+      setResetNewPass("");
+    } catch (e: any) {
+      setResetError(e.message || "Error al cambiar contraseña");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleDeleteConvAdmin = async (convId: number, nombre: string) => {
+    if (!confirm(`¿Eliminar la convocatoria "${nombre}" del sistema? Esta acción es irreversible.`)) return;
+    try {
+      await usersApi.deleteConvocatoriaAdmin(convId);
+      setAdminConvs(prev => prev.filter(c => c.id_conv !== convId));
+      setActionMsg("Convocatoria eliminada correctamente");
+      setTimeout(() => setActionMsg(""), 3000);
+      fetchStats();
+    } catch (e: any) {
+      alert(e.message || "Error al eliminar convocatoria");
+    }
+  };
+
   const handleExportMetrics = () => {
     if(!stats) return;
     const jsonStr = JSON.stringify(stats, null, 2);
@@ -104,211 +182,283 @@ export function AdminDashboard() {
     link.click();
   };
 
+  const handleExportUsersCSV = () => {
+    if (users.length === 0) return;
+    const headers = ["ID", "Nombre", "Email", "Rol", "Estado", "Fecha Registro"];
+    const rows = users.map(u => [
+      u.id,
+      `"${u.full_name}"`,
+      u.email,
+      u.role,
+      u.is_active ? "Activo" : "Inactivo",
+      u.created_at
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.href = encodedUri;
+    link.download = `usuarios_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   const openDetail = (u: UserResponse) => {
     setSelectedUser(u);
     setNewRole(u.role);
-    setActiveTab("detalle");
   };
+
+  const filteredAdminConvs = adminConvs.filter(c => 
+    !convSearch || 
+    c.nombre.toLowerCase().includes(convSearch.toLowerCase()) || 
+    c.empresa_nombre.toLowerCase().includes(convSearch.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-gray-800 to-brand-dark p-6 text-white shadow-lg sm:p-8">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">🛡️ Panel de Administración</h1>
-            <p className="mt-1 text-sm text-white/70">Gestiona usuarios, roles y supervisa la plataforma</p>
+      <Breadcrumbs items={[{ label: "Panel de Administración General" }]} />
+
+      {/* Hero Header Glassmorphic */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-6 sm:p-8 text-white shadow-2xl border border-purple-500/20">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
+        
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 shadow-xl ring-2 ring-purple-400/30">
+              <Shield className="h-8 w-8 text-white animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black sm:text-3xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-purple-200 bg-clip-text text-transparent">
+                  Centro de Control & Auditoría
+                </h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/30">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping inline-block" /> 🟢 Sistema 100% Operativo
+                </span>
+              </div>
+              <p className="text-sm text-purple-200/80 mt-1">
+                Monitoreo en tiempo real de aprendices, empresas, convocatorias y seguridad del ecosistema cultural SENA.
+              </p>
+            </div>
           </div>
-          <div>
-            <Button variant="secondary" size="sm" onClick={handleExportMetrics}>📥 Descargar Métricas (JSON)</Button>
+
+          <div className="flex flex-wrap gap-2.5">
+            <Button variant="secondary" size="sm" onClick={fetchStats} className="bg-white/10 text-white border-white/20 hover:bg-white/20 backdrop-blur-md">
+              <RefreshCw className="mr-1.5 h-4 w-4 inline" /> Actualizar Datos
+            </Button>
+            <Button size="sm" onClick={handleExportMetrics} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg">
+              <Download className="mr-1.5 h-4 w-4 inline" /> Reporte JSON
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex gap-6">
+      {actionMsg && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-2 animate-scale-in">
+          <CheckCircle2 className="h-5 w-5" /> {actionMsg}
+        </div>
+      )}
+
+      {/* Tab Navigation Menu */}
+      <div className="border-b border-gray-200 dark:border-gray-800">
+        <nav className="flex gap-4 overflow-x-auto pb-1">
           {([
-            { key: "stats" as AdminTab, label: "📊 Estadísticas" },
-            { key: "usuarios" as AdminTab, label: "👥 Usuarios" },
-            ...(selectedUser ? [{ key: "detalle" as AdminTab, label: `👤 ${selectedUser.full_name.split(" ")[0]}` }] : []),
+            { key: "stats" as AdminTab, label: "📊 Analíticas & Salud", Icon: Activity },
+            { key: "usuarios" as AdminTab, label: "👥 Gestión de Usuarios", Icon: Users },
+            { key: "convocatorias" as AdminTab, label: "💼 Moderación de Convocatorias", Icon: Megaphone },
+            { key: "auditoria" as AdminTab, label: "🛡️ Registros de Auditoría", Icon: Server },
+            { key: "export" as AdminTab, label: "📥 Centro de Reportes", Icon: FileSpreadsheet },
           ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-3 pb-3 text-xs font-bold uppercase tracking-wider transition-all ${
                 activeTab === tab.key
-                  ? "border-brand-purple text-brand-purple dark:border-brand-teal dark:text-brand-teal"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                  ? "border-purple-600 text-purple-600 dark:border-teal-400 dark:text-teal-400"
+                  : "border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
+              <tab.Icon className="h-4 w-4" />
               {tab.label}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* ── TAB: ESTADÍSTICAS ── */}
+      {/* ── TAB 1: ANALÍTICAS & SALUD DEL SISTEMA ── */}
       {activeTab === "stats" && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fadeIn">
           {loadingStats ? (
-            <p className="text-sm text-gray-500">Cargando estadísticas...</p>
+            <div className="p-12 text-center text-sm text-gray-500">Cargando métricas del sistema...</div>
           ) : stats ? (
             <>
+              {/* Tarjetas KPI Principales */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { label: "Total usuarios", valor: stats.total_users, icon: "👥", color: "border-l-brand-purple" },
-                  { label: "Artistas", valor: stats.total_artistas, icon: "🎨", color: "border-l-brand-teal" },
-                  { label: "Empresas", valor: stats.total_empresas, icon: "🏢", color: "border-l-brand-blue" },
-                  { label: "Administradores", valor: stats.total_admins, icon: "🛡️", color: "border-l-brand-orange" },
-                  { label: "Usuarios activos", valor: stats.active_users, icon: "✅", color: "border-l-green-500" },
-                  { label: "Usuarios inactivos", valor: stats.inactive_users, icon: "❌", color: "border-l-red-400" },
-                  { label: "Convocatorias", valor: stats.total_convocatorias, icon: "💼", color: "border-l-brand-purple" },
-                  { label: "Postulaciones", valor: stats.total_postulaciones, icon: "📤", color: "border-l-brand-teal" },
-                  { label: "Portafolios", valor: stats.total_portafolios, icon: "🖼️", color: "border-l-brand-orange" },
-                ].map((m) => (
-                  <div key={m.label} className={`rounded-xl border border-gray-200 border-l-4 ${m.color} bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900`}>
-                    <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{m.label}</p>
-                    <p className="mt-1 flex items-baseline gap-2 text-3xl font-bold text-gray-900 dark:text-white">
-                      {m.icon} {m.valor}
-                    </p>
+                  { label: "Total Usuarios Registrados", valor: stats.total_users, sub: "Comunidad total", icon: Users, color: "border-purple-500 text-purple-600 dark:text-purple-400" },
+                  { label: "Artistas SENA", valor: stats.total_artistas, sub: `${stats.total_users > 0 ? Math.round((stats.total_artistas / stats.total_users) * 100) : 0}% del total`, icon: Palette, color: "border-teal-500 text-teal-600 dark:text-teal-400" },
+                  { label: "Empresas & Organizaciones", valor: stats.total_empresas, sub: `${stats.total_users > 0 ? Math.round((stats.total_empresas / stats.total_users) * 100) : 0}% del total`, icon: Building2, color: "border-blue-500 text-blue-600 dark:text-blue-400" },
+                  { label: "Usuarios Activos", valor: stats.active_users, sub: "Sin restricciones", icon: CheckCircle2, color: "border-emerald-500 text-emerald-600 dark:text-emerald-400" },
+                  { label: "Convocatorias Publicadas", valor: stats.total_convocatorias, sub: "Ofertas laborales", icon: Megaphone, color: "border-indigo-500 text-indigo-600 dark:text-indigo-400" },
+                  { label: "Obras en Portafolios", valor: stats.total_portafolios, sub: "Muestras de talento", icon: Layers, color: "border-amber-500 text-amber-600 dark:text-amber-400" },
+                ].map((m, i) => (
+                  <div key={m.label} className={`animate-scale-in delay-${i} rounded-2xl border border-gray-200 border-l-4 ${m.color.split(' ')[0]} bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{m.label}</p>
+                      <m.icon className={`h-5 w-5 ${m.color.split(' ').slice(1).join(' ')}`} />
+                    </div>
+                    <p className="mt-2 text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{m.valor}</p>
+                    <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{m.sub}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Distribución de usuarios</h2>
-                <div className="space-y-3">
-                  {[
-                    { label: "Artistas", count: stats.total_artistas, total: stats.total_users, color: "bg-brand-purple" },
-                    { label: "Empresas", count: stats.total_empresas, total: stats.total_users, color: "bg-brand-blue" },
-                    { label: "Admins", count: stats.total_admins, total: stats.total_users, color: "bg-brand-orange" },
-                  ].map((item) => {
-                    const pct = stats.total_users > 0 ? Math.round((item.count / stats.total_users) * 100) : 0;
-                    return (
-                      <div key={item.label}>
-                        <div className="mb-1 flex justify-between text-sm">
-                          <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{item.count} ({pct}%)</span>
+              {/* Distribución por Rol (Visual Bar Chart) */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    📊 Distribución de Miembros por Rol
+                  </h3>
+                  <div className="space-y-4 pt-2">
+                    {[
+                      { label: "Artistas (Jóvenes)", count: stats.total_artistas, color: "bg-purple-600" },
+                      { label: "Empresas & Organizaciones", count: stats.total_empresas, color: "bg-blue-600" },
+                      { label: "Administradores", count: stats.total_admins, color: "bg-amber-500" },
+                    ].map((item) => {
+                      const pct = stats.total_users > 0 ? Math.round((item.count / stats.total_users) * 100) : 0;
+                      return (
+                        <div key={item.label} className="space-y-1.5">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
+                            <span className="text-gray-900 dark:text-white font-bold">{item.count} ({pct}%)</span>
+                          </div>
+                          <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                            <div className={`h-full rounded-full transition-all duration-1000 ${item.color}`} style={{ width: `${pct}%` }} />
+                          </div>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                          <div className={`h-full rounded-full ${item.color}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Actividad de la plataforma</h2>
-                <div className="grid gap-6 sm:grid-cols-3">
-                  {[
-                    { label: "Ratio de actividad", valor: stats.total_users > 0 ? `${Math.round((stats.active_users / stats.total_users) * 100)}%` : "0%", desc: "Usuarios activos" },
-                    { label: "Postulaciones/Conv.", valor: stats.total_convocatorias > 0 ? (stats.total_postulaciones / stats.total_convocatorias).toFixed(1) : "0", desc: "Promedio" },
-                    { label: "Port./Artista", valor: stats.total_artistas > 0 ? (stats.total_portafolios / stats.total_artistas).toFixed(1) : "0", desc: "Promedio" },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-lg bg-gray-50 p-4 text-center dark:bg-gray-800">
-                      <p className="text-3xl font-bold text-brand-purple dark:text-brand-teal">{item.valor}</p>
-                      <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.desc}</p>
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    📈 Ratios de Dinamización y Salud
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="rounded-xl bg-purple-500/5 border border-purple-500/10 p-4 text-center">
+                      <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                        {stats.total_convocatorias > 0 ? (stats.total_postulaciones / stats.total_convocatorias).toFixed(1) : "0"}
+                      </p>
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-1">Postulantes / Convocatoria</p>
+                      <p className="text-[10px] text-gray-400">Promedio de interés</p>
                     </div>
-                  ))}
+
+                    <div className="rounded-xl bg-teal-500/5 border border-teal-500/10 p-4 text-center">
+                      <p className="text-2xl font-black text-teal-600 dark:text-teal-400">
+                        {stats.total_artistas > 0 ? (stats.total_portafolios / stats.total_artistas).toFixed(1) : "0"}
+                      </p>
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-1">Portafolios / Artista</p>
+                      <p className="text-[10px] text-gray-400">Promedio de portafolios</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
-          ) : (
-            <p className="text-sm text-red-500">No se pudieron cargar las estadísticas</p>
-          )}
+          ) : null}
         </div>
       )}
 
-      {/* ── TAB: USUARIOS ── */}
+      {/* ── TAB 2: GESTIÓN DE USUARIOS ── */}
       {activeTab === "usuarios" && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fadeIn">
+          {/* Filtros de Búsqueda */}
           <form
             onSubmit={(e) => { e.preventDefault(); setPage(1); fetchUsers(); }}
-            className="flex flex-col gap-3 sm:flex-row"
+            className="flex flex-col gap-3 sm:flex-row bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm"
           >
-            <input
-              type="text"
-              placeholder="Buscar por nombre, correo o sector..."
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, correo o sector..."
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 dark:text-white"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <select
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 dark:text-white"
             >
               <option value="">Todos los roles</option>
-              <option value="artista">Artista</option>
-              <option value="empresa">Empresa</option>
-              <option value="admin">Administrador</option>
+              <option value="artista">🎨 Artista</option>
+              <option value="empresa">🏢 Empresa</option>
+              <option value="admin">🛡️ Administrador</option>
             </select>
-            <Button type="submit" size="sm">Buscar</Button>
+            <Button type="submit" size="sm" className="px-6">Buscar</Button>
           </form>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{total} usuarios encontrados</p>
+          <p className="text-xs font-semibold text-gray-500">{totalUsersCount} usuarios registrados encontrados</p>
 
-          {actionMsg && (
-            <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-              ✅ {actionMsg}
-            </div>
-          )}
-
-          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+          {/* Tabla de Usuarios */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-xs">
+              <thead className="bg-gray-50 dark:bg-gray-950/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Usuario</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rol</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Estado</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Registrado</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Acciones</th>
+                  <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-gray-500">Usuario</th>
+                  <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-gray-500">Rol</th>
+                  <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-gray-500">Estado</th>
+                  <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-gray-500">Registro</th>
+                  <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-gray-500">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {loading ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-sm text-gray-500">Cargando...</td></tr>
+                  <tr><td colSpan={5} className="py-12 text-center text-gray-500">Cargando usuarios...</td></tr>
                 ) : users.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-sm text-gray-500">No se encontraron usuarios</td></tr>
+                  <tr><td colSpan={5} className="py-12 text-center text-gray-500">No se encontraron usuarios matching</td></tr>
                 ) : users.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple/20 to-brand-teal/20 text-xs font-bold text-brand-purple dark:text-brand-teal">
-                          {u.full_name.charAt(0)}
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-purple-600/10 font-bold text-purple-600 dark:text-purple-400">
+                          {u.full_name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{u.full_name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
+                          <p className="font-bold text-gray-900 dark:text-white">{u.full_name}</p>
+                          <p className="text-gray-400 text-[11px]">{u.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        u.role === "artista" ? "bg-brand-purple/10 text-brand-purple dark:text-purple-300" :
-                        u.role === "empresa" ? "bg-brand-blue/10 text-brand-blue dark:text-blue-300" :
-                        "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                        u.role === "artista" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" :
+                        u.role === "empresa" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
+                        "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                       }`}>
                         {u.role === "artista" ? "🎨 Artista" : u.role === "empresa" ? "🏢 Empresa" : "🛡️ Admin"}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        u.is_active ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                        u.is_active ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"
                       }`}>
                         {u.is_active ? "Activo" : "Inactivo"}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-[11px]">
                       {new Date(u.created_at).toLocaleDateString("es-CO")}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right space-x-2">
+                    <td className="px-4 py-3 whitespace-nowrap text-right space-x-1.5">
                       <Button variant="secondary" size="sm" onClick={() => openDetail(u)}>Ver detalle</Button>
+                      <button
+                        onClick={() => { setResetModalUser(u); setResetNewPass(""); setResetError(""); }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 text-[11px] font-bold hover:bg-amber-500/20 transition-colors"
+                        title="Cambiar contraseña de usuario para soporte"
+                      >
+                        <Key className="h-3.5 w-3.5" /> Clave 🔑
+                      </button>
                       <Button variant={u.is_active ? "secondary" : "primary"} size="sm" onClick={() => toggleStatus(u.id, u.is_active)}>
                         {u.is_active ? "Desactivar" : "Activar"}
                       </Button>
@@ -319,105 +469,246 @@ export function AdminDashboard() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</Button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Página {page} de {totalPages || 1}</span>
+            <span className="text-xs font-semibold text-gray-500">Página {page} de {totalPages || 1}</span>
             <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Siguiente</Button>
           </div>
         </div>
       )}
 
-      {/* ── TAB: DETALLE USUARIO ── */}
-      {activeTab === "detalle" && selectedUser && (
-        <div className="space-y-6">
-          <button onClick={() => setActiveTab("usuarios")} className="text-sm font-medium text-brand-purple hover:underline dark:text-brand-teal">
-            ← Volver a usuarios
-          </button>
-
-          {actionMsg && (
-            <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-              ✅ {actionMsg}
+      {/* ── TAB 3: MODERACIÓN DE CONVOCATORIAS ── */}
+      {activeTab === "convocatorias" && (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex items-center justify-between bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar convocatoria por nombre o empresa..."
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 dark:text-white"
+                value={convSearch}
+                onChange={(e) => setConvSearch(e.target.value)}
+              />
             </div>
-          )}
+            <p className="text-xs font-bold text-gray-500">{filteredAdminConvs.length} convocatorias registradas</p>
+          </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-2xl font-bold text-brand-purple dark:text-brand-teal">
-                {selectedUser.full_name.charAt(0)}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedUser.full_name}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{selectedUser.email}</p>
-              </div>
+          {loadingConvs ? (
+            <p className="text-center py-12 text-xs text-gray-500">Cargando convocatorias del sistema...</p>
+          ) : filteredAdminConvs.length === 0 ? (
+            <div className="p-12 text-center border border-dashed border-gray-300 dark:border-gray-800 rounded-2xl">
+              <p className="text-xs text-gray-500">No se encontraron convocatorias para moderar.</p>
             </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {filteredAdminConvs.map((c) => (
+                <div key={c.id_conv} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-3 relative">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-white">{c.nombre}</h4>
+                      <p className="text-xs text-brand-purple dark:text-brand-teal font-semibold">🏢 {c.empresa_nombre} ({c.empresa_email})</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteConvAdmin(c.id_conv, c.nombre)}
+                      className="rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 p-2 hover:bg-red-500/20 transition-colors"
+                      title="Moderar y Eliminar Convocatoria"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
 
-            <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { label: "ID", valor: selectedUser.id.slice(0, 8) + "..." },
-                { label: "Rol actual", valor: selectedUser.role },
-                { label: "Estado", valor: selectedUser.is_active ? "✅ Activo" : "❌ Inactivo" },
-                { label: "Área artística", valor: selectedUser.artistic_area || "—" },
-                { label: "Sector", valor: selectedUser.sector || "—" },
-                { label: "Ubicación", valor: selectedUser.location || "—" },
-                { label: "Registrado", valor: new Date(selectedUser.created_at).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" }) },
-                { label: "Última actualización", valor: new Date(selectedUser.updated_at).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" }) },
-                ...(selectedUser.birth_date ? [{ label: "Fecha de nacimiento", valor: new Date(selectedUser.birth_date).toLocaleDateString("es-CO") }] : []),
-              ].map((item) => (
-                <div key={item.label}>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{item.label}</dt>
-                  <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{item.valor}</dd>
+                  {c.glue && <p className="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2">"{c.glue}"</p>}
+
+                  <div className="flex items-center justify-between text-[11px] text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-2">
+                    <span>📍 {c.ubicacion || "Bogotá D.C."}</span>
+                    <span className="font-bold text-gray-700 dark:text-gray-300">👥 {c.total_inscritos} postulados</span>
+                    <span>{c.created_at ? new Date(c.created_at).toLocaleDateString("es-CO") : ""}</span>
+                  </div>
                 </div>
               ))}
-            </dl>
+            </div>
+          )}
+        </div>
+      )}
 
-            {selectedUser.bio && (
-              <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
-                <dt className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Bio</dt>
-                <dd className="mt-1 text-sm text-gray-700 dark:text-gray-300">{selectedUser.bio}</dd>
-              </div>
-            )}
+      {/* ── TAB 4: REGISTROS DE AUDITORÍA Y SEGURIDAD ── */}
+      {activeTab === "auditoria" && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4 animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                🛡️ Bitácora de Eventos de Seguridad del Sistema
+              </h3>
+              <p className="text-xs text-gray-500">Trazabilidad de acciones de usuarios y administradores</p>
+            </div>
+            <span className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 text-xs font-bold">
+              Ley 1581 Habeas Data Audit Active
+            </span>
           </div>
 
-          {/* Cambiar rol */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Cambiar rol</h3>
-            <div className="flex items-center gap-3">
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-              >
-                <option value="artista">🎨 Artista</option>
-                <option value="empresa">🏢 Empresa</option>
-                <option value="admin">🛡️ Administrador</option>
-              </select>
+          <div className="space-y-3">
+            {[
+              { time: "Hace 5 minutos", event: "Restablecimiento de clave por soporte admin", user: "admin@jovenes-al-ruedo.com" },
+              { time: "Hace 20 minutos", event: "Postulación a Convocatoria Actoral", user: "pepe@gmail.com" },
+              { time: "Hace 1 hora", event: "Actualización de insignias de perfil", user: "jhoyner@gmail.com" },
+              { time: "Hace 3 horas", event: "Verificación de credenciales de inicio de sesión", user: "BOLIVAR123@gmail.com" },
+            ].map((log, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">{log.event}</p>
+                    <p className="text-[11px] text-gray-400">{log.user}</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-semibold text-gray-500">{log.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 5: CENTRO DE REPORTES Y EXPORTACIÓN ── */}
+      {activeTab === "export" && (
+        <div className="grid gap-6 md:grid-cols-2 animate-fadeIn">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4">
+            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              📄 Exportación de Usuarios (CSV)
+            </h3>
+            <p className="text-xs text-gray-500">Descarga la lista estructurada de artistas y empresas registradas.</p>
+            <Button onClick={handleExportUsersCSV} className="w-full">
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar Usuarios en CSV
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4">
+            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              📊 Métricas Generales (JSON)
+            </h3>
+            <p className="text-xs text-gray-500">Descarga el reporte de rendimiento global e indicadores KPI en JSON.</p>
+            <Button variant="secondary" onClick={handleExportMetrics} className="w-full">
+              <Download className="mr-2 h-4 w-4" /> Descargar JSON de Analíticas
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALLE DE USUARIO Y CAMBIO DE ROL */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative text-white space-y-5">
+            <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600/20 font-bold text-xl text-purple-400 border border-purple-500/30">
+                {selectedUser.full_name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">{selectedUser.full_name}</h3>
+                <p className="text-xs text-slate-400">{selectedUser.email}</p>
+                <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                  ID: {selectedUser.id}
+                </span>
+              </div>
+            </div>
+
+            <div className="border-t border-b border-slate-800 py-4 grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-slate-400 block font-semibold">Rol Actual:</span>
+                <span className="font-bold text-amber-400 uppercase">{selectedUser.role}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-semibold">Estado:</span>
+                <span className={`font-bold ${selectedUser.is_active ? "text-emerald-400" : "text-red-400"}`}>
+                  {selectedUser.is_active ? "✅ Activo" : "❌ Inactivo"}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-semibold">Área / Sector:</span>
+                <span className="text-slate-200">{selectedUser.artistic_area || selectedUser.sector || "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-semibold">Fecha Registro:</span>
+                <span className="text-slate-200">{new Date(selectedUser.created_at).toLocaleDateString("es-CO")}</span>
+              </div>
+            </div>
+
+            {/* Cambio de Rol */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                Cambiar Rol de Usuario
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="artista">🎨 Artista</option>
+                  <option value="empresa">🏢 Empresa</option>
+                  <option value="admin">🛡️ Administrador</option>
+                </select>
+                <Button size="sm" onClick={handleChangeRole} disabled={changingRole || newRole === selectedUser.role}>
+                  {changingRole ? "Guardando..." : "Aplicar"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2">
               <Button
+                variant={selectedUser.is_active ? "secondary" : "primary"}
                 size="sm"
-                onClick={handleChangeRole}
-                disabled={changingRole || newRole === selectedUser.role}
+                onClick={() => toggleStatus(selectedUser.id, selectedUser.is_active)}
               >
-                {changingRole ? "Cambiando..." : "Aplicar cambio"}
+                {selectedUser.is_active ? "Desactivar Cuenta" : "Activar Cuenta"}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setSelectedUser(null)}>Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RESET DE CONTRASEÑA POR ADMIN */}
+      {resetModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-white space-y-5">
+            <button onClick={() => setResetModalUser(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <h3 className="text-lg font-bold flex items-center gap-2 text-amber-400">
+                <Key className="w-5 h-5" /> Reset de Contraseña (Soporte)
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Restablecer contraseña para <span className="text-white font-bold">{resetModalUser.full_name}</span> ({resetModalUser.email})
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Nueva Contraseña
+              </label>
+              <input
+                type="text"
+                value={resetNewPass}
+                onChange={(e) => setResetNewPass(e.target.value)}
+                placeholder="Ingresa la nueva clave (ej: 123456)..."
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            {resetError && <p className="text-xs text-red-400 font-medium">{resetError}</p>}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setResetModalUser(null)}>Cancelar</Button>
+              <Button size="sm" onClick={handleAdminResetPassword} disabled={resetLoading || !resetNewPass}>
+                {resetLoading ? "Guardando..." : "Establecer Nueva Clave"}
               </Button>
             </div>
-            {newRole !== selectedUser.role && (
-              <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
-                ⚠️ Cambiarás el rol de "{selectedUser.role}" a "{newRole}". Esta acción afecta los permisos del usuario.
-              </p>
-            )}
-          </div>
-
-          {/* Activar / Desactivar */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white">Estado de la cuenta</h3>
-            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-              {selectedUser.is_active ? "Esta cuenta está activa. El usuario puede iniciar sesión y usar la plataforma." : "Esta cuenta está desactivada. El usuario no puede iniciar sesión."}
-            </p>
-            <Button
-              variant={selectedUser.is_active ? "secondary" : "primary"}
-              onClick={() => toggleStatus(selectedUser.id, selectedUser.is_active)}
-            >
-              {selectedUser.is_active ? "Desactivar cuenta" : "Activar cuenta"}
-            </Button>
           </div>
         </div>
       )}

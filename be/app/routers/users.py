@@ -456,3 +456,80 @@ def change_user_role(
     user.role = role_update.role
     db.commit()
     return MessageResponse(message=f"Rol cambiado a {role_update.role} correctamente")
+
+
+@router.post(
+    "/{user_id}/reset-password",
+    response_model=MessageResponse,
+    summary="Restablecer contraseña de un usuario por administrador",
+)
+def admin_reset_user_password(
+    user_id: str,
+    body: AdminResetPasswordRequest,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Permite al administrador restablecer la contraseña de cualquier usuario."""
+    try:
+        import uuid as _uuid
+        uid = _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de usuario inválido")
+    user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    from app.utils.security import hash_password
+    user.hashed_password = hash_password(body.new_password)
+    db.commit()
+    return MessageResponse(message=f"Contraseña de {user.full_name} restablecida con éxito")
+
+
+@router.get(
+    "/admin/all-convocatorias",
+    summary="Listar todas las convocatorias para moderación (admin)",
+)
+def get_all_convocatorias_admin(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Retorna todas las convocatorias del sistema con información de la empresa emisora."""
+    convs = db.execute(select(Conv).order_by(Conv.created_at.desc())).scalars().all()
+    result = []
+    for c in convs:
+        empresa = db.execute(select(User).where(User.id == c.id_usr)).scalar_one_or_none()
+        total_inscritos = db.execute(select(func.count()).where(Inscripcion.id_conv == c.id_conv)).scalar() or 0
+        result.append({
+            "id_conv": c.id_conv,
+            "nombre": c.nombre,
+            "glue": c.glue,
+            "nivel_experiencia": c.nivel_experiencia,
+            "tipo_jornada": c.tipo_jornada,
+            "rango_salarial": c.rango_salarial,
+            "ubicacion": c.ubicacion,
+            "empresa_nombre": empresa.full_name if empresa else "Empresa",
+            "empresa_email": empresa.email if empresa else "",
+            "total_inscritos": total_inscritos,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        })
+    return result
+
+
+@router.delete(
+    "/admin/convocatoria/{conv_id}",
+    response_model=MessageResponse,
+    summary="Eliminar o moderar una convocatoria (admin)",
+)
+def admin_delete_convocatoria(
+    conv_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Permite al administrador moderar y eliminar convocatorias."""
+    conv = db.get(Conv, conv_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
+    db.delete(conv)
+    db.commit()
+    return MessageResponse(message="Convocatoria moderada y eliminada del sistema")
+
