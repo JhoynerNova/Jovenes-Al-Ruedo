@@ -62,11 +62,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
               El código después de `yield` se ejecuta al CERRAR.
     """
     # --- Startup ---
-    logger.info("Jóvenes al Ruedo — Backend iniciando...")
-    logger.info(f"CORS habilitado para: {settings.FRONTEND_URL}")
-    from app.database import Base, engine
+    from app.database import Base, engine, SessionLocal
     import app.models  # Importar todos los modelos
     Base.metadata.create_all(bind=engine)
+
+    # Seeding automático de la cuenta de Administrador universal
+    try:
+        from app.seed import seed_admin_user
+        db = SessionLocal()
+        seed_admin_user(db)
+        db.close()
+    except Exception as e:
+        logger.error(f"Error seeding admin user: {e}")
+
     yield
     # --- Shutdown ---
     logger.info("Jóvenes al Ruedo — Backend cerrando...")
