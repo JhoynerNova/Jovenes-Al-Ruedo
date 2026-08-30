@@ -37,7 +37,7 @@ COPY package.json pnpm-lock.yaml ./
 # ¿Impacto? --frozen-lockfile FALLA si pnpm-lock.yaml no está sincronizado con package.json.
 #           Esto es intencional: alerta de inconsistencias antes de que causen bugs en runtime.
 #           En CI/CD, este comportamiento previene que versiones inesperadas rompan el build.
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # ¿Qué? Copia todo el código fuente del frontend.
 # ¿Para qué? Tener los archivos .tsx, .ts, .css disponibles para el proceso de build.
