@@ -542,7 +542,89 @@ def admin_delete_convocatoria(
     conv = db.get(Conv, conv_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
+
     db.delete(conv)
     db.commit()
-    return MessageResponse(message="Convocatoria moderada y eliminada del sistema")
+    return MessageResponse(message=f"Convocatoria '{conv.nombre}' eliminada con éxito")
 
+
+def _format_time_ago(dt) -> str:
+    """Formatea una fecha a tiempo relativo legible (hace X minutos/horas/días)."""
+    if not dt:
+        return "Hace un momento"
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff = (now - dt).total_seconds()
+    if diff < 60:
+        return "Hace un momento"
+    elif diff < 3600:
+        mins = int(diff // 60)
+        return f"Hace {mins} min"
+    elif diff < 86400:
+        hours = int(diff // 3600)
+        return f"Hace {hours} h"
+    else:
+        days = int(diff // 86400)
+        return f"Hace {days} d"
+
+
+@router.get(
+    "/admin/audit-logs",
+    summary="Bitácora de eventos de seguridad y auditoría (admin)",
+)
+def get_audit_logs(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Retorna eventos de auditoría y seguridad reales en tiempo real."""
+    logs = []
+
+    # 1. Notificaciones emitidas en la plataforma
+    try:
+        from app.models.notificacion import Notificacion
+        nots = db.execute(select(Notificacion).order_by(Notificacion.created_at.desc()).limit(10)).scalars().all()
+        for n in nots:
+            u = db.execute(select(User).where(User.id == n.id_usr)).scalar_one_or_none()
+            logs.append({
+                "event": f"Notificación: {n.titulo}",
+                "user": u.email if u else "Sistema",
+                "time": _format_time_ago(n.created_at),
+                "created_at": n.created_at.isoformat() if n.created_at else "",
+            })
+    except Exception as e:
+        print(f"[Audit] Error notificaciones: {e}")
+
+    # 2. Postulaciones a convocatorias
+    try:
+        inscs = db.execute(select(Inscripcion).order_by(Inscripcion.created_at.desc()).limit(10)).scalars().all()
+        for i in inscs:
+            u = db.execute(select(User).where(User.id == i.id_usr)).scalar_one_or_none()
+            c = db.get(Conv, i.id_conv)
+            conv_title = c.nombre if c else "Convocatoria"
+            logs.append({
+                "event": f"Postulación a Convocatoria: {conv_title}",
+                "user": u.email if u else "Aprendiz",
+                "time": _format_time_ago(i.created_at),
+                "created_at": i.created_at.isoformat() if i.created_at else "",
+            })
+    except Exception as e:
+        print(f"[Audit] Error postulaciones: {e}")
+
+    # 3. Usuarios registrados recientemente
+    try:
+        users = db.execute(select(User).order_by(User.created_at.desc()).limit(10)).scalars().all()
+        for u in users:
+            logs.append({
+                "event": f"Registro de usuario ({u.role.capitalize()})",
+                "user": u.email,
+                "time": _format_time_ago(u.created_at),
+                "created_at": u.created_at.isoformat() if u.created_at else "",
+            })
+    except Exception as e:
+        print(f"[Audit] Error usuarios: {e}")
+
+    # Ordenar eventos cronológicamente (más reciente primero)
+    logs.sort(key=lambda x: x["created_at"] or "", reverse=True)
+    return logs[:20]

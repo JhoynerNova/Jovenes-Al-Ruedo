@@ -102,4 +102,9 @@ export const usersApi = {
     const { data } = await api.delete<MessageResponse>(`/api/v1/users/admin/convocatoria/${convId}`);
     return data;
   },
+
+  getAuditLogs: async () => {
+    const { data } = await api.get<any[]>("/api/v1/users/admin/audit-logs");
+    return data;
+  },
 };

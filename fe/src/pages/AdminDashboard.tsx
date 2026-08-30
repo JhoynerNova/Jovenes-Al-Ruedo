@@ -102,9 +102,26 @@ export function AdminDashboard() {
     }
   }, []);
 
+  // Registros de auditoría dinámicos desde el backend
+  const [auditLogs, setAuditLogs] = useState<{ event: string; user: string; time: string }[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  const fetchAuditLogs = useCallback(async () => {
+    setLoadingAudit(true);
+    try {
+      const data = await usersApi.getAuditLogs();
+      setAuditLogs(data);
+    } catch {
+      // silent
+    } finally {
+      setLoadingAudit(false);
+    }
+  }, []);
+
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { if (activeTab === "usuarios") fetchUsers(); }, [activeTab, fetchUsers]);
   useEffect(() => { if (activeTab === "convocatorias") fetchConvocatorias(); }, [activeTab, fetchConvocatorias]);
+  useEffect(() => { if (activeTab === "auditoria") fetchAuditLogs(); }, [activeTab, fetchAuditLogs]);
 
   const toggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -535,37 +552,49 @@ export function AdminDashboard() {
       {/* ── TAB 4: REGISTROS DE AUDITORÍA Y SEGURIDAD ── */}
       {activeTab === "auditoria" && (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+          <div className="flex flex-wrap items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 gap-3">
             <div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 🛡️ Bitácora de Eventos de Seguridad del Sistema
               </h3>
-              <p className="text-xs text-gray-500">Trazabilidad de acciones de usuarios y administradores</p>
+              <p className="text-xs text-gray-500">Trazabilidad de acciones de usuarios y administradores en tiempo real</p>
             </div>
-            <span className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 text-xs font-bold">
-              Ley 1581 Habeas Data Audit Active
-            </span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={fetchAuditLogs} disabled={loadingAudit}>
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loadingAudit ? "animate-spin" : ""}`} /> Actualizar
+              </Button>
+              <span className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 text-xs font-bold">
+                Ley 1581 Habeas Data Audit Active
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { time: "Hace 5 minutos", event: "Restablecimiento de clave por soporte admin", user: "admin@jovenes-al-ruedo.com" },
-              { time: "Hace 20 minutos", event: "Postulación a Convocatoria Actoral", user: "pepe@gmail.com" },
-              { time: "Hace 1 hora", event: "Actualización de insignias de perfil", user: "jhoyner@gmail.com" },
-              { time: "Hace 3 horas", event: "Verificación de credenciales de inicio de sesión", user: "BOLIVAR123@gmail.com" },
-            ].map((log, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-xs">
-                <div className="flex items-center gap-3">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <div>
-                    <p className="font-bold text-gray-900 dark:text-white">{log.event}</p>
-                    <p className="text-[11px] text-gray-400">{log.user}</p>
+          {loadingAudit ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand-purple border-t-transparent" />
+              <p className="mt-2 text-xs text-gray-500">Cargando eventos de auditoría...</p>
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <div className="py-12 text-center text-gray-400">
+              <Server className="mx-auto h-8 w-8 mb-2 opacity-50" />
+              <p className="text-sm">No se han registrado eventos recientes en la bitácora</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {auditLogs.map((log, index) => (
+                <div key={index} className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-xs border border-gray-100 dark:border-gray-800/80 hover:border-brand-purple/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shrink-0" />
+                    <div>
+                      <p className="font-bold text-gray-900 dark:text-white">{log.event}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{log.user}</p>
+                    </div>
                   </div>
+                  <span className="text-[11px] font-semibold text-gray-500 shrink-0">{log.time}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-gray-500">{log.time}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
