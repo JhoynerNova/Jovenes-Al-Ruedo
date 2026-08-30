@@ -55,24 +55,48 @@ api.interceptors.request.use(
  */
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Manejo de token expirado (401) con auto-refresco de JWT transparente
+    if (error.response && error.response.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const storedRefreshToken = sessionStorage.getItem("refresh_token");
+
+      if (storedRefreshToken && !originalRequest.url?.includes("/auth/refresh") && !originalRequest.url?.includes("/auth/login")) {
+        try {
+          // Intentar renovar el access token expirado
+          const refreshRes = await axios.post(`${API_URL}/api/v1/auth/refresh`, {
+            refresh_token: storedRefreshToken,
+          });
+
+          const { access_token, refresh_token } = refreshRes.data;
+          sessionStorage.setItem("access_token", access_token);
+          sessionStorage.setItem("refresh_token", refresh_token);
+
+          // Reintentar la petición original con la nueva credencial Bearer
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return api(originalRequest);
+        } catch (refreshErr) {
+          sessionStorage.removeItem("access_token");
+          sessionStorage.removeItem("refresh_token");
+        }
+      }
+    }
+
     if (error.response) {
-      // ¿Qué? Error HTTP del servidor (4xx, 5xx).
-      // ¿Para qué? Extraer el mensaje de error del body de la respuesta.
+      // Error HTTP del servidor (4xx, 5xx).
       const data = error.response.data;
 
-      // ¿Qué? Manejo especial para errores de validación Pydantic (422).
-      // ¿Para qué? Los errores 422 tienen estructura { detail: [{loc, msg, type}] }.
       if (error.response.status === 422 && Array.isArray(data.detail)) {
         const messages = data.detail.map(
           (err: { msg: string }) => err.msg,
         );
         error.message = messages.join(". ");
-        
-        // Extraer errores por campo para que los formularios los muestren bajo el input
+
         (error as any).validationErrors = data.detail.reduce((acc: Record<string, string>, err: any) => {
           if (err.loc && err.loc.length > 0) {
-            const field = err.loc[err.loc.length - 1]; // Usualmente ['body', 'email'] -> 'email'
+            const field = err.loc[err.loc.length - 1];
             acc[field] = err.msg;
           }
           return acc;
@@ -81,8 +105,6 @@ api.interceptors.response.use(
         error.message = data.detail;
       }
     } else if (error.request) {
-      // ¿Qué? La petición se envió pero no hubo respuesta.
-      // ¿Para qué? Informar al usuario que el servidor no respondió.
       error.message = "No se pudo conectar con el servidor";
     }
     return Promise.reject(error);

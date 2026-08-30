@@ -92,7 +92,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const verifySession = async () => {
       const storedToken = sessionStorage.getItem("access_token");
-      if (!storedToken) {
+      const storedRefreshToken = sessionStorage.getItem("refresh_token");
+      if (!storedToken && !storedRefreshToken) {
         setIsLoading(false);
         return;
       }
@@ -101,16 +102,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData = await authApi.getMe();
         setUser(userData);
       } catch {
-        // ¿Qué? Si el token es inválido o expiró, limpiamos la sesión.
-        // ¿Para qué? Evitar que la app quede en un estado inconsistente.
-        clearAuth();
+        if (storedRefreshToken) {
+          try {
+            const tokens = await authApi.refreshToken({ refresh_token: storedRefreshToken });
+            saveTokens(tokens.access_token, tokens.refresh_token);
+            const userData = await authApi.getMe();
+            setUser(userData);
+          } catch {
+            clearAuth();
+          }
+        } else {
+          clearAuth();
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     verifySession();
-  }, [clearAuth]);
+  }, [clearAuth, saveTokens]);
 
   /**
    * ¿Qué? Acción de login — autentica al usuario y guarda tokens.
