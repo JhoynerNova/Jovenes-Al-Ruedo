@@ -366,7 +366,7 @@ def get_mensajes(
     "/conversacion/{id_conversacion}/mensajes",
     response_model=MensajeResponse,
 )
-def enviar_mensaje(
+async def enviar_mensaje(
     id_conversacion: int,
     body: MensajeCreate,
     current_user: User = Depends(get_current_user),
@@ -391,6 +391,7 @@ def enviar_mensaje(
     db.commit()
     db.refresh(nuevo_mensaje)
 
+    # 1. Crear notificación en DB
     try:
         destinatario_id = _get_destinatario_id(conv, current_user, db)
         from app.services import notification_service
@@ -404,6 +405,20 @@ def enviar_mensaje(
         )
     except Exception as e:
         print(f"[Chat] Error al crear notificacion: {e}")
+
+    # 2. Transmitir por WebSocket a todos los usuarios conectados a esta conversación
+    try:
+        broadcast_data = {
+            "id_msg": nuevo_mensaje.id_msg,
+            "id_conversacion": id_conversacion,
+            "remitente_id": str(nuevo_mensaje.remitente_id),
+            "contenido": nuevo_mensaje.contenido,
+            "created_at": nuevo_mensaje.created_at.isoformat() if nuevo_mensaje.created_at else None,
+            "leido": nuevo_mensaje.leido,
+        }
+        await manager.broadcast(broadcast_data, id_conversacion)
+    except Exception as e:
+        print(f"[Chat] Error en broadcast WS: {e}")
 
     return nuevo_mensaje
 

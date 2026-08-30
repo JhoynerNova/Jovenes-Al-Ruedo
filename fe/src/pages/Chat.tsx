@@ -70,7 +70,7 @@ export function Chat() {
       }
     };
     fetchConvs();
-    const interval = setInterval(fetchConvs, 15000);
+    const interval = setInterval(fetchConvs, 5000);
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -83,7 +83,7 @@ export function Chat() {
     activeConvIdRef.current = activeConvId;
   }, [activeConvId]);
 
-  // Cargar mensajes y conectar WebSocket
+  // Cargar mensajes, sincronizar polling constante y conectar WebSocket
   useEffect(() => {
     if (!activeConvId) return;
     const currentConvId = activeConvId;
@@ -107,7 +107,26 @@ export function Chat() {
     };
     fetchMsgs();
 
-    // 2. Conectar WebSocket
+    // 2. Polling secundario rápido cada 3s para respaldar WebSocket si la conexión oscila
+    const pollMsgsInterval = setInterval(async () => {
+      if (isCancelled || activeConvIdRef.current !== currentConvId) return;
+      try {
+        const data = await chatApi.getMensajes(currentConvId);
+        if (!isCancelled && activeConvIdRef.current === currentConvId) {
+          setMensajes((prev) => {
+            if (prev.length !== data.length || (data.length > 0 && prev[prev.length - 1]?.id_msg !== data[data.length - 1]?.id_msg)) {
+              scrollToBottom();
+              return data;
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // Silencioso para no saturar con toasts
+      }
+    }, 3000);
+
+    // 3. Conectar WebSocket
     let reconnectTimeout: any;
     const connectWs = () => {
       if (isCancelled) return;
@@ -157,7 +176,7 @@ export function Chat() {
       };
 
       ws.onclose = () => {
-        if (isCancelled) return; // ¡CRUCIAL! No reconectar si la conversación cambió o se desmontó
+        if (isCancelled) return;
         setConnectionStatus("disconnected");
         reconnectTimeout = setTimeout(connectWs, 3000);
       };
@@ -167,6 +186,7 @@ export function Chat() {
 
     return () => {
       isCancelled = true;
+      clearInterval(pollMsgsInterval);
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
