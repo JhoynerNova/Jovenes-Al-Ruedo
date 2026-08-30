@@ -16,6 +16,7 @@ import { toAbsoluteMediaUrl } from "@/lib/media";
 import { UserBadges } from "@/components/ui/UserBadges";
 import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
 import { analyticsApi, type UserStats } from "@/api/analytics";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type Tab = "resumen" | "portafolio" | "convocatorias" | "mis-postulaciones";
 type MediaFilter = "todas" | "imagenes" | "videos" | "audios" | "documentos";
@@ -223,16 +224,40 @@ export function ArtistDashboard() {
     }
   };
 
-  const handleDeletePortafolio = async (id: number) => {
-    if (!confirm("¿Eliminar este portafolio?")) return;
-    try {
-      await portafolioApi.delete(id);
-      if (viewingPort?.id_port === id) setViewingPort(null);
-      loadPortafolios();
-      loadStats();
-    } catch (e: any) {
-      alert(e.message);
-    }
+  // Modal de Confirmación Elegante
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const handleDeletePortafolio = (id: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Portafolio",
+      message: "¿Seguro que deseas eliminar este portafolio? Esta acción eliminará el contenedor de tus obras.",
+      confirmText: "Eliminar",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await portafolioApi.delete(id);
+          if (viewingPort?.id_port === id) setViewingPort(null);
+          loadPortafolios();
+          loadStats();
+        } catch (e: any) {
+          setPortError(e.message || "Error al eliminar portafolio");
+        }
+      },
+    });
   };
 
   const handleAddItem = async () => {
@@ -269,18 +294,27 @@ export function ArtistDashboard() {
     }
   };
   
-  const handleDeleteItem = async (itemId: number) => {
-    if(!viewingPort) return;
-    if(!confirm("¿Eliminar este obra de tu galería?")) return;
-    try {
-      await portafolioApi.deleteItem(viewingPort.id_port, itemId);
-      const updatedList = await portafolioApi.list();
-      setPortafolios(updatedList);
-      setViewingPort(updatedList.find(p => p.id_port === viewingPort.id_port) || null);
-    } catch(e:any) {
-      alert(e.message);
-    }
-  }
+  const handleDeleteItem = (itemId: number) => {
+    if (!viewingPort) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Obra",
+      message: "¿Seguro que deseas eliminar esta obra de tu galería?",
+      confirmText: "Eliminar obra",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await portafolioApi.deleteItem(viewingPort.id_port, itemId);
+          const updatedList = await portafolioApi.list();
+          setPortafolios(updatedList);
+          setViewingPort(updatedList.find(p => p.id_port === viewingPort.id_port) || null);
+        } catch (e: any) {
+          setItemError(e.message || "Error al eliminar obra");
+        }
+      },
+    });
+  };
 
   const handleApplySubmit = async () => {
     if (!applyModalConv) return;
@@ -309,17 +343,26 @@ export function ArtistDashboard() {
     }
   };
 
-  const handleWithdraw = async (convId: number) => {
-    if (!confirm("¿Seguro que deseas retirar tu postulación?")) return;
-    try {
-      await convocatoriasApi.withdraw(convId);
-      setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
-      setConvMsg("Postulación retirada");
-      loadMisPostulaciones();
-      setTimeout(() => setConvMsg(""), 3000);
-    } catch(e:any) {
-      alert(e.message);
-    }
+  const handleWithdraw = (convId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Retirar Postulación",
+      message: "¿Seguro que deseas retirar tu postulación a esta convocatoria?",
+      confirmText: "Retirar postulación",
+      variant: "warning",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await convocatoriasApi.withdraw(convId);
+          setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
+          setConvMsg("Postulación retirada");
+          loadMisPostulaciones();
+          setTimeout(() => setConvMsg(""), 3000);
+        } catch (e: any) {
+          setConvMsg(e.message || "Error al retirar postulación");
+        }
+      },
+    });
   };
 
   const totalItems = portafolios.reduce((acc, p) => acc + p.archivos.length, 0);
@@ -1286,6 +1329,17 @@ export function ArtistDashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación Elegante (Reemplazo de window.confirm) */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }

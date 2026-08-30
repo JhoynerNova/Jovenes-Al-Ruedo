@@ -15,6 +15,7 @@ import { toAbsoluteMediaUrl } from "@/lib/media";
 import { UserBadges } from "@/components/ui/UserBadges";
 import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
 import { analyticsApi, type UserStats } from "@/api/analytics";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
@@ -181,25 +182,48 @@ export function CompanyDashboard() {
     }
   };
 
-  const handleDeleteConv = async (id: number) => {
-    if (!confirm("¿Eliminar esta convocatoria? Se perderán todas las postulaciones.")) return;
-    try {
-      await convocatoriasApi.delete(id);
-      loadConvs();
-      loadStats();
-    } catch (e: any) {
-      alert(e.message);
-    }
+  // Modal de Confirmación Elegante
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const handleDeleteConv = (id: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Convocatoria",
+      message: "¿Seguro que deseas eliminar esta convocatoria? Se perderán todas las postulaciones asociadas.",
+      confirmText: "Eliminar",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await convocatoriasApi.delete(id);
+          loadConvs();
+          loadStats();
+        } catch (e: any) {
+          setConvError(e.message || "Error al eliminar convocatoria");
+        }
+      },
+    });
   };
 
   const handleUpdateApplicantStatus = async (convId: number, inscId: number, nuevoEstado: string) => {
     try {
       await convocatoriasApi.updateApplicantStatus(convId, inscId, nuevoEstado);
-      // update local state
       setAllApplicants(prev => prev.map(a => a.id_i === inscId ? { ...a, estado: nuevoEstado } : a));
       loadStats();
-    } catch (e: any) {
-      alert("Error al actualizar estado");
+    } catch {
+      // silent
     }
   };
 
@@ -737,6 +761,17 @@ export function CompanyDashboard() {
           convocatoriaTitulo={certTarget.convNombre}
         />
       )}
+
+      {/* Modal de Confirmación Elegante */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }

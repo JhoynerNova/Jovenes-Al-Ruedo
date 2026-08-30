@@ -7,6 +7,7 @@ import { logoutAllDevices } from "@/api/auth";
 import { PaletteSelector } from "@/components/PaletteSelector";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type SettingsTab = "perfil" | "seguridad" | "cuenta";
 
@@ -41,26 +42,47 @@ export function SettingsPage() {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  const handleDeleteAccount = async () => {
+  // Modal de Confirmación Elegante
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const handleDeleteAccount = () => {
     if (!deletePassword) {
       setDeleteError("Ingresa tu contraseña para confirmar");
       return;
     }
-    const confirmed = window.confirm(
-      "Esta acción es irreversible. Tu cuenta quedará desactivada y perderás acceso a la plataforma. ¿Confirmas que deseas eliminar tu cuenta?"
-    );
-    if (!confirmed) return;
-
-    setDeleting(true);
     setDeleteError("");
-    try {
-      await usersApi.deleteAccount(deletePassword);
-      logout();
-      navigate("/", { replace: true });
-    } catch (e: any) {
-      setDeleteError(e.message || "Error al eliminar la cuenta");
-      setDeleting(false);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Cuenta Permanentemente",
+      message: "Esta acción es irreversible. Tu cuenta quedará desactivada y perderás acceso a la plataforma. ¿Confirmas que deseas eliminar tu cuenta?",
+      confirmText: "Sí, eliminar mi cuenta",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        setDeleting(true);
+        try {
+          await usersApi.deleteAccount(deletePassword);
+          logout();
+          navigate("/", { replace: true });
+        } catch (e: any) {
+          setDeleteError(e.message || "Error al eliminar la cuenta. Verifica tu contraseña.");
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   // Perfil
@@ -525,6 +547,17 @@ export function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación Elegante */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }

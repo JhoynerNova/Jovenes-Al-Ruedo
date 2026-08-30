@@ -8,6 +8,7 @@ import {
   Download, FileSpreadsheet, RefreshCw, Trash2, CheckCircle2,
   Megaphone, Server, Layers, X
 } from "lucide-react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type AdminTab = "stats" | "usuarios" | "convocatorias" | "auditoria" | "export";
 
@@ -175,17 +176,41 @@ export function AdminDashboard() {
     }
   };
 
-  const handleDeleteConvAdmin = async (convId: number, nombre: string) => {
-    if (!confirm(`¿Eliminar la convocatoria "${nombre}" del sistema? Esta acción es irreversible.`)) return;
-    try {
-      await usersApi.deleteConvocatoriaAdmin(convId);
-      setAdminConvs(prev => prev.filter(c => c.id_conv !== convId));
-      setActionMsg("Convocatoria eliminada correctamente");
-      setTimeout(() => setActionMsg(""), 3000);
-      fetchStats();
-    } catch (e: any) {
-      alert(e.message || "Error al eliminar convocatoria");
-    }
+  // Modal de Confirmación Elegante
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const handleDeleteConvAdmin = (convId: number, nombre: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Moderación: Eliminar Convocatoria",
+      message: `¿Seguro que deseas eliminar la convocatoria "${nombre}" del sistema? Esta acción es irreversible.`,
+      confirmText: "Eliminar definitivamente",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await usersApi.deleteConvocatoriaAdmin(convId);
+          setAdminConvs((prev) => prev.filter((c) => c.id_conv !== convId));
+          setActionMsg("Convocatoria eliminada correctamente");
+          setTimeout(() => setActionMsg(""), 3000);
+          fetchStats();
+        } catch (e: any) {
+          setActionMsg(e.message || "Error al eliminar convocatoria");
+        }
+      },
+    });
   };
 
   const handleExportMetrics = () => {
@@ -741,6 +766,17 @@ export function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación Elegante */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }
