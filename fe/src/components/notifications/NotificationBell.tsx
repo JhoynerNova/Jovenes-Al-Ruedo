@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, ExternalLink, Briefcase, MessageSquare, Star, Info, X } from "lucide-react";
+import { Bell, CheckCheck, Briefcase, MessageSquare, Star, Info, X } from "lucide-react";
 import { notificacionesApi, type Notificacion } from "@/api/notificaciones";
 
 export function NotificationBell() {
@@ -8,12 +8,34 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isRinging, setIsRinging] = useState(false);
+  const [toastNotification, setToastNotification] = useState<Notificacion | null>(null);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
   const navigate = useNavigate();
 
   const loadUnreadCount = async () => {
     try {
       const count = await notificacionesApi.getUnreadCount();
+      
+      // Si la cantidad de no leídos aumentó, disparar animación y cargar notificación reciente
+      if (count > prevCountRef.current && prevCountRef.current !== 0) {
+        setIsRinging(true);
+        setTimeout(() => setIsRinging(false), 3000);
+        
+        // Obtener la notificación más reciente para mostrar el Banner Flotante
+        try {
+          const recent = await notificacionesApi.getAll(true, 1);
+          if (recent.length > 0) {
+            setToastNotification(recent[0]);
+            setTimeout(() => setToastNotification(null), 5000);
+          }
+        } catch {
+          // silent
+        }
+      }
+      prevCountRef.current = count;
       setUnreadCount(count);
     } catch {
       // Ignorar errores silenciosos de polling
@@ -34,7 +56,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 20000); // Polling cada 20s
+    const interval = setInterval(loadUnreadCount, 6000); // Polling rápido cada 6s
     return () => clearInterval(interval);
   }, []);
 
@@ -78,6 +100,7 @@ export function NotificationBell() {
       }
     }
     setIsOpen(false);
+    setToastNotification(null);
     if (n.enlace) {
       navigate(n.enlace);
     }
@@ -98,19 +121,44 @@ export function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Botón de la Campana */}
+      {/* Botón de la Campana con Animación */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-lg p-2 text-purple-200 hover:bg-brand-purple/20 hover:text-white transition-colors focus:outline-none"
+        className={`relative rounded-xl p-2 text-purple-200 hover:bg-brand-purple/20 hover:text-white transition-all focus:outline-none ${
+          isRinging ? "ring-4 ring-amber-400/50 bg-amber-500/20 text-amber-300 animate-bounce" : ""
+        }`}
         title="Notificaciones"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className={`h-5 w-5 ${isRinging ? "animate-spin text-amber-300" : ""}`} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-lg animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-lg ring-2 ring-brand-dark animate-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
+
+      {/* BANNER FLOTANTE ANIMADO AL LLEGAR NOTIFICACIÓN */}
+      {toastNotification && (
+        <div
+          onClick={() => handleNotificationClick(toastNotification)}
+          className="fixed top-20 right-6 z-50 flex items-start gap-3 w-80 sm:w-96 rounded-2xl border border-amber-500/40 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-md cursor-pointer animate-slide-down text-white hover:scale-102 transition-transform"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Bell className="h-5 w-5 animate-bounce" />
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">🔔 Nueva Notificación</p>
+            <p className="text-sm font-bold truncate mt-0.5">{toastNotification.titulo}</p>
+            <p className="text-xs text-slate-300 line-clamp-2 mt-0.5">{toastNotification.mensaje}</p>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setToastNotification(null); }}
+            className="text-slate-400 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Popover Desplegable */}
       {isOpen && (
@@ -148,49 +196,47 @@ export function NotificationBell() {
             {loading ? (
               <div className="p-6 text-center text-xs text-gray-500">Cargando...</div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center">
-                <Bell className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-700 mb-2" />
-                <p className="text-xs text-gray-500">No tienes notificaciones por ahora</p>
+              <div className="p-8 text-center text-xs text-gray-500">
+                No tienes notificaciones
               </div>
             ) : (
               notifications.map((n) => (
                 <div
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
-                  className={`flex items-start gap-3 p-3.5 transition-colors cursor-pointer ${
-                    !n.leida
-                      ? "bg-brand-purple/5 dark:bg-brand-purple/10 font-medium"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  className={`flex items-start gap-3 p-3.5 transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                    !n.leida ? "bg-purple-50/50 dark:bg-purple-950/20" : ""
                   }`}
                 >
-                  <div className="mt-0.5 rounded-lg bg-gray-100 p-2 dark:bg-gray-800 shrink-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                     {getIcon(n.tipo)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className={`text-xs text-gray-900 dark:text-white truncate ${!n.leida ? "font-bold" : ""}`}>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <p className={`text-xs ${!n.leida ? "font-bold text-gray-900 dark:text-white" : "font-semibold text-gray-700 dark:text-gray-300"}`}>
                         {n.titulo}
                       </p>
-                      {!n.leida && <span className="h-2 w-2 rounded-full bg-brand-purple shrink-0" />}
+                      {!n.leida && <span className="h-2 w-2 rounded-full bg-brand-purple dark:bg-brand-teal shrink-0" />}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{n.mensaje}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {new Date(n.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+                      {n.mensaje}
                     </p>
+                    <span className="mt-1 block text-[10px] text-gray-400">
+                      {new Date(n.created_at).toLocaleDateString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                   </div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-gray-100 dark:border-gray-800 p-2.5 bg-gray-50 text-center dark:bg-gray-950/50">
+          <div className="border-t border-gray-100 dark:border-gray-800 p-2.5 text-center bg-gray-50 dark:bg-gray-950/50">
             <Link
               to="/notificaciones"
               onClick={() => setIsOpen(false)}
-              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-brand-purple hover:underline dark:text-brand-teal"
+              className="text-xs font-bold text-brand-purple hover:underline dark:text-brand-teal"
             >
-              Ver todas las notificaciones <ExternalLink className="h-3 w-3" />
+              Ver todas las notificaciones →
             </Link>
           </div>
         </div>
