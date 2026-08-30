@@ -23,9 +23,20 @@ export function CompanyDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("resumen");
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
-  useEffect(() => {
-    analyticsApi.getMyStats().then(setUserStats).catch(() => {});
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await analyticsApi.getMyStats();
+      setUserStats(stats);
+    } catch { /* silent */ }
   }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    if (activeTab === "resumen") loadStats();
+  }, [activeTab, loadStats]);
   const navigate = useNavigate();
   const [startingChatId, setStartingChatId] = useState<string | null>(null);
 
@@ -144,6 +155,7 @@ export function CompanyDashboard() {
       setNewConvUbicacion("");
       setShowNewConv(false);
       loadConvs();
+      loadStats();
     } catch (e: any) {
       setConvError(e.message || "Error al crear convocatoria");
     }
@@ -163,6 +175,7 @@ export function CompanyDashboard() {
       });
       setEditingConv(null);
       loadConvs();
+      loadStats();
     } catch (e: any) {
       setConvError(e.message || "Error al actualizar");
     }
@@ -173,6 +186,7 @@ export function CompanyDashboard() {
     try {
       await convocatoriasApi.delete(id);
       loadConvs();
+      loadStats();
     } catch (e: any) {
       alert(e.message);
     }
@@ -183,6 +197,7 @@ export function CompanyDashboard() {
       await convocatoriasApi.updateApplicantStatus(convId, inscId, nuevoEstado);
       // update local state
       setAllApplicants(prev => prev.map(a => a.id_i === inscId ? { ...a, estado: nuevoEstado } : a));
+      loadStats();
     } catch (e: any) {
       alert("Error al actualizar estado");
     }

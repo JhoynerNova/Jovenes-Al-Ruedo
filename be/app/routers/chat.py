@@ -256,8 +256,8 @@ def enviar_mensaje(
             tipo="mensaje",
             enlace="/mensajes"
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Chat] Error al crear notificacion: {e}")
 
     return nuevo_mensaje
 
@@ -308,15 +308,35 @@ async def websocket_endpoint(
             contenido = data.get("contenido")
             
             if contenido and remitente_id:
+                remitente_uuid = uuid.UUID(remitente_id) if isinstance(remitente_id, str) else remitente_id
                 # Guardar en base de datos
                 nuevo_mensaje = Mensaje(
                     id_conversacion=id_conversacion,
-                    remitente_id=uuid.UUID(remitente_id),
+                    remitente_id=remitente_uuid,
                     contenido=contenido,
                 )
                 db.add(nuevo_mensaje)
                 db.commit()
                 db.refresh(nuevo_mensaje)
+
+                # Generar notificación para el destinatario
+                conv = db.get(Conversacion, id_conversacion)
+                if conv:
+                    dest_uid = conv.artista_id if str(conv.empresa_id) == str(remitente_uuid) else conv.empresa_id
+                    rem_user = db.execute(select(User).where(User.id == remitente_uuid)).scalar_one_or_none()
+                    rem_nombre = rem_user.full_name if rem_user else "Usuario"
+                    try:
+                        from app.services import notification_service
+                        notification_service.create_notification(
+                            db,
+                            id_usr=dest_uid,
+                            titulo=f"Nuevo mensaje de {rem_nombre}",
+                            mensaje=contenido[:150],
+                            tipo="mensaje",
+                            enlace="/mensajes"
+                        )
+                    except Exception as e:
+                        print(f"[WS Chat] Error creando notificación: {e}")
                 
                 # Transmitir a todos los conectados
                 broadcast_data = {

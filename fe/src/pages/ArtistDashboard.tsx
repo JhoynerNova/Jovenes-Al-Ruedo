@@ -153,16 +153,24 @@ export function ArtistDashboard() {
 
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await analyticsApi.getMyStats();
+      setUserStats(stats);
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     loadPortafolios();
     loadMisPostulaciones();
     loadConvocatorias();
-    analyticsApi.getMyStats().then(setUserStats).catch(() => {});
-  }, [loadPortafolios, loadMisPostulaciones, loadConvocatorias]);
+    loadStats();
+  }, [loadPortafolios, loadMisPostulaciones, loadConvocatorias, loadStats]);
 
   useEffect(() => {
     if (activeTab === "convocatorias") loadConvocatorias();
-  }, [activeTab, loadConvocatorias]);
+    if (activeTab === "resumen") loadStats();
+  }, [activeTab, loadConvocatorias, loadStats]);
 
   const handleCreatePortafolio = async () => {
     if (!newPortNombre.trim()) {
@@ -207,6 +215,7 @@ export function ArtistDashboard() {
       setPortafolios(updatedList);
       const freshCreated = updatedList.find(p => p.id_port === createdPort.id_port);
       if (freshCreated) setViewingPort(freshCreated);
+      loadStats();
     } catch (e: any) {
       setPortError(e.message || "Error al crear portafolio");
     } finally {
@@ -220,6 +229,7 @@ export function ArtistDashboard() {
       await portafolioApi.delete(id);
       if (viewingPort?.id_port === id) setViewingPort(null);
       loadPortafolios();
+      loadStats();
     } catch (e: any) {
       alert(e.message);
     }
@@ -251,6 +261,7 @@ export function ArtistDashboard() {
       const updatedList = await portafolioApi.list();
       setPortafolios(updatedList);
       setViewingPort(updatedList.find(p => p.id_port === viewingPort.id_port) || null);
+      loadStats();
     } catch (e: any) {
       setItemError(e.message || "Error al subir item");
     } finally {
