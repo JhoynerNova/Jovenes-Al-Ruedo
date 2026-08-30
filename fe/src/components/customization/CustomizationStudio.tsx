@@ -61,8 +61,8 @@ export function CustomizationStudio({ user, onUpdate }: CustomizationStudioProps
       onUpdate(updated);
       setMsg("✨ ¡Estudio de personalización guardado exitosamente!");
       setTimeout(() => setMsg(""), 4000);
-    } catch {
-      setMsg("Error al guardar cambios");
+    } catch (e: any) {
+      setMsg(e?.response?.data?.detail || e?.message || "Error al guardar cambios");
     } finally {
       setSaving(false);
     }
