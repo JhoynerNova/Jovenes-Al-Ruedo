@@ -36,16 +36,39 @@ def _build_conversacion_response(
     db: Session,
 ) -> ConversacionResponse:
     """Construye la respuesta de una conversación para el usuario actual."""
-    es_empresa = conv.empresa_id == current_user_id
+    current_id_str = str(current_user_id)
+    es_empresa = str(conv.empresa_id) == current_id_str
     otro_uid = conv.artista_id if es_empresa else conv.empresa_id
 
     # Obtener datos del otro usuario
     try:
+        target_uid = uuid.UUID(str(otro_uid)) if isinstance(otro_uid, (str, uuid.UUID)) else otro_uid
         otro_user = db.execute(
-            select(User).where(User.id == otro_uid)
+            select(User).where(User.id == target_uid)
         ).scalar_one_or_none()
     except Exception:
         otro_user = None
+
+    # Nombre de la conversación/usuario
+    otro_nombre = otro_user.full_name if otro_user else "Usuario"
+    
+    # Si la conversación es de soporte y quien consulta es un Admin
+    curr_user = db.execute(select(User).where(User.id == current_user_id)).scalar_one_or_none()
+    if conv.tipo == "soporte":
+        if curr_user and curr_user.role == "admin":
+            # Para el admin, mostrar el nombre del cliente (sea artista o empresa)
+            cliente_id = conv.artista_id if str(conv.empresa_id) == current_id_str else conv.empresa_id
+            if str(cliente_id) == current_id_str:
+                cliente_id = conv.artista_id if str(conv.artista_id) != current_id_str else conv.empresa_id
+            try:
+                cl_uid = uuid.UUID(str(cliente_id))
+                cl_user = db.execute(select(User).where(User.id == cl_uid)).scalar_one_or_none()
+                if cl_user and cl_user.id != current_user_id:
+                    otro_nombre = f"Soporte: {cl_user.full_name}"
+            except Exception:
+                pass
+        else:
+            otro_nombre = "Soporte Oficial"
 
     # Nombre de la convocatoria (solo para tipo postulacion)
     conv_nombre = None
@@ -76,7 +99,7 @@ def _build_conversacion_response(
         tipo=conv.tipo,
         conv_nombre=conv_nombre,
         otro_usuario_id=str(otro_uid),
-        otro_usuario_nombre=otro_user.full_name if otro_user else "Usuario",
+        otro_usuario_nombre=otro_nombre,
         otro_usuario_avatar=otro_user.profile_pic_url if otro_user else None,
         otro_usuario_role=otro_user.role if otro_user else None,
         ultimo_mensaje_texto=ultimo_msg.contenido if ultimo_msg else None,
@@ -91,22 +114,38 @@ def get_conversaciones(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Obtener todas mis conversaciones (postulación + directos)."""
+    """Obtener todas mis conversaciones (postulación + directos + soporte)."""
     user_uid = current_user.id
-    user_id_str = str(current_user.id)
 
-    convs = db.execute(
-        select(Conversacion).where(
+    if current_user.role == "admin":
+        stmt = select(Conversacion).where(
+            or_(
+                Conversacion.empresa_id == user_uid,
+                Conversacion.artista_id == user_uid,
+                Conversacion.tipo == "soporte",
+            )
+        )
+    else:
+        stmt = select(Conversacion).where(
             or_(
                 Conversacion.empresa_id == user_uid,
                 Conversacion.artista_id == user_uid,
             )
         )
-    ).scalars().all()
+    convs = db.execute(stmt).scalars().all()
 
     result = [
         _build_conversacion_response(c, user_uid, db) for c in convs
     ]
+
+    # Ordenar por último mensaje (más reciente primero)
+    def sort_key(c: ConversacionResponse):
+        return c.ultimo_mensaje_fecha or datetime.min.replace(
+            tzinfo=timezone.utc
+        )
+
+    result.sort(key=sort_key, reverse=True)
+    return result
 
     # Ordenar por último mensaje (más reciente primero)
     def sort_key(c: ConversacionResponse):
@@ -239,7 +278,7 @@ def get_mensajes(
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
     user_id_str = str(current_user.id)
-    if str(conv.empresa_id) != user_id_str and str(conv.artista_id) != user_id_str:
+    if str(conv.empresa_id) != user_id_str and str(conv.artista_id) != user_id_str and current_user.role != "admin":
         raise HTTPException(
             status_code=403, detail="No tienes acceso a esta conversación"
         )
@@ -280,7 +319,7 @@ def enviar_mensaje(
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
     user_id_str = str(current_user.id)
-    if str(conv.empresa_id) != user_id_str and str(conv.artista_id) != user_id_str:
+    if str(conv.empresa_id) != user_id_str and str(conv.artista_id) != user_id_str and current_user.role != "admin":
         raise HTTPException(
             status_code=403, detail="No tienes acceso a esta conversación"
         )
