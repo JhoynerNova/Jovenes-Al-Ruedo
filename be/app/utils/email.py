@@ -1,104 +1,103 @@
 """
 Módulo: utils/email.py
-Descripción: Utilidades para envío de emails — recuperación de contraseña.
-¿Para qué? Proveer funciones para enviar emails de recuperación de contraseña al usuario,
-           incluyendo el enlace con el token de reset.
-¿Impacto? Sin este módulo, la funcionalidad de "olvidé mi contraseña" no puede enviar
-          el enlace de recuperación al email del usuario.
+Descripción: Utilidades para envío de emails — recuperación de contraseña y notificaciones.
+¿Para qué? Proveer funciones para enviar emails reales por SMTP (Gmail, Outlook, SendGrid, etc.)
+           o registrar en consola en modo desarrollo.
 """
 
+import asyncio
 import logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from app.config import settings
 
-# ¿Qué? Logger para registrar eventos de envío de email.
-# ¿Para qué? En desarrollo, loggear los emails en lugar de enviarlos realmente
-#            (útil cuando no hay servidor SMTP configurado).
-# ¿Impacto? Permite depurar el flujo de recuperación sin configurar un servidor de correo.
 logger = logging.getLogger(__name__)
+
+
+def _send_smtp_sync(email: str, reset_url: str, token: str) -> bool:
+    """Función síncrona interna para enviar email por SMTP usando smtplib (Estándar de Python)."""
+    if not settings.MAIL_USERNAME or not settings.MAIL_PASSWORD or settings.MAIL_SERVER == "smtp.example.com":
+        logger.info("[Email] Configuración SMTP no detectada o por defecto. Omitiendo envío SMTP real.")
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = f"{settings.MAIL_FROM_NAME} <{settings.MAIL_FROM}>"
+    msg["To"] = email
+    msg["Subject"] = "Jóvenes al Ruedo — Recuperación de contraseña"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; color: #333; margin: 0; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }}
+            .header {{ text-align: center; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 20px; }}
+            .header h1 {{ color: #4f46e5; margin: 0; font-size: 24px; }}
+            .btn {{ display: inline-block; padding: 12px 28px; background-color: #6366f1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; text-align: center; }}
+            .footer {{ margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Jóvenes al Ruedo</h1>
+            </div>
+            <h2>Solicitud de Recuperación de Contraseña</h2>
+            <p>Hola,</p>
+            <p>Has solicitado restablecer tu contraseña en la plataforma <strong>Jóvenes al Ruedo</strong>.</p>
+            <p>Haz clic en el siguiente botón para crear una nueva contraseña. Este enlace es válido por 1 hora:</p>
+            <div style="text-align: center;">
+                <a href="{reset_url}" class="btn" target="_blank">Restablecer Contraseña</a>
+            </div>
+            <p style="margin-top: 25px; font-size: 13px; color: #666;">
+                Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br>
+                <a href="{reset_url}" style="color: #6366f1; word-break: break-all;">{reset_url}</a>
+            </p>
+            <div class="footer">
+                <p>Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.</p>
+                <p>&copy; 2026 Jóvenes al Ruedo — Plataforma Cultural y Bolsa de Empleo</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    msg.attach(MIMEText(html_content, "html"))
+
+    try:
+        if settings.MAIL_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.MAIL_SERVER, settings.MAIL_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT, timeout=10)
+            server.starttls()
+
+        server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+        server.sendmail(settings.MAIL_FROM, [email], msg.as_string())
+        server.quit()
+        logger.info(f"[Email OK] Correo enviado exitosamente a {email} vía SMTP ({settings.MAIL_SERVER})")
+        return True
+    except Exception as e:
+        logger.error(f"[Email Error] Error al enviar email vía SMTP a {email}: {e}")
+        return False
 
 
 async def send_password_reset_email(email: str, token: str) -> None:
     """Envía un email con el enlace de recuperación de contraseña.
 
-    ¿Qué? Construye y envía un email con un enlace que contiene el token de reset.
-    ¿Para qué? Permitir al usuario restablecer su contraseña cuando la ha olvidado.
-              El enlace lleva al frontend con el token como query parameter.
-    ¿Impacto? Si el email no se envía, el usuario no puede recuperar su cuenta.
-              En desarrollo, el enlace se muestra en la consola del servidor.
-
-    Args:
-        email: Dirección de email del usuario que solicitó el reset.
-        token: Token único de recuperación (UUID) generado por el sistema.
+    Intenta enviar por SMTP real si las credenciales están configuradas.
+    Imprime en consola para facilidad de depuración y testing.
     """
-    # ¿Qué? URL completa que el usuario recibirá en su email.
-    # ¿Para qué? Al hacer clic, el frontend captura el token y muestra el formulario de reset.
-    # ¿Impacto? FRONTEND_URL debe coincidir con la URL real del frontend, de lo contrario
-    #           el enlace no funcionará.
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
 
-    # ────────────────────────────
-    # 📧 Modo desarrollo — Log en consola
-    # ────────────────────────────
-    # ¿Qué? En desarrollo, imprimimos el enlace en la consola en lugar de enviar email real.
-    # ¿Para qué? Facilitar el testing sin necesidad de configurar un servidor SMTP.
-    # ¿Impacto? En producción, esto debe reemplazarse por envío SMTP real con aiosmtplib.
-    #           TODO: Implementar envío SMTP real para producción.
-    logger.info(
-        "📧 Email de recuperación de contraseña:\n"
-        f"   Para: {email}\n"
-        f"   Enlace: {reset_url}\n"
-        f"   Token: {token}"
-    )
-
-    # ────────────────────────────
-    # 📧 Modo producción — Envío SMTP real (descomentado cuando el SMTP esté configurado)
-    # ────────────────────────────
-    # ¿Qué? Envío de email usando aiosmtplib (cliente SMTP asíncrono).
-    # ¿Para qué? Enviar el email de recuperación de forma no bloqueante.
-    # ¿Impacto? Si el SMTP falla, el usuario no recibe el email pero el token sí se crea
-    #           en la BD. Se debería manejar el error y notificar al usuario.
-    #
-    # from email.mime.text import MIMEText
-    # from email.mime.multipart import MIMEMultipart
-    # import aiosmtplib
-    #
-    # message = MIMEMultipart("alternative")
-    # message["From"] = f"{settings.MAIL_FROM_NAME} <{settings.MAIL_FROM}>"
-    # message["To"] = email
-    # message["Subject"] = "NN Auth System — Recuperación de contraseña"
-    #
-    # html_content = f"""
-    # <html>
-    # <body>
-    #     <h2>Recuperación de contraseña</h2>
-    #     <p>Has solicitado restablecer tu contraseña en NN Auth System.</p>
-    #     <p>Haz clic en el siguiente enlace (válido por 1 hora):</p>
-    #     <p><a href="{reset_url}">Restablecer contraseña</a></p>
-    #     <p>Si no solicitaste este cambio, ignora este email.</p>
-    # </body>
-    # </html>
-    # """
-    # message.attach(MIMEText(html_content, "html"))
-    #
-    # try:
-    #     await aiosmtplib.send(
-    #         message,
-    #         hostname=settings.MAIL_SERVER,
-    #         port=settings.MAIL_PORT,
-    #         username=settings.MAIL_USERNAME,
-    #         password=settings.MAIL_PASSWORD,
-    #         use_tls=True,
-    #     )
-    # except Exception as e:
-    #     logger.error(f"Error enviando email a {email}: {e}")
-    #     raise
-
-    # ¿Qué? Print adicional para desarrollo — visible directamente en la terminal.
-    # ¿Para qué? Garantizar que el enlace sea visible incluso si el logging no está configurado.
-    # ¿Impacto? Facilita copiar/pegar el enlace durante el desarrollo.
-    print(f"\n{'='*60}")
-    print(f"📧 EMAIL DE RECUPERACIÓN (modo desarrollo)")
+    print(f"\n{'='*65}")
+    print(f"[RECUPERACION DE CONTRASEÑA]")
     print(f"   Para: {email}")
     print(f"   Enlace: {reset_url}")
-    print(f"{'='*60}\n")
+    print(f"   Token: {token}")
+    print(f"{'='*65}\n")
+
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, _send_smtp_sync, email, reset_url, token)
