@@ -385,9 +385,12 @@ def get_public_profile(
     portafolios_data = []
     if user.role == "artista":
         from app.models.portafolio import DetPortafolio
-        ports = db.execute(
-            select(Portafolio).where(or_(Portafolio.id_usr == uid, Portafolio.id_usr == str(uid)))
-        ).scalars().all()
+        try:
+            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == uid)).scalars().all()
+        except Exception:
+            db.rollback()
+            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == str(uid))).scalars().all()
+
         for p in ports:
             archivos = db.execute(
                 select(DetPortafolio).where(DetPortafolio.id_port == p.id_port, DetPortafolio.estado == "P")
@@ -404,9 +407,12 @@ def get_public_profile(
     # Convocatorias publicadas (si es empresa)
     convocatorias_data = []
     if user.role == "empresa":
-        convs_q = db.execute(
-            select(Conv).where(or_(Conv.id_usr == uid, Conv.id_usr == str(uid)))
-        ).scalars().all()
+        try:
+            convs_q = db.execute(select(Conv).where(Conv.id_usr == uid)).scalars().all()
+        except Exception:
+            db.rollback()
+            convs_q = db.execute(select(Conv).where(Conv.id_usr == str(uid))).scalars().all()
+
         for c in convs_q:
             total_inscritos = db.execute(
                 select(func.count()).where(Inscripcion.id_conv == c.id_conv)
