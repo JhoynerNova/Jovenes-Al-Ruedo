@@ -17,7 +17,7 @@ from app.dependencies import get_current_user, require_admin, get_db
 from app.models.user import User
 from app.models.conv import Conv, Inscripcion
 from app.models.portafolio import Portafolio
-from app.schemas.user import DeleteAccountRequest, UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate
+from app.schemas.user import DeleteAccountRequest, UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate, AdminResetPasswordRequest
 from app.utils.security import verify_password
 
 # ¿Qué? Router de FastAPI para endpoints de usuario.
