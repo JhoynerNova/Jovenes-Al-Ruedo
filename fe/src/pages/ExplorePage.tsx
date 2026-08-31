@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { usersApi } from "@/api/users";
 import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
+import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
+import { uploadApi } from "@/api/upload";
 import type { UserResponse } from "@/types/auth";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -77,6 +79,13 @@ export function ExplorePage() {
   const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
   const [applyingId, setApplyingId] = useState<number | null>(null);
 
+  // Application Modal States
+  const [applyModalConv, setApplyModalConv] = useState<ConvResponse | null>(null);
+  const [applyCarta, setApplyCarta] = useState("");
+  const [applyPortafolioId, setApplyPortafolioId] = useState<number | "">("");
+  const [applyCvFile, setApplyCvFile] = useState<File | null>(null);
+  const [portafolios, setPortafolios] = useState<PortafolioResponse[]>([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -106,19 +115,44 @@ export function ExplorePage() {
     load();
   }, [load]);
 
-  const handleApply = async (convId: number) => {
-    if (!isAuthenticated) return;
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "artista") {
+      portafolioApi.list().then(setPortafolios).catch(() => {});
+    }
+  }, [isAuthenticated, user?.role]);
+
+  const handleWithdraw = async (convId: number) => {
     setApplyingId(convId);
     try {
-      if (appliedIds.has(convId)) {
-        await convocatoriasApi.withdraw(convId);
-        setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
-      } else {
-        await convocatoriasApi.apply(convId, {});
-        setAppliedIds((prev) => new Set(prev).add(convId));
-      }
+      await convocatoriasApi.withdraw(convId);
+      setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
     } catch (e: any) {
       alert(e?.response?.data?.detail || e.message);
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  const handleApplySubmit = async () => {
+    if (!applyModalConv) return;
+    setApplyingId(applyModalConv.id_conv);
+    try {
+      let cv_url: string | undefined = undefined;
+      if (applyCvFile) {
+        cv_url = await uploadApi.uploadFile(applyCvFile);
+      }
+      await convocatoriasApi.apply(applyModalConv.id_conv, {
+        carta_presentacion: applyCarta.trim() || undefined,
+        id_portafolio_interno: applyPortafolioId ? Number(applyPortafolioId) : undefined,
+        cv_url,
+      });
+      setAppliedIds((prev) => new Set(prev).add(applyModalConv.id_conv));
+      setApplyModalConv(null);
+      setApplyCarta("");
+      setApplyPortafolioId("");
+      setApplyCvFile(null);
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || e.message || "Error al enviar postulación");
     } finally {
       setApplyingId(null);
     }
@@ -656,9 +690,9 @@ export function ExplorePage() {
                           <div className="mt-3">
                             {isAuthenticated && user?.role === "artista" ? (
                               <button
-                                onClick={() => handleApply(c.id_conv)}
+                                onClick={() => applied ? handleWithdraw(c.id_conv) : setApplyModalConv(c)}
                                 disabled={applyingId === c.id_conv}
-                                className={`w-full rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm ${
+                                className={`w-full rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm cursor-pointer ${
                                   applied
                                     ? "bg-gray-200 text-gray-700 hover:bg-red-50 hover:text-red-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                                     : "bg-brand-purple text-white hover:bg-brand-purple/90 shadow-md shadow-brand-purple/20 hover:shadow-lg hover:shadow-brand-purple/30 active:scale-[0.98]"
@@ -688,6 +722,59 @@ export function ExplorePage() {
             </section>
           )}
         </>
+      )}
+      {/* Modal de Aplicación en ExplorePage */}
+      {applyModalConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="animate-scale-in w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Postular a {applyModalConv.nombre}</h3>
+              <button onClick={() => setApplyModalConv(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-4 text-xs text-gray-500">Completa tu carta de presentación y adjunta tus documentos para destacar.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Carta de presentación</label>
+                <textarea 
+                  value={applyCarta} onChange={(e) => setApplyCarta(e.target.value)}
+                  rows={4} placeholder="¿Por qué eres el candidato ideal para esta oportunidad?"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Portafolio en Plataforma (Opcional)</label>
+                <select
+                  value={applyPortafolioId}
+                  onChange={(e) => setApplyPortafolioId(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="">No adjuntar portafolio</option>
+                  {portafolios.map(p => (
+                    <option key={p.id_port} value={p.id_port}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">CV (Archivo PDF, Opcional)</label>
+                <input 
+                  type="file" accept=".pdf"
+                  onChange={(e) => setApplyCvFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-brand-purple file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-purple/90 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setApplyModalConv(null)}>Cancelar</Button>
+                <Button onClick={handleApplySubmit} disabled={applyingId === applyModalConv.id_conv}>
+                  {applyingId === applyModalConv.id_conv ? "Enviando..." : "Enviar postulación"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

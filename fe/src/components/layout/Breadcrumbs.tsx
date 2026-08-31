@@ -35,7 +35,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
   if (items && items.length > 0) {
     return (
       <nav aria-label="Ruta de navegación" className="flex items-center gap-2 text-xs font-medium text-slate-400 py-3 px-4 bg-slate-900/60 border border-slate-800/80 rounded-xl mb-6 backdrop-blur-sm">
-        <Link to="/" className="flex items-center gap-1 hover:text-emerald-400 transition-colors">
+        <Link to="/dashboard" className="flex items-center gap-1 hover:text-emerald-400 transition-colors">
           <Home className="w-3.5 h-3.5" />
           <span>Inicio</span>
         </Link>

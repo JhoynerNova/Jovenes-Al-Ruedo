@@ -44,10 +44,48 @@ export function ArtistDigitalCardModal({
     setTransformStyle("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(profileUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleCopyLink = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(profileUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = profileUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      alert(`Enlace de perfil: ${profileUrl}`);
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    setDownloading(true);
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `QR_${user.full_name.replace(/\s+/g, "_")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(qrUrl, "_blank");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -122,7 +160,7 @@ export function ArtistDigitalCardModal({
             <img
               src={qrUrl}
               alt="Código QR del Perfil"
-              className="h-16 w-16 rounded-xl border border-purple-500/30 shadow-md"
+              className="h-28 w-28 rounded-xl border border-purple-500/30 shadow-md object-contain bg-slate-950 p-1"
             />
           </div>
         </div>
@@ -138,15 +176,13 @@ export function ArtistDigitalCardModal({
             {copied ? "¡Enlace Copiado!" : "Compartir Perfil"}
           </Button>
           
-          <a
-            href={qrUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={`QR_${user.full_name.replace(/\s+/g, '_')}.png`}
-            className="inline-flex items-center justify-center rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 transition-all"
+          <button
+            onClick={handleDownloadQR}
+            disabled={downloading}
+            className="inline-flex items-center justify-center rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Download className="mr-2 h-4 w-4" /> Descargar QR
-          </a>
+            <Download className="mr-2 h-4 w-4" /> {downloading ? "Descargando..." : "Descargar QR"}
+          </button>
         </div>
       </div>
     </div>

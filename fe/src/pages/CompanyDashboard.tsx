@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type Applicant } from "@/api/convocatorias";
 import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
 import { chatApi } from "@/api/chat";
+import api from "@/api/axios";
 import { RatingModal } from "@/components/RatingModal";
 import { CertificateModal } from "@/components/CertificateModal";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -44,8 +45,9 @@ export function CompanyDashboard() {
   const handleStartChat = async (artistaId: string) => {
     setStartingChatId(artistaId);
     try {
-      await chatApi.crearConversacionDirecta(artistaId);
-      navigate("/mensajes");
+      const conv = await chatApi.crearConversacionDirecta(artistaId);
+      const convId = conv.id_conversacion || (conv as any).id;
+      navigate(`/mensajes?convId=${convId}`);
     } catch {
       alert("Error al iniciar chat con el artista.");
     } finally {
@@ -74,8 +76,23 @@ export function CompanyDashboard() {
   const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; convId?: number } | null>(null);
   const [certTarget, setCertTarget] = useState<{ artistaNombre: string; convNombre: string } | null>(null);
 
-  const handleExportCSV = () => {
-    window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/reports/convocatorias/csv`, '_blank');
+  const handleExportCSV = async () => {
+    try {
+      const response = await api.get("/api/v1/reports/convocatorias/csv", {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "reporte_convocatorias_jovenes_al_ruedo.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Error al exportar el reporte CSV.");
+    }
   };
 
   // States for viewing artist portfolio in modal
@@ -553,7 +570,9 @@ export function CompanyDashboard() {
                         <div key={a.id_i} className="animate-scale-in rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-xs space-y-2.5">
                           <div className="flex items-start justify-between gap-1">
                             <div>
-                              <h5 className="font-bold text-gray-900 dark:text-white">{a.artista_nombre}</h5>
+                              <Link to={`/perfil/${a.id_usr}`} className="font-bold text-gray-900 dark:text-white hover:text-brand-purple dark:hover:text-brand-teal transition-colors">
+                                {a.artista_nombre} 👤
+                              </Link>
                               <p className="text-[10px] text-gray-400">{a.artista_email}</p>
                               {a.artista_area && <span className="mt-1 inline-block text-[10px] text-brand-teal font-medium">✨ {a.artista_area}</span>}
                             </div>
@@ -588,20 +607,21 @@ export function CompanyDashboard() {
                             </select>
                           </div>
 
-                          {(a.id_portafolio_interno || a.cv_url) && (
-                            <div className="flex justify-between items-center pt-1 text-[10px] gap-2">
-                              {a.id_portafolio_interno && (
-                                <button onClick={() => handleViewPortfolio(a.id_portafolio_interno!)} className="text-brand-purple hover:underline font-semibold dark:text-brand-teal">
-                                  Ver Portafolio 🎨
-                                </button>
-                              )}
-                              {a.cv_url && (
-                                <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline font-semibold ml-auto">
-                                  Descargar CV 📄
-                                </a>
-                              )}
-                            </div>
-                          )}
+                          <div className="flex justify-between items-center pt-1 text-[10px] gap-2 flex-wrap">
+                            <Link to={`/perfil/${a.id_usr}`} className="text-brand-blue hover:underline font-semibold dark:text-cyan-400">
+                              Ver Perfil 👤
+                            </Link>
+                            {a.id_portafolio_interno && (
+                              <button onClick={() => handleViewPortfolio(a.id_portafolio_interno!)} className="text-brand-purple hover:underline font-semibold dark:text-brand-teal">
+                                Ver Portafolio 🎨
+                              </button>
+                            )}
+                            {a.cv_url && (
+                              <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline font-semibold ml-auto">
+                                Descargar CV 📄
+                              </a>
+                            )}
+                          </div>
 
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-850 space-y-1.5">
                             <div className="flex gap-1.5">

@@ -25,7 +25,8 @@ def driver():
     driver.quit()
 
 
-BASE_URL = "http://localhost:5173"
+import os
+BASE_URL = os.getenv("TEST_BASE_URL", "http://204.48.26.96")
 
 
 # 1. Vista Landing Page

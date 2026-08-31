@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { usersApi } from "@/api/users";
 import { logoutAllDevices } from "@/api/auth";
-import { PaletteSelector } from "@/components/PaletteSelector";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -92,7 +91,8 @@ export function SettingsPage() {
   const [sector, setSector] = useState(user?.sector || "");
   const [bio, setBio] = useState(user?.bio || "");
   const [location, setLocation] = useState(user?.location || "");
-  const [colorPalette, setColorPalette] = useState(user?.color_palette || "blue");
+  const [socialUrl, setSocialUrl] = useState(user?.social_links?.social || user?.social_links?.website || "");
+  const [phone, setPhone] = useState(user?.social_links?.phone || "");
   const [profilePicUrl, setProfilePicUrl] = useState(user?.profile_pic_url || "");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -115,11 +115,16 @@ export function SettingsPage() {
         sector: sector.trim() || undefined,
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
-        color_palette: colorPalette,
         profile_pic_url: profilePicUrl || undefined,
+        social_links: {
+          ...(user?.social_links || {}),
+          social: socialUrl.trim(),
+          website: socialUrl.trim(),
+          phone: phone.trim(),
+        },
       });
       setSaveMsg("Perfil actualizado correctamente");
-      // Actualizar el contexto global de auth para que el color se aplique al instante
+      // Actualizar el contexto global de auth
       updateUser(updated);
       // Update local display values
       setFullName(updated.full_name);
@@ -127,7 +132,8 @@ export function SettingsPage() {
       setSector(updated.sector || "");
       setBio(updated.bio || "");
       setLocation(updated.location || "");
-      setColorPalette(updated.color_palette || "blue");
+      setSocialUrl(updated.social_links?.social || updated.social_links?.website || "");
+      setPhone(updated.social_links?.phone || "");
       setProfilePicUrl(updated.profile_pic_url || "");
       setTimeout(() => setSaveMsg(""), 4000);
     } catch (e: any) {
@@ -285,9 +291,29 @@ export function SettingsPage() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tema y Personalización Visual</label>
-                <PaletteSelector value={colorPalette} onChange={setColorPalette} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {user?.role === "empresa" ? "Sitio web o enlace oficial" : "Red social o portafolio (Instagram, Behance, etc.)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={socialUrl}
+                    onChange={(e) => setSocialUrl(e.target.value)}
+                    placeholder="https://instagram.com/tu_usuario"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono / WhatsApp de contacto</label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+57 300 123 4567"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
               </div>
 
               <div>
