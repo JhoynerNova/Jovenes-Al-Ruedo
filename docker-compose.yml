@@ -111,6 +111,9 @@ services:
       #           los endpoints directamente sin necesidad del frontend.
       - "8000:8000"
 
+    volumes:
+      - backend_uploads:/app/uploads
+
     networks:
       - jovenes_al_ruedo_network
 
@@ -159,6 +162,8 @@ volumes:
   # ¿Para qué? Almacenar datos de la BD de forma durable entre reinicios del contenedor.
   # ¿Impacto? Para borrar TODOS los datos: `docker compose down -v` (¡cuidado en producción!).
   jovenes_al_ruedo_data:
+  # Volumen para conservar imagenes, audios y documentos subidos por los usuarios
+  backend_uploads:
 
 # ────────────────────────────
 # 🔌 Red interna
