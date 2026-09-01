@@ -38,7 +38,10 @@ interface ConvocatoriaPublic {
 }
 
 export function PublicProfile() {
-  const { userId } = useParams<{ userId: string }>();
+  const params = useParams<{ userId?: string; "*"?: string }>();
+  const rawParam = params["*"] || params.userId || "";
+  const targetId = rawParam.split("/").filter(Boolean).pop() || "";
+
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserResponse | null>(null);
@@ -69,11 +72,11 @@ export function PublicProfile() {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   useEffect(() => {
-    if (!userId) return;
+    if (!targetId) return;
     const load = async () => {
       setLoading(true);
       try {
-        const data = await usersApi.getPublicProfile(userId);
+        const data = await usersApi.getPublicProfile(targetId);
         setProfile(data.user);
         setPortafolios(data.portafolios || []);
         setConvocatorias(data.convocatorias || []);
@@ -84,7 +87,7 @@ export function PublicProfile() {
       }
     };
     load();
-  }, [userId]);
+  }, [targetId]);
 
   const calcEdad = (bd: string) => {
     const hoy = new Date();

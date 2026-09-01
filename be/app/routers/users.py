@@ -7,7 +7,7 @@ Descripción: Endpoints de usuario — perfil del usuario autenticado.
 """
 
 from typing import Optional
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, cast, String
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, Query, HTTPException, Response, status
 
@@ -352,21 +352,47 @@ def get_admin_stats(
     }
 
 
+import re
+
 @router.get(
-    "/profile/{user_id}",
+    "/profile/{user_id:path}",
     summary="Ver perfil público de un usuario",
 )
 def get_public_profile(
     user_id: str,
     db: Session = Depends(get_db),
 ):
-    """Retorna el perfil público de un usuario con sus portafolios (si es artista)."""
-    try:
-        import uuid as _uuid
-        uid = _uuid.UUID(user_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de usuario inválido")
-    user = db.execute(select(User).where(User.id == uid, User.is_active == True)).scalar_one_or_none()
+    """Retorna el perfil público de un usuario por UUID, slug o código corto."""
+    clean_id = user_id.strip().rstrip("/").split("/")[-1]
+    clean_id = clean_id.replace("JAR-2026-", "").replace("JAR-", "")
+    
+    short_uuid_match = re.search(r"([0-9a-fA-F]{8})$", clean_id)
+    short_hex = short_uuid_match.group(1) if short_uuid_match else clean_id
+
+    user = None
+    # 1. Intentar UUID exacto si tiene formato UUID completo
+    if len(clean_id) == 36 and "-" in clean_id:
+        try:
+            import uuid as _uuid
+            uid = _uuid.UUID(clean_id)
+            user = db.execute(select(User).where(User.id == uid, User.is_active == True)).scalar_one_or_none()
+        except ValueError:
+            pass
+
+    # 2. Intentar buscar por prefijo de UUID (primeros 8 caracteres)
+    if not user and short_hex and len(short_hex) >= 6:
+        stmt = select(User).where(User.is_active == True, cast(User.id, String).ilike(f"{short_hex}%"))
+        user = db.execute(stmt).scalars().first()
+
+    # 3. Intentar buscar por email o nombre si no se encontró por UUID
+    if not user:
+        term = f"%{clean_id}%"
+        stmt = select(User).where(
+            User.is_active == True,
+            or_(User.email.ilike(term), User.first_name.ilike(term))
+        )
+        user = db.execute(stmt).scalars().first()
+
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 

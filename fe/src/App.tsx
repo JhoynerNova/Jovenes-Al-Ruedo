@@ -78,7 +78,9 @@ function App() {
               <Route element={<AppLayout />}>
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/perfil/:userId" element={<PublicProfile />} />
+                <Route path="/perfil/*" element={<PublicProfile />} />
                 <Route path="/profile/:userId" element={<PublicProfile />} />
+                <Route path="/profile/*" element={<PublicProfile />} />
               </Route>
 
               {/* 🔒 Rutas protegidas */}

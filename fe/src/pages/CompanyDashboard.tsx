@@ -17,6 +17,7 @@ import { UserBadges } from "@/components/ui/UserBadges";
 import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
 import { analyticsApi, type UserStats } from "@/api/analytics";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { getUserProfileSlug } from "@/lib/user";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
@@ -570,7 +571,7 @@ export function CompanyDashboard() {
                         <div key={a.id_i} className="animate-scale-in rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-xs space-y-2.5">
                           <div className="flex items-start justify-between gap-1">
                             <div>
-                              <Link to={`/perfil/${a.id_usr}`} className="font-bold text-gray-900 dark:text-white hover:text-brand-purple dark:hover:text-brand-teal transition-colors">
+                              <Link to={`/perfil/${getUserProfileSlug({ id: a.id_usr, full_name: a.artista_nombre })}`} className="font-bold text-gray-900 dark:text-white hover:text-brand-purple dark:hover:text-brand-teal transition-colors">
                                 {a.artista_nombre} 👤
                               </Link>
                               <p className="text-[10px] text-gray-400">{a.artista_email}</p>
@@ -608,7 +609,7 @@ export function CompanyDashboard() {
                           </div>
 
                           <div className="flex justify-between items-center pt-1 text-[10px] gap-2 flex-wrap">
-                            <Link to={`/perfil/${a.id_usr}`} className="text-brand-blue hover:underline font-semibold dark:text-cyan-400">
+                            <Link to={`/perfil/${getUserProfileSlug({ id: a.id_usr, full_name: a.artista_nombre })}`} className="text-brand-blue hover:underline font-semibold dark:text-cyan-400">
                               Ver Perfil 👤
                             </Link>
                             {a.id_portafolio_interno && (

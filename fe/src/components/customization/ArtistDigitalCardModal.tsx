@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { AvatarFrame } from "@/components/customization/AvatarFrame";
 import type { UserResponse } from "@/types/auth";
 
+import { getUserProfileSlug } from "@/lib/user";
+
 interface ArtistDigitalCardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,7 +24,7 @@ export function ArtistDigitalCardModal({
 
   if (!isOpen) return null;
 
-  const profileUrl = `${window.location.origin}/profile/${user.id}`;
+  const profileUrl = `${window.location.origin}/perfil/${getUserProfileSlug(user)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}&color=ffffff&bgcolor=0f172a`;
   const frameStyle = user.customization?.avatar_frame || "holo-glow";
   

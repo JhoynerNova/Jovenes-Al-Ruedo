@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { toAbsoluteMediaUrl } from "@/lib/media";
 import { detectSocialLink } from "@/lib/social";
+import { getUserProfileSlug } from "@/lib/user";
 import { UserBadges } from "@/components/ui/UserBadges";
 import {
   ExternalLink, Search, MapPin, Briefcase, Clock, Star, Users, Filter,
@@ -444,7 +445,7 @@ export function ExplorePage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(activeTab === "todo" ? filteredArtistas.slice(0, 4) : filteredArtistas).map((a) => (
-                    <Link to={`/perfil/${a.id}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
+                    <Link to={`/perfil/${getUserProfileSlug(a)}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
                       {/* Card gradient top */}
                       <div
                         className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20 bg-cover bg-center"
@@ -525,7 +526,7 @@ export function ExplorePage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(activeTab === "todo" ? empresas.slice(0, 4) : empresas).map((e) => (
-                    <Link to={`/perfil/${e.id}`} key={e.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-blue/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
+                    <Link to={`/perfil/${getUserProfileSlug(e)}`} key={e.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-blue/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
                       <div
                         className="h-16 bg-gradient-to-r from-brand-blue/20 via-blue-400/10 to-brand-dark/20 bg-cover bg-center"
                         style={e.cover_pic_url ? { backgroundImage: `url(${toAbsoluteMediaUrl(e.cover_pic_url)})` } : undefined}
