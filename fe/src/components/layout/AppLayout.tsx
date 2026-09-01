@@ -10,6 +10,7 @@ import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { CookieConsentBanner } from "./CookieConsentBanner";
 import { useAuth } from "@/hooks/useAuth";
 
 const PALETTE_HEX: Record<string, string> = {
@@ -53,6 +54,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <Footer />
+      <CookieConsentBanner />
     </div>
   );
 }

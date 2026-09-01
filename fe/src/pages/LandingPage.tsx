@@ -16,6 +16,7 @@ import {
 import logo from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 
 /**
  * ¿Qué? Datos de las categorías artísticas soportadas por la plataforma.
@@ -563,6 +564,7 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+      <CookieConsentBanner />
     </div>
   );
 }
