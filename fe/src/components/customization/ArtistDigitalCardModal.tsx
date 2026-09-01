@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, QrCode, Download, Share2, Sparkles, Check, MapPin } from "lucide-react";
+import { X, QrCode, Download, Share2, Sparkles, Check, MapPin, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { AvatarFrame } from "@/components/customization/AvatarFrame";
 import type { UserResponse } from "@/types/auth";
@@ -16,35 +16,52 @@ export function ArtistDigitalCardModal({
   user,
 }: ArtistDigitalCardModalProps) {
   const [copied, setCopied] = useState(false);
-  const [transformStyle, setTransformStyle] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [transformStyle, setTransformStyle] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
+  const [glareStyle, setGlareStyle] = useState({ opacity: 0, x: 50, y: 50 });
 
   if (!isOpen) return null;
 
   const profileUrl = `${window.location.origin}/profile/${user.id}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(profileUrl)}&color=ffffff&bgcolor=0f172a`;
-
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}&color=ffffff&bgcolor=0f172a`;
   const frameStyle = user.customization?.avatar_frame || "holo-glow";
+  
+  // ID Formateado seguro y profesional (Oculta la UUID interna directa en la tarjeta)
+  const shortId = `JAR-${user.id.slice(0, 8).toUpperCase()}`;
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const updateTilt = (clientX: number, clientY: number, currentTarget: HTMLElement) => {
+    const rect = currentTarget.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const rotateX = ((y - centerY) / centerY) * -12;
-    const rotateY = ((x - centerX) / centerX) * 12;
+    const rotateX = ((y - centerY) / centerY) * -16;
+    const rotateY = ((x - centerX) / centerX) * 16;
 
-    setTransformStyle(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`);
+    setTransformStyle(`perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.03, 1.03, 1.03)`);
+    setGlareStyle({
+      opacity: 0.45,
+      x: Math.round((x / rect.width) * 100),
+      y: Math.round((y / rect.height) * 100),
+    });
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    updateTilt(e.clientX, e.clientY, e.currentTarget);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches[0]) {
+      updateTilt(e.touches[0].clientX, e.touches[0].clientY, e.currentTarget);
+    }
+  };
+
+  const handleResetTilt = () => {
     setTransformStyle("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
+    setGlareStyle({ opacity: 0, x: 50, y: 50 });
   };
-
-  const [downloading, setDownloading] = useState(false);
 
   const handleCopyLink = async () => {
     try {
@@ -89,7 +106,7 @@ export function ArtistDigitalCardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div
         className="relative w-full max-w-lg rounded-3xl bg-slate-950 p-6 text-white shadow-2xl border border-slate-800 space-y-6"
         onClick={(e) => e.stopPropagation()}
@@ -105,31 +122,48 @@ export function ArtistDigitalCardModal({
           <h3 className="text-xl font-bold flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-400" /> Tarjeta Digital Artística 3D
           </h3>
-          <p className="text-xs text-gray-400">Pasa el mouse para interactuar y descarga tu código QR oficial</p>
+          <p className="text-xs text-gray-400">Pasa el cursor o desliza tu dedo para interactuar en 3D</p>
         </div>
 
-        {/* TARJETA 3D INTERACTIVA TILT */}
+        {/* TARJETA 3D INTERACTIVA TILT CON CAPA HOLOGRÁFICA */}
         <div
           onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          style={{ transform: transformStyle, transition: "transform 0.15s ease-out" }}
-          className="relative overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-br from-slate-900 via-purple-950/40 to-slate-950 p-6 shadow-2xl cursor-pointer select-none space-y-5"
+          onMouseLeave={handleResetTilt}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleResetTilt}
+          style={{
+            transform: transformStyle,
+            transition: "transform 0.1s ease-out",
+            transformStyle: "preserve-3d",
+          }}
+          className="relative overflow-hidden rounded-3xl border border-purple-500/40 bg-gradient-to-br from-slate-900 via-purple-950/60 to-slate-950 p-6 shadow-2xl cursor-pointer select-none space-y-5 group"
         >
-          {/* Brillo holográfico de fondo */}
-          <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-purple-500/20 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
+          {/* Capa de destello / reflejo holográfico dinámico */}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-3xl transition-opacity duration-200 z-30"
+            style={{
+              opacity: glareStyle.opacity,
+              background: `radial-gradient(circle at ${glareStyle.x}% ${glareStyle.y}%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 70%)`,
+            }}
+          />
 
-          <div className="relative flex items-center justify-between border-b border-slate-800/80 pb-4">
+          {/* Brillos holográficos de ambiente */}
+          <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
+
+          {/* Cabecera de la Tarjeta */}
+          <div className="relative flex items-center justify-between border-b border-slate-800/80 pb-4 z-10" style={{ transform: "translateZ(20px)" }}>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-bold tracking-wider uppercase text-purple-400">Talento Verificado</span>
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span className="text-[11px] font-bold tracking-wider uppercase text-purple-300">Talento Verificado</span>
             </div>
-            <span className="text-[10px] font-medium text-gray-400 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
-              Jóvenes al Ruedo ID
+            <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-full border border-cyan-800/50 shadow-sm">
+              {shortId}
             </span>
           </div>
 
-          <div className="relative flex items-center gap-4">
+          {/* Cuerpo principal de la tarjeta en 3D */}
+          <div className="relative flex items-center gap-4 z-10" style={{ transform: "translateZ(30px)" }}>
             <AvatarFrame
               src={user.profile_pic_url}
               alt={user.full_name}
@@ -149,8 +183,11 @@ export function ArtistDigitalCardModal({
             </div>
           </div>
 
-          {/* Código QR incorporado en la tarjeta */}
-          <div className="relative flex items-center justify-between rounded-2xl bg-slate-900/90 p-4 border border-slate-800">
+          {/* Código QR incorporado en relieve 3D */}
+          <div
+            className="relative flex items-center justify-between rounded-2xl bg-slate-900/90 p-4 border border-slate-800/90 shadow-inner z-10"
+            style={{ transform: "translateZ(25px)" }}
+          >
             <div>
               <p className="text-xs font-bold text-white flex items-center gap-1.5">
                 <QrCode className="h-4 w-4 text-cyan-400" /> Escanea para Ver Perfil
@@ -160,7 +197,7 @@ export function ArtistDigitalCardModal({
             <img
               src={qrUrl}
               alt="Código QR del Perfil"
-              className="h-28 w-28 rounded-xl border border-purple-500/30 shadow-md object-contain bg-slate-950 p-1"
+              className="h-24 w-24 rounded-xl border border-purple-500/30 shadow-md object-contain bg-slate-950 p-1"
             />
           </div>
         </div>
