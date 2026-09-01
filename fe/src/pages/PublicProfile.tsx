@@ -10,6 +10,7 @@ import { RatingModal } from "@/components/RatingModal";
 import { RatingsList } from "@/components/RatingsList";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { detectSocialLink } from "@/lib/social";
+import { getUserProfileSlug } from "@/lib/user";
 import { UserBadges } from "@/components/ui/UserBadges";
 import { AvatarFrame } from "@/components/customization/AvatarFrame";
 import { AudioSignaturePlayer } from "@/components/customization/AudioSignaturePlayer";
@@ -80,6 +81,12 @@ export function PublicProfile() {
         setProfile(data.user);
         setPortafolios(data.portafolios || []);
         setConvocatorias(data.convocatorias || []);
+
+        // Auto-reescribir la URL en el navegador si aún muestra la UUID cruda
+        const cleanSlug = getUserProfileSlug(data.user);
+        if (cleanSlug && targetId !== cleanSlug) {
+          navigate(`/perfil/${cleanSlug}`, { replace: true });
+        }
       } catch (e: any) {
         setError(e.response?.data?.detail || "No se pudo cargar el perfil");
       } finally {
