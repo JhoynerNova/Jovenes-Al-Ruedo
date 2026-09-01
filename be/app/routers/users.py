@@ -366,32 +366,27 @@ def get_public_profile(
     clean_id = user_id.strip().rstrip("/").split("/")[-1]
     clean_id = clean_id.replace("JAR-2026-", "").replace("JAR-", "")
     
-    short_uuid_match = re.search(r"([0-9a-fA-F]{8})$", clean_id)
-    short_hex = short_uuid_match.group(1) if short_uuid_match else clean_id
+    # Extraer parte de id o slug
+    short_match = re.search(r"([0-9a-fA-F-]{8,36})$", clean_id)
+    search_term = (short_match.group(1) if short_match else clean_id).lower()
 
+    users = db.execute(select(User).where(User.is_active == True)).scalars().all()
     user = None
-    # 1. Intentar UUID exacto si tiene formato UUID completo
-    if len(clean_id) == 36 and "-" in clean_id:
-        try:
-            import uuid as _uuid
-            uid = _uuid.UUID(clean_id)
-            user = db.execute(select(User).where(User.id == uid, User.is_active == True)).scalar_one_or_none()
-        except ValueError:
-            pass
+    
+    # 1. Coincidencia exacta o por prefijo de UUID
+    for u in users:
+        u_id_str = str(u.id).lower()
+        if u_id_str == search_term or u_id_str.startswith(search_term):
+            user = u
+            break
 
-    # 2. Intentar buscar por prefijo de UUID (primeros 8 caracteres)
-    if not user and short_hex and len(short_hex) >= 6:
-        stmt = select(User).where(User.is_active == True, cast(User.id, String).ilike(f"{short_hex}%"))
-        user = db.execute(stmt).scalars().first()
-
-    # 3. Intentar buscar por email o nombre si no se encontró por UUID
+    # 2. Coincidencia por nombre o email si no coincidió UUID
     if not user:
-        term = f"%{clean_id}%"
-        stmt = select(User).where(
-            User.is_active == True,
-            or_(User.email.ilike(term), User.first_name.ilike(term))
-        )
-        user = db.execute(stmt).scalars().first()
+        for u in users:
+            name_str = f"{u.first_name or ''} {u.last_name or ''} {u.email or ''}".lower()
+            if search_term in name_str or clean_id.lower() in name_str:
+                user = u
+                break
 
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -412,10 +407,10 @@ def get_public_profile(
     if user.role == "artista":
         from app.models.portafolio import DetPortafolio
         try:
-            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == uid)).scalars().all()
+            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == user.id)).scalars().all()
         except Exception:
             db.rollback()
-            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == str(uid))).scalars().all()
+            ports = db.execute(select(Portafolio).where(Portafolio.id_usr == str(user.id))).scalars().all()
 
         for p in ports:
             archivos = db.execute(
@@ -434,10 +429,10 @@ def get_public_profile(
     convocatorias_data = []
     if user.role == "empresa":
         try:
-            convs_q = db.execute(select(Conv).where(Conv.id_usr == uid)).scalars().all()
+            convs_q = db.execute(select(Conv).where(Conv.id_usr == user.id)).scalars().all()
         except Exception:
             db.rollback()
-            convs_q = db.execute(select(Conv).where(Conv.id_usr == str(uid))).scalars().all()
+            convs_q = db.execute(select(Conv).where(Conv.id_usr == str(user.id))).scalars().all()
 
         for c in convs_q:
             total_inscritos = db.execute(
