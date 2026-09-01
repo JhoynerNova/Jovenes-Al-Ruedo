@@ -352,6 +352,7 @@ def get_admin_stats(
     }
 
 
+from urllib.parse import unquote
 import re
 
 @router.get(
@@ -363,28 +364,34 @@ def get_public_profile(
     db: Session = Depends(get_db),
 ):
     """Retorna el perfil público de un usuario por UUID, slug o código corto."""
-    clean_id = user_id.strip().rstrip("/").split("/")[-1]
-    clean_id = clean_id.replace("JAR-2026-", "").replace("JAR-", "")
-    
-    # Extraer parte de id o slug
-    short_match = re.search(r"([0-9a-fA-F-]{8,36})$", clean_id)
-    search_term = (short_match.group(1) if short_match else clean_id).lower()
+    raw_str = unquote(user_id).strip().rstrip("/").split("/")[-1].lower()
+    clean_str = raw_str.replace("jar-2026-", "").replace("jar-", "").strip()
 
     users = db.execute(select(User).where(User.is_active == True)).scalars().all()
     user = None
-    
-    # 1. Coincidencia exacta o por prefijo de UUID
+
+    # 1. Coincidencia por UUID exacto, prefijo de UUID o 8 primeros hex
     for u in users:
-        u_id_str = str(u.id).lower()
-        if u_id_str == search_term or u_id_str.startswith(search_term):
+        uid_full = str(u.id).lower()
+        uid_short = uid_full[:8]
+        uid_compact = uid_full.replace("-", "")
+        
+        if (uid_full in clean_str or 
+            clean_str in uid_full or 
+            clean_str.endswith(uid_short) or 
+            uid_short in clean_str or 
+            clean_str == uid_compact or 
+            clean_str.startswith(uid_compact[:8])):
             user = u
             break
 
-    # 2. Coincidencia por nombre o email si no coincidió UUID
+    # 2. Coincidencia por nombre o email si no coincidió por ID
     if not user:
         for u in users:
             name_str = f"{u.first_name or ''} {u.last_name or ''} {u.email or ''}".lower()
-            if search_term in name_str or clean_id.lower() in name_str:
+            clean_name = re.sub(r'[^a-z0-9]+', '', name_str)
+            clean_search = re.sub(r'[^a-z0-9]+', '', clean_str)
+            if clean_search and (clean_search in clean_name or clean_name in clean_search):
                 user = u
                 break
 
