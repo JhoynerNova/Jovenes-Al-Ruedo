@@ -17,7 +17,7 @@ Descripción: Política de privacidad y tratamiento de datos personales del proy
 RESPONSABLE = {
     "nombre": "Jóvenes al Ruedo",
     "ficha_sena": "3171599",
-    "correo": "privacidad@jovenes-al-ruedo.com",
+    "correo": "jovenesalruedo.contacto@gmail.com",
     "ciudad": "Colombia",
 }
 
@@ -93,7 +93,7 @@ Fecha de vigencia: 2026
 1. RESPONSABLE DEL TRATAMIENTO
 Jóvenes al Ruedo es el responsable del tratamiento de los datos personales
 recolectados a través de esta plataforma. Para ejercer sus derechos o realizar
-consultas, puede comunicarse a: privacidad@jovenes-al-ruedo.com
+consultas, puede comunicarse a: jovenesalruedo.contacto@gmail.com
 
 2. DATOS PERSONALES RECOLECTADOS
 Recolectamos los siguientes datos personales: nombre completo, correo electrónico,
@@ -108,7 +108,7 @@ comunicaciones relacionadas con el servicio.
 4. DERECHOS DEL TITULAR (Art. 8, Ley 1581 de 2012)
 Usted tiene derecho a conocer, actualizar, rectificar y suprimir sus datos personales,
 así como a revocar su autorización para el tratamiento. Para ejercer estos derechos,
-contáctenos en: privacidad@jovenes-al-ruedo.com
+contáctenos en: jovenesalruedo.contacto@gmail.com
 
 5. COOKIES
 Utilizamos cookies HTTPOnly para gestionar su sesión de forma segura. Estas cookies

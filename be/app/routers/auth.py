@@ -10,16 +10,19 @@ Descripción: Endpoints de autenticación — registro, login, refresh, cambio y
 """
 
 import logging
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.cookies import clear_auth_cookies, set_auth_cookies
-from app.dependencies import get_current_user, get_db
+from app.core.limiter import limiter
+from app.dependencies import get_current_user, get_db, oauth2_scheme
 from app.models.user import User
 from app.schemas.user import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    LogoutRequest,
     MessageResponse,
     RefreshTokenRequest,
     ResetPasswordRequest,
@@ -29,6 +32,8 @@ from app.schemas.user import (
     UserResponse,
 )
 from app.services import auth_service
+from app.utils.security import decode_token
+from app.utils.token_blacklist import exp_to_datetime, revoke_token
 
 # ¿Qué? Logger del módulo de autenticación.
 # ¿Para qué? Registrar intentos de login (exitosos y fallidos) para auditoría.
@@ -51,6 +56,7 @@ router = APIRouter(
 @router.options("/login")
 @router.options("/refresh")
 @router.options("/logout")
+@router.options("/logout-all-devices")
 @router.options("/change-password")
 @router.options("/forgot-password")
 @router.options("/reset-password")
@@ -65,7 +71,9 @@ async def options_handler():
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo usuario",
 )
+@limiter.limit("5/minute")
 def register(
+    request: Request,
     user_data: UserCreate,
     db: Session = Depends(get_db),
 ) -> UserResponse:
@@ -88,7 +96,9 @@ def register(
 
 
 @router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
+@limiter.limit("5/minute")
 def login(
+    request: Request,
     login_data: UserLogin,
     response: Response,
     db: Session = Depends(get_db),
@@ -97,6 +107,7 @@ def login(
     # ¿Para qué? Permitir inicio de sesión seguro con cookies en lugar de localStorage.
     # ¿Impacto? OWASP A07 — cookies HTTPOnly previenen robo de tokens por XSS.
     #           Se registra en logs el intento de login (exitoso o fallido).
+    #           Límite de 5/min por IP mitiga fuerza bruta de contraseñas.
     logger.info(f"Intento de login para: {login_data.email}")
     result = auth_service.login_user(db=db, login_data=login_data)
     set_auth_cookies(response, result.access_token, result.refresh_token)
@@ -140,15 +151,60 @@ def refresh_token(
 
 
 @router.post("/logout", response_model=MessageResponse, summary="Cerrar sesión")
-def logout(response: Response) -> MessageResponse:
-    # ¿Qué? Cierra la sesión del usuario eliminando las cookies de autenticación.
-    # ¿Para qué? Proporcionar un mecanismo seguro de logout que invalide las cookies HTTPOnly.
-    # ¿Impacto? Sin este endpoint, el frontend no podría borrar cookies HTTPOnly
-    #           (JavaScript no tiene acceso a ellas por diseño de seguridad).
+def logout(
+    response: Response,
+    logout_data: LogoutRequest,
+    access_token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    # ¿Qué? Cierra la sesión del usuario: borra las cookies Y revoca los tokens del lado
+    #        del servidor (blacklist), en vez de solo borrar las cookies del navegador.
+    # ¿Para qué? Un JWT sigue siendo técnicamente válido hasta que expira, aunque el
+    #           navegador ya haya borrado la cookie/sessionStorage — si alguien capturó el
+    #           token antes del logout, podría seguir usándolo sin esta revocación.
+    # ¿Impacto? OWASP A07 — invalidación real de sesión, no solo del lado del cliente.
     #           Ley 1581/2012: el usuario tiene derecho a terminar su sesión de forma segura.
+    access_payload = decode_token(access_token)
+    if access_payload and (jti := access_payload.get("jti")) and (exp := access_payload.get("exp")):
+        revoke_token(db, jti, exp_to_datetime(exp))
+
+    if logout_data.refresh_token:
+        refresh_payload = decode_token(logout_data.refresh_token)
+        if refresh_payload and (jti := refresh_payload.get("jti")) and (exp := refresh_payload.get("exp")):
+            revoke_token(db, jti, exp_to_datetime(exp))
+
     clear_auth_cookies(response)
     logger.info("Sesión cerrada correctamente")
     return MessageResponse(message="Sesión cerrada correctamente")
+
+
+@router.post(
+    "/logout-all-devices",
+    response_model=MessageResponse,
+    summary="Cerrar sesión en todos los dispositivos",
+)
+def logout_all_devices(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Invalida TODAS las sesiones activas del usuario, en cualquier dispositivo.
+
+    ¿Qué? Marca User.sessions_invalidated_at = ahora — cualquier access/refresh token
+          emitido antes de este momento deja de ser aceptado (ver dependencies.get_current_user
+          y auth_service.refresh_access_token), sin importar en qué dispositivo esté.
+    ¿Para qué? El usuario perdió su celular, o sospecha que alguien más tiene su sesión
+              abierta, y quiere cortar el acceso desde todos lados a la vez — no solo
+              este navegador (que ya cubre el /logout normal).
+    ¿Impacto? También cierra la sesión ACTUAL — el usuario deberá volver a loguearse
+              después de llamar este endpoint.
+    """
+    current_user.sessions_invalidated_at = datetime.now(timezone.utc)
+    db.commit()
+
+    clear_auth_cookies(response)
+    logger.info(f"Todas las sesiones cerradas para: {current_user.email}")
+    return MessageResponse(message="Se cerró la sesión en todos los dispositivos")
 
 
 @router.post(
@@ -190,7 +246,9 @@ def change_password(
     response_model=MessageResponse,
     summary="Solicitar recuperación de contraseña",
 )
+@limiter.limit("3/minute")
 async def forgot_password(
+    request: Request,
     request_data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -220,7 +278,9 @@ async def forgot_password(
     response_model=MessageResponse,
     summary="Restablecer contraseña con token",
 )
+@limiter.limit("5/minute")
 def reset_password(
+    request: Request,
     reset_data: ResetPasswordRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:

@@ -2,7 +2,7 @@ import api from "./axios";
 
 export interface ConversacionResponse {
   id_conversacion: number;
-  tipo: "postulacion" | "directo";
+  tipo: "postulacion" | "directo" | "soporte";
   conv_nombre: string | null;
   otro_usuario_id: string;
   otro_usuario_nombre: string;
@@ -32,6 +32,11 @@ export const chatApi = {
     const { data } = await api.post<ConversacionResponse>("/api/v1/chat/conversaciones/directo/", {
       artista_id: artistaId,
     });
+    return data;
+  },
+
+  startSupportChat: async () => {
+    const { data } = await api.post<ConversacionResponse>("/api/v1/chat/soporte");
     return data;
   },
 

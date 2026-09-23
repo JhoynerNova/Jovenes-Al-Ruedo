@@ -5,10 +5,11 @@
  * ¿Impacto? Sin navbar, el usuario no tendría forma de cerrar sesión ni cambiar tema.
  */
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import logo from "@/assets/logo.png";
 
 /**
@@ -19,6 +20,20 @@ import logo from "@/assets/logo.png";
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * ¿Qué? Clases del link de navegación según si su ruta es la actual.
+   * ¿Para qué? Resaltar visualmente en qué sección está el usuario — regla de usabilidad
+   *           básica: el menú debe reflejar dónde estás, no solo a dónde puedes ir.
+   * ¿Impacto? Sin esto, todos los links se ven idénticos sin importar la página activa.
+   */
+  const navLinkClass = (path: string) =>
+    `text-sm font-medium transition-colors ${
+      location.pathname === path
+        ? "text-white font-semibold border-b-2 border-brand-blue pb-0.5"
+        : "text-purple-200 hover:text-white"
+    }`;
 
   /**
    * ¿Qué? Handler de logout — cierra sesión y redirige al login.
@@ -45,16 +60,16 @@ export function Navbar() {
         {/* Menú de navegación central */}
         {isAuthenticated && (
           <div className="hidden md:flex space-x-8">
-            <Link to="/dashboard" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+            <Link to="/dashboard" className={navLinkClass("/dashboard")}>
               Inicio
             </Link>
-            <Link to="/explore" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+            <Link to="/explore" className={navLinkClass("/explore")}>
               Explorar
             </Link>
-            <Link to="/settings" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+            <Link to="/settings" className={navLinkClass("/settings")}>
               Configuración
             </Link>
-            <Link to="/mensajes" className="text-sm font-medium text-purple-200 hover:text-white transition-colors">
+            <Link to="/mensajes" className={navLinkClass("/mensajes")}>
               Mensajes
             </Link>
           </div>
@@ -68,6 +83,24 @@ export function Navbar() {
 
           {isAuthenticated && user && (
             <>
+              <button
+                onClick={async () => {
+                  try {
+                    const { chatApi } = await import("@/api/chat");
+                    const conv = await chatApi.startSupportChat();
+                    navigate(`/mensajes?convId=${conv.id_conversacion}`);
+                  } catch {
+                    navigate("/mensajes");
+                  }
+                }}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition-all"
+                title="Chat directo con Soporte Oficial"
+              >
+                🛠️ Soporte
+              </button>
+
+              <NotificationBell />
+
               {/* ¿Qué? Nombre del usuario autenticado. */}
               <span className="hidden text-sm text-purple-200 sm:block">
                 {user.full_name}

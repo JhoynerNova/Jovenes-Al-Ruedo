@@ -41,7 +41,25 @@ export const usersApi = {
     return data;
   },
 
-  updateProfile: async (body: { first_name?: string; last_name?: string; artistic_area?: string; sector?: string; bio?: string; location?: string; color_palette?: string }) => {
+  updateProfile: async (body: {
+    first_name?: string;
+    last_name?: string;
+    artistic_area?: string;
+    sector?: string;
+    bio?: string;
+    location?: string;
+    color_palette?: string;
+    customization?: Record<string, any>;
+    profile_pic_url?: string;
+    cover_pic_url?: string;
+    social_links?: Record<string, string>;
+    artistic_disciplines?: string[];
+    looking_for_disciplines?: string[];
+    company_legal_name?: string;
+    company_nit?: string;
+    company_size?: string;
+    onboarding_completed?: boolean;
+  }) => {
     const { data } = await api.patch<UserResponse>("/api/v1/users/me/", body);
     return data;
   },
@@ -63,6 +81,31 @@ export const usersApi = {
 
   getPublicProfile: async (userId: string) => {
     const { data } = await api.get<any>(`/api/v1/users/profile/${userId}/`);
+    return data;
+  },
+
+  deleteAccount: async (password: string) => {
+    const { data } = await api.delete<MessageResponse>("/api/v1/users/me/", { data: { password } });
+    return data;
+  },
+
+  resetUserPassword: async (userId: string, new_password: string) => {
+    const { data } = await api.post<MessageResponse>(`/api/v1/users/${userId}/reset-password`, { new_password });
+    return data;
+  },
+
+  getAllConvocatoriasAdmin: async () => {
+    const { data } = await api.get<any[]>("/api/v1/users/admin/all-convocatorias");
+    return data;
+  },
+
+  deleteConvocatoriaAdmin: async (convId: number) => {
+    const { data } = await api.delete<MessageResponse>(`/api/v1/users/admin/convocatoria/${convId}`);
+    return data;
+  },
+
+  getAuditLogs: async () => {
+    const { data } = await api.get<any[]>("/api/v1/users/admin/audit-logs");
     return data;
   },
 };

@@ -25,7 +25,7 @@ def list_portafolios(
 ):
     _require_artista(current_user)
     portafolios = db.execute(
-        select(Portafolio).where(Portafolio.id_usr == str(current_user.id)).order_by(Portafolio.created_at.desc())
+        select(Portafolio).where(Portafolio.id_usr == current_user.id).order_by(Portafolio.created_at.desc())
     ).scalars().all()
     return portafolios
 
@@ -42,7 +42,7 @@ def create_portafolio(
         nombre=body.nombre,
         descripcion=body.descripcion,
         visibilidad=body.visibilidad,
-        id_usr=str(current_user.id)
+        id_usr=current_user.id
     )
     db.add(port)
     db.commit()

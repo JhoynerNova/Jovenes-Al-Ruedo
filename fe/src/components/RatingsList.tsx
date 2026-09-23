@@ -29,7 +29,7 @@ export const RatingsList: React.FC<RatingsListProps> = ({ artistId }) => {
     const fetchRatings = async () => {
       setLoading(true);
       try {
-        const res = await axios.get<RatingsSummary>(`/ratings/artist/${artistId}`);
+        const res = await axios.get<RatingsSummary>(`/api/v1/ratings/artist/${artistId}`);
         setData(res.data);
       } catch {
         // silent

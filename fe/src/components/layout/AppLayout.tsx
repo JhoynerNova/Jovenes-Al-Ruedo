@@ -9,6 +9,8 @@ import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { Breadcrumbs } from "./Breadcrumbs";
+import { CookieConsentBanner } from "./CookieConsentBanner";
 import { useAuth } from "@/hooks/useAuth";
 
 const PALETTE_HEX: Record<string, string> = {
@@ -48,9 +50,11 @@ export function AppLayout() {
       {/* ¿Qué? Contenedor del contenido principal con max-width y padding. */}
       {/* ¿Para qué? Centrar el contenido y darle espaciado responsivo. */}
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumbs />
         <Outlet />
       </main>
       <Footer />
+      <CookieConsentBanner />
     </div>
   );
 }

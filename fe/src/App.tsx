@@ -49,6 +49,8 @@ import { ExplorePage } from "@/pages/ExplorePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { Chat } from "@/pages/Chat";
 import { PublicProfile } from "@/pages/PublicProfile";
+import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
 
 /**
  * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
@@ -76,6 +78,9 @@ function App() {
               <Route element={<AppLayout />}>
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/perfil/:userId" element={<PublicProfile />} />
+                <Route path="/perfil/*" element={<PublicProfile />} />
+                <Route path="/profile/:userId" element={<PublicProfile />} />
+                <Route path="/profile/*" element={<PublicProfile />} />
               </Route>
 
               {/* 🔒 Rutas protegidas */}
@@ -86,10 +91,12 @@ function App() {
                   </ProtectedRoute>
                 }
               >
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/mensajes" element={<Chat />} />
+                <Route path="/notificaciones" element={<NotificationsPage />} />
               </Route>
 
               {/* Ruta raíz */}

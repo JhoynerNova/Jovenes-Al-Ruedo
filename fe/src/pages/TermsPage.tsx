@@ -224,10 +224,10 @@ export function TermsPage() {
             Contáctanos si necesitas aclaración sobre cualquier sección:
           </p>
           <a
-            href="mailto:soporte@jovenes-al-ruedo.com"
+            href="mailto:jovenesalruedo.contacto@gmail.com"
             className="inline-block rounded-lg bg-brand-teal px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
-            soporte@jovenes-al-ruedo.com
+            jovenesalruedo.contacto@gmail.com
           </a>
         </div>
 

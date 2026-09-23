@@ -1,39 +1,25 @@
-import React, { useState } from 'react';
-import { Palette, Check } from 'lucide-react';
-import axios from '../api/axios';
+import React, { useState } from "react";
+import { Palette, Check } from "lucide-react";
+import { usersApi } from "@/api/users";
 
-interface PaletteOption {
+export interface PaletteOption {
   id: string;
   name: string;
   colors: string[];
 }
 
-const PALETTES: PaletteOption[] = [
-  { id: 'default', name: 'Esmeralda SENA (Original)', colors: ['#059669', '#10B981', '#064E3B'] },
-  { id: 'sunset', name: 'Atardecer Cálido', colors: ['#F59E0B', '#EF4444', '#78350F'] },
-  { id: 'cyberpunk', name: 'Neon Cyberpunk', colors: ['#EC4899', '#8B5CF6', '#4C1D95'] },
-  { id: 'ocean', name: 'Océano Nocturno', colors: ['#0284C7', '#3B82F6', '#1E3A8A'] },
+export const PALETTES: PaletteOption[] = [
+  { id: "default", name: "Púrpura Místico (Original)", colors: ["#5A3FA0", "#2F80ED", "#2EC4B6"] },
+  { id: "cyberpunk", name: "Neon Cyberpunk", colors: ["#EC4899", "#8B5CF6", "#06B6D4"] },
+  { id: "emerald", name: "Esmeralda & Naturaleza", colors: ["#059669", "#10B981", "#14B8A6"] },
+  { id: "sunset", name: "Atardecer Dorado", colors: ["#D97706", "#F59E0B", "#EF4444"] },
+  { id: "ocean", name: "Océano Nocturno", colors: ["#2563EB", "#0284C7", "#06B6D4"] },
+  { id: "rose", name: "Rosa Cuarzo", colors: ["#E11D48", "#F43F5E", "#FB7185"] },
 ];
 
-export const applyThemePalette = (paletteId: string) => {
-  const root = document.documentElement;
-  if (paletteId === 'sunset') {
-    root.style.setProperty('--color-primary', '#F59E0B');
-    root.style.setProperty('--color-primary-hover', '#D97706');
-    root.style.setProperty('--color-accent', '#EF4444');
-  } else if (paletteId === 'cyberpunk') {
-    root.style.setProperty('--color-primary', '#EC4899');
-    root.style.setProperty('--color-primary-hover', '#DB2777');
-    root.style.setProperty('--color-accent', '#8B5CF6');
-  } else if (paletteId === 'ocean') {
-    root.style.setProperty('--color-primary', '#0284C7');
-    root.style.setProperty('--color-primary-hover', '#0369A1');
-    root.style.setProperty('--color-accent', '#3B82F6');
-  } else {
-    root.style.setProperty('--color-primary', '#10B981');
-    root.style.setProperty('--color-primary-hover', '#059669');
-    root.style.setProperty('--color-accent', '#064E3B');
-  }
+export const applyThemePalette = (paletteId: string | null | undefined) => {
+  const pId = paletteId || "default";
+  document.documentElement.setAttribute("data-theme", pId);
 };
 
 interface PaletteSelectorProps {
@@ -44,7 +30,7 @@ interface PaletteSelectorProps {
 }
 
 export const PaletteSelector: React.FC<PaletteSelectorProps> = ({
-  currentPalette = 'default',
+  currentPalette = "default",
   value,
   onPaletteChange,
   onChange,
@@ -58,27 +44,27 @@ export const PaletteSelector: React.FC<PaletteSelectorProps> = ({
     applyThemePalette(paletteId);
     setLoading(true);
     try {
-      await axios.patch('/users/palette', { color_palette: paletteId });
+      await usersApi.updateProfile({ color_palette: paletteId });
       onPaletteChange?.(paletteId);
       onChange?.(paletteId);
     } catch (err) {
-      console.error('Error al guardar paleta', err);
+      console.error("Error al guardar paleta", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-slate-100">
-      <div className="flex items-center gap-2 mb-4">
-        <Palette className="w-5 h-5 text-emerald-400" />
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-slate-100 space-y-4">
+      <div className="flex items-center gap-2">
+        <Palette className="w-5 h-5 text-purple-400" />
         <h3 className="text-lg font-bold text-white">Paleta de Colores Dinámica</h3>
       </div>
-      <p className="text-xs text-slate-400 mb-5">
-        Personaliza el tema visual de la plataforma según tu disciplina artística o gusto.
+      <p className="text-xs text-slate-400">
+        Personaliza el color y la atmósfera visual de tu perfil y la interfaz en tiempo real.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
         {PALETTES.map((p) => {
           const isSelected = selected === p.id;
           return (
@@ -88,19 +74,19 @@ export const PaletteSelector: React.FC<PaletteSelectorProps> = ({
               disabled={loading}
               className={`p-4 rounded-xl border transition-all text-left flex flex-col gap-3 relative ${
                 isSelected
-                  ? 'border-emerald-500 bg-slate-800/80 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500'
-                  : 'border-slate-800 bg-slate-950/50 hover:border-slate-700 hover:bg-slate-800/40'
+                  ? "border-purple-500 bg-slate-800/90 shadow-lg shadow-purple-500/20 ring-2 ring-purple-500/50"
+                  : "border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-800/40"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">{p.name}</span>
-                {isSelected && <Check className="w-4 h-4 text-emerald-400" />}
+                <span className="text-xs font-bold text-white">{p.name}</span>
+                {isSelected && <Check className="w-4 h-4 text-purple-400" />}
               </div>
               <div className="flex items-center gap-2">
                 {p.colors.map((c, idx) => (
                   <div
                     key={idx}
-                    className="w-6 h-6 rounded-full border border-white/10 shadow-inner"
+                    className="w-5 h-5 rounded-full border border-white/20 shadow-md"
                     style={{ backgroundColor: c }}
                   />
                 ))}

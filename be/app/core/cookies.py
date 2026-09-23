@@ -11,6 +11,13 @@ Descripción: Configuración centralizada de cookies HTTPOnly para tokens JWT.
 
 from fastapi import Response
 
+from app.config import settings
+
+# ¿Qué? Si las cookies deben marcarse "secure" (solo se envían por HTTPS).
+# ¿Para qué? En producción esto es obligatorio para prevenir robo de cookies por sniffing
+#            en redes no cifradas. En desarrollo local (HTTP) debe quedar en False.
+# ¿Impacto? Se deriva de ENVIRONMENT — cambiar ENVIRONMENT=production activa esto automáticamente.
+COOKIE_SECURE = settings.ENVIRONMENT == "production"
 
 # ¿Qué? Duración del access token en segundos (15 minutos).
 # ¿Para qué? Sesión corta limita la ventana de ataque si el token es robado.
@@ -46,7 +53,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=False,       
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=ACCESS_TOKEN_MAX_AGE,
         path="/",
@@ -60,7 +67,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,       
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=REFRESH_TOKEN_MAX_AGE,
         path="/api/v1/auth/refresh",

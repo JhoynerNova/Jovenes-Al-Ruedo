@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, date
 from typing import List
 
-from sqlalchemy import Boolean, Date, DateTime, String, Text, func
+from sqlalchemy import JSON, Boolean, Date, DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -104,6 +104,40 @@ class User(Base):
     profile_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
     cover_pic_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
+    # ¿Qué? Enlaces a redes sociales / sitio web del usuario (artista o empresa).
+    # ¿Para qué? Onboarding — permitir compartir instagram, sitio web, etc.
+    # ¿Impacto? Diccionario libre {"instagram": "...", "website": "...", ...}; NULL = sin cargar.
+    social_links: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Disciplinas artísticas adicionales elegidas en el onboarding (artista).
+    # ¿Para qué? Permitir más de una disciplina, sin tocar `artistic_area` (usado en filtros).
+    # ¿Impacto? Lista de strings, ej. ["música", "pintura"]; NULL = no completado.
+    artistic_disciplines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Tipos de talento que busca la empresa, elegidos en el onboarding.
+    # ¿Para qué? Ayudar a mostrarle a la empresa artistas relevantes en el futuro.
+    # ¿Impacto? Lista de strings, ej. ["diseño gráfico", "música"]; NULL = no completado.
+    looking_for_disciplines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Razón social / nombre legal de la empresa.
+    company_legal_name: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    # ¿Qué? NIT o número de registro de la empresa (Colombia).
+    company_nit: Mapped[str] = mapped_column(String(30), nullable=True)
+
+    # ¿Qué? Tamaño de la empresa (rango de empleados), ej. "1-10", "11-50", "51-200", "200+".
+    company_size: Mapped[str] = mapped_column(String(30), nullable=True)
+
+    # ¿Qué? Si el usuario ya completó u omitió el wizard de onboarding post-registro.
+    # ¿Para qué? Evitar mostrar el wizard de nuevo una vez terminado u omitido.
+    # ¿Impacto? Default False — se pone True al terminar o al presionar "Completar más tarde".
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
+
     # ¿Qué? Rol del usuario.
     # ¿Para qué? Diferenciar entre artistas, empresas o administradores.
     # ¿Impacto? Controla los permisos y la vista del dashboard inicial.
@@ -117,6 +151,17 @@ class User(Base):
     # ¿Qué? Paleta de colores preferida por el usuario.
     # ¿Para qué? Temas dinámicos según el arte del usuario o su preferencia.
     color_palette: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # ¿Qué? Configuración avanzada de personalización visual (marcos, audio, banners, layouts).
+    customization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # ¿Qué? Contador real de visitas al perfil del usuario.
+    profile_views: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+    )
 
     # ¿Qué? Hash bcrypt de la contraseña del usuario.
     # ¿Para qué? Almacenar la contraseña de forma segura — el hash es irreversible,
@@ -137,6 +182,27 @@ class User(Base):
         Boolean,
         default=True,
         nullable=False,
+    )
+
+    # ¿Qué? Marca de tiempo del último "cerrar sesión en todos los dispositivos".
+    # ¿Para qué? Los JWT son stateless — para invalidar TODAS las sesiones activas de un
+    #            usuario a la vez (sin conocer cada token individual), comparamos el "iat"
+    #            (issued at) de cada token contra esta fecha: cualquier token emitido antes
+    #            de sessions_invalidated_at se rechaza, sin importar que no haya expirado.
+    # ¿Impacto? NULL = nunca se ha usado esta función, todos los tokens existentes son válidos.
+    sessions_invalidated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # ¿Qué? Fecha y hora en que el usuario aceptó la Política de Privacidad y Términos.
+    # ¿Para qué? Registrar el consentimiento informado exigido por la Ley 1581 de 2012
+    #            (Habeas Data) — no basta con mostrar un checkbox en el frontend, hay que
+    #            poder demostrar CUÁNDO y QUE un usuario específico lo aceptó.
+    # ¿Impacto? Se establece una sola vez, en el registro — es la prueba de consentimiento.
+    privacy_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     # ¿Qué? Fecha y hora de creación del registro.

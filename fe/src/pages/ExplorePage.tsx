@@ -4,9 +4,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { usersApi } from "@/api/users";
 import { convocatoriasApi, type ConvResponse } from "@/api/convocatorias";
+import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
+import { uploadApi } from "@/api/upload";
 import type { UserResponse } from "@/types/auth";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { toAbsoluteMediaUrl } from "@/lib/media";
+import { detectSocialLink } from "@/lib/social";
+import { getUserProfileSlug } from "@/lib/user";
+import { UserBadges } from "@/components/ui/UserBadges";
 import {
   ExternalLink, Search, MapPin, Briefcase, Clock, Star, Users, Filter,
   ChevronDown, X, Palette, Building2, Sparkles, TrendingUp, Zap, Award
@@ -74,6 +80,13 @@ export function ExplorePage() {
   const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
   const [applyingId, setApplyingId] = useState<number | null>(null);
 
+  // Application Modal States
+  const [applyModalConv, setApplyModalConv] = useState<ConvResponse | null>(null);
+  const [applyCarta, setApplyCarta] = useState("");
+  const [applyPortafolioId, setApplyPortafolioId] = useState<number | "">("");
+  const [applyCvFile, setApplyCvFile] = useState<File | null>(null);
+  const [portafolios, setPortafolios] = useState<PortafolioResponse[]>([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -103,19 +116,44 @@ export function ExplorePage() {
     load();
   }, [load]);
 
-  const handleApply = async (convId: number) => {
-    if (!isAuthenticated) return;
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "artista") {
+      portafolioApi.list().then(setPortafolios).catch(() => {});
+    }
+  }, [isAuthenticated, user?.role]);
+
+  const handleWithdraw = async (convId: number) => {
     setApplyingId(convId);
     try {
-      if (appliedIds.has(convId)) {
-        await convocatoriasApi.withdraw(convId);
-        setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
-      } else {
-        await convocatoriasApi.apply(convId, {});
-        setAppliedIds((prev) => new Set(prev).add(convId));
-      }
+      await convocatoriasApi.withdraw(convId);
+      setAppliedIds((prev) => { const s = new Set(prev); s.delete(convId); return s; });
     } catch (e: any) {
       alert(e?.response?.data?.detail || e.message);
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  const handleApplySubmit = async () => {
+    if (!applyModalConv) return;
+    setApplyingId(applyModalConv.id_conv);
+    try {
+      let cv_url: string | undefined = undefined;
+      if (applyCvFile) {
+        cv_url = await uploadApi.uploadFile(applyCvFile);
+      }
+      await convocatoriasApi.apply(applyModalConv.id_conv, {
+        carta_presentacion: applyCarta.trim() || undefined,
+        id_portafolio_interno: applyPortafolioId ? Number(applyPortafolioId) : undefined,
+        cv_url,
+      });
+      setAppliedIds((prev) => new Set(prev).add(applyModalConv.id_conv));
+      setApplyModalConv(null);
+      setApplyCarta("");
+      setApplyPortafolioId("");
+      setApplyCvFile(null);
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || e.message || "Error al enviar postulación");
     } finally {
       setApplyingId(null);
     }
@@ -407,27 +445,48 @@ export function ExplorePage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(activeTab === "todo" ? filteredArtistas.slice(0, 4) : filteredArtistas).map((a) => (
-                    <Link to={`/perfil/${a.id}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
+                    <Link to={`/perfil/${getUserProfileSlug(a)}`} key={a.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-purple/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
                       {/* Card gradient top */}
-                      <div className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20" />
+                      <div
+                        className="h-16 bg-gradient-to-r from-brand-purple/20 via-purple-400/10 to-brand-teal/20 bg-cover bg-center"
+                        style={a.cover_pic_url ? { backgroundImage: `url(${toAbsoluteMediaUrl(a.cover_pic_url)})` } : undefined}
+                      />
                       <div className="p-5 pt-0 -mt-6">
                         <div className="flex items-end gap-3">
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-lg font-bold text-brand-purple shadow-sm dark:border-gray-800 dark:text-brand-teal">
-                            {a.full_name.charAt(0).toUpperCase()}
-                          </div>
+                          {a.profile_pic_url ? (
+                            <img
+                              src={toAbsoluteMediaUrl(a.profile_pic_url)}
+                              alt={a.full_name}
+                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800 bg-white"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-purple/30 to-brand-teal/30 text-lg font-bold text-brand-purple shadow-sm dark:border-gray-800 dark:text-brand-teal">
+                              {a.full_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{a.full_name}</h3>
-                            {a.artistic_area && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[11px] font-semibold text-brand-purple dark:text-purple-300">
-                                <Palette className="h-3 w-3" /> {a.artistic_area}
-                              </span>
-                            )}
+                            <div className="mt-0.5 flex flex-wrap gap-1 items-center">
+                              {a.artistic_area && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[11px] font-semibold text-brand-purple dark:text-purple-300">
+                                  <Palette className="h-3 w-3" /> {a.artistic_area}
+                                </span>
+                              )}
+                              <UserBadges userId={a.id} size="sm" />
+                            </div>
                           </div>
                         </div>
                         <div className="mt-3 space-y-1.5">
                           {a.location && <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><MapPin className="h-3 w-3" /> {a.location}</p>}
                           {a.birth_date && <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><Clock className="h-3 w-3" /> {calcEdad(a.birth_date)} años</p>}
                           {a.bio && <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">{a.bio}</p>}
+                          {a.social_links?.social && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-purple/10 px-2 py-0.5 text-[10px] font-semibold text-brand-purple dark:text-purple-300">
+                                <ExternalLink className="h-2.5 w-2.5" /> {detectSocialLink(a.social_links.social)?.platform}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
                           <span className="flex items-center gap-1 text-xs font-medium text-brand-purple opacity-0 group-hover:opacity-100 transition-opacity">
@@ -467,20 +526,34 @@ export function ExplorePage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(activeTab === "todo" ? empresas.slice(0, 4) : empresas).map((e) => (
-                    <Link to={`/perfil/${e.id}`} key={e.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-blue/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
-                      <div className="h-16 bg-gradient-to-r from-brand-blue/20 via-blue-400/10 to-brand-dark/20" />
+                    <Link to={`/perfil/${getUserProfileSlug(e)}`} key={e.id} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-brand-blue/40 hover:shadow-lg hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900">
+                      <div
+                        className="h-16 bg-gradient-to-r from-brand-blue/20 via-blue-400/10 to-brand-dark/20 bg-cover bg-center"
+                        style={e.cover_pic_url ? { backgroundImage: `url(${toAbsoluteMediaUrl(e.cover_pic_url)})` } : undefined}
+                      />
                       <div className="p-5 pt-0 -mt-6">
                         <div className="flex items-end gap-3">
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-blue/30 to-brand-dark/30 text-lg font-bold text-brand-blue shadow-sm dark:border-gray-800 dark:text-blue-300">
-                            {e.full_name.charAt(0).toUpperCase()}
-                          </div>
+                          {e.profile_pic_url ? (
+                            <img
+                              src={toAbsoluteMediaUrl(e.profile_pic_url)}
+                              alt={e.full_name}
+                              className="h-14 w-14 flex-shrink-0 rounded-xl border-2 border-white object-cover shadow-sm dark:border-gray-800 bg-white"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-white bg-gradient-to-br from-brand-blue/30 to-brand-dark/30 text-lg font-bold text-brand-blue shadow-sm dark:border-gray-800 dark:text-blue-300">
+                              {e.full_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0 pb-1">
                             <h3 className="truncate font-semibold text-gray-900 dark:text-white">{e.full_name}</h3>
-                            {e.sector && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue dark:text-blue-300">
-                                <Briefcase className="h-3 w-3" /> {e.sector}
-                              </span>
-                            )}
+                            <div className="mt-0.5 flex flex-wrap gap-1 items-center">
+                              {e.sector && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue dark:text-blue-300">
+                                  <Briefcase className="h-3 w-3" /> {e.sector}
+                                </span>
+                              )}
+                              <UserBadges userId={e.id} size="sm" />
+                            </div>
                           </div>
                         </div>
                         <div className="mt-3">
@@ -618,9 +691,9 @@ export function ExplorePage() {
                           <div className="mt-3">
                             {isAuthenticated && user?.role === "artista" ? (
                               <button
-                                onClick={() => handleApply(c.id_conv)}
+                                onClick={() => applied ? handleWithdraw(c.id_conv) : setApplyModalConv(c)}
                                 disabled={applyingId === c.id_conv}
-                                className={`w-full rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm ${
+                                className={`w-full rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm cursor-pointer ${
                                   applied
                                     ? "bg-gray-200 text-gray-700 hover:bg-red-50 hover:text-red-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                                     : "bg-brand-purple text-white hover:bg-brand-purple/90 shadow-md shadow-brand-purple/20 hover:shadow-lg hover:shadow-brand-purple/30 active:scale-[0.98]"
@@ -650,6 +723,59 @@ export function ExplorePage() {
             </section>
           )}
         </>
+      )}
+      {/* Modal de Aplicación en ExplorePage */}
+      {applyModalConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="animate-scale-in w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Postular a {applyModalConv.nombre}</h3>
+              <button onClick={() => setApplyModalConv(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-4 text-xs text-gray-500">Completa tu carta de presentación y adjunta tus documentos para destacar.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Carta de presentación</label>
+                <textarea 
+                  value={applyCarta} onChange={(e) => setApplyCarta(e.target.value)}
+                  rows={4} placeholder="¿Por qué eres el candidato ideal para esta oportunidad?"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Portafolio en Plataforma (Opcional)</label>
+                <select
+                  value={applyPortafolioId}
+                  onChange={(e) => setApplyPortafolioId(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="">No adjuntar portafolio</option>
+                  {portafolios.map(p => (
+                    <option key={p.id_port} value={p.id_port}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">CV (Archivo PDF, Opcional)</label>
+                <input 
+                  type="file" accept=".pdf"
+                  onChange={(e) => setApplyCvFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-brand-purple file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-purple/90 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setApplyModalConv(null)}>Cancelar</Button>
+                <Button onClick={handleApplySubmit} disabled={applyingId === applyModalConv.id_conv}>
+                  {applyingId === applyModalConv.id_conv ? "Enviando..." : "Enviar postulación"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

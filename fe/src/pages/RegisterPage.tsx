@@ -49,68 +49,106 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
   };
 
   /**
-   * ¿Qué? Validación del lado del cliente antes de enviar al backend.
+   * ¿Qué? Reglas de validación de un solo campo, dado el estado actual del formulario.
+   * ¿Para qué? Compartir las mismas reglas entre la validación en tiempo real (onBlur)
+   *           y la validación completa al enviar el formulario — una sola fuente de verdad.
+   * ¿Impacto? Retorna "" (sin error) o el mensaje a mostrar bajo el campo.
+   */
+  const getFieldError = (name: string, data: typeof formData): string => {
+    switch (name) {
+      case "email":
+        if (!data.email) return "El correo es obligatorio";
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(data.email)) {
+          return "El formato del correo es inválido";
+        }
+        return "";
+
+      case "first_name":
+        if (!data.first_name || data.first_name.trim().length < 2) {
+          return "El nombre debe tener al menos 2 caracteres";
+        }
+        return "";
+
+      case "last_name":
+        if (!data.last_name || data.last_name.trim().length < 2) {
+          return "El apellido debe tener al menos 2 caracteres";
+        }
+        return "";
+
+      case "birth_date": {
+        if (data.role !== "artista") return "";
+        if (!data.birth_date) return "La fecha de nacimiento es obligatoria";
+        const birth = new Date(data.birth_date);
+        if (isNaN(birth.getTime())) return "Fecha inválida";
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        if (age < 18 || age > 28) return "La plataforma es exclusiva para jóvenes entre 18 y 28 años";
+        return "";
+      }
+
+      case "artistic_area":
+        if (data.role !== "artista") return "";
+        if (!data.artistic_area || data.artistic_area.trim().length < 2) {
+          return "El área artística es obligatoria";
+        }
+        return "";
+
+      case "sector":
+        if (data.role !== "empresa") return "";
+        if (!data.sector || data.sector.trim().length < 2) {
+          return "El sector es obligatorio para empresas o fundaciones";
+        }
+        return "";
+
+      case "password":
+        if (data.password.length < 8) return "Mínimo 8 caracteres";
+        if (!/[A-Z]/.test(data.password)) return "Debe incluir al menos una mayúscula";
+        if (!/[a-z]/.test(data.password)) return "Debe incluir al menos una minúscula";
+        if (!/\d/.test(data.password)) return "Debe incluir al menos un número";
+        return "";
+
+      case "confirmPassword":
+        if (data.password !== data.confirmPassword) return "Las contraseñas no coinciden";
+        return "";
+
+      default:
+        return "";
+    }
+  };
+
+  /**
+   * ¿Qué? Valida un campo individual al perder el foco (onBlur).
+   * ¿Para qué? Dar feedback inmediato mientras el usuario completa el formulario,
+   *           en vez de que todos los errores aparezcan recién al enviar.
+   * ¿Impacto? No bloquea el submit — solo actualiza el mensaje bajo ese campo.
+   */
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    setErrors((prev) => ({ ...prev, [name]: getFieldError(name, formData) }));
+  };
+
+  /**
+   * ¿Qué? Validación completa del lado del cliente antes de enviar al backend.
    * ¿Para qué? Dar feedback inmediato sin esperar la respuesta del servidor.
    * ¿Impacto? Reduce peticiones innecesarias y mejora la UX.
    */
   const validate = (): boolean => {
+    const fields = [
+      "email",
+      "first_name",
+      "last_name",
+      "birth_date",
+      "artistic_area",
+      "sector",
+      "password",
+      "confirmPassword",
+    ];
     const newErrors: Record<string, string> = {};
-
-    if (!formData.email) {
-      newErrors.email = "El correo es obligatorio";
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
-      newErrors.email = "El formato del correo es inválido";
-    }
-
-    if (!formData.first_name || formData.first_name.trim().length < 2) {
-      newErrors.first_name = "El nombre debe tener al menos 2 caracteres";
-    }
-
-    if (!formData.last_name || formData.last_name.trim().length < 2) {
-      newErrors.last_name = "El apellido debe tener al menos 2 caracteres";
-    }
-
-    if (formData.role === "artista") {
-      if (!formData.birth_date) {
-        newErrors.birth_date = "La fecha de nacimiento es obligatoria";
-      } else {
-        const birth = new Date(formData.birth_date);
-        if (isNaN(birth.getTime())) {
-          newErrors.birth_date = "Fecha inválida";
-        } else {
-          const today = new Date();
-          let age = today.getFullYear() - birth.getFullYear();
-          const m = today.getMonth() - birth.getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-          }
-          if (age < 18 || age > 28) {
-            newErrors.birth_date = "La plataforma es exclusiva para jóvenes entre 18 y 28 años";
-          }
-        }
-      }
-
-      if (!formData.artistic_area || formData.artistic_area.trim().length < 2) {
-        newErrors.artistic_area = "El área artística es obligatoria";
-      }
-    } else if (formData.role === "empresa") {
-      if (!formData.sector || formData.sector.trim().length < 2) {
-        newErrors.sector = "El sector es obligatorio para empresas o fundaciones";
-      }
-    }
-
-    if (formData.password.length < 8) {
-      newErrors.password = "Mínimo 8 caracteres";
-    } else if (!/[A-Z]/.test(formData.password)) {
-      newErrors.password = "Debe incluir al menos una mayúscula";
-    } else if (!/[a-z]/.test(formData.password)) {
-      newErrors.password = "Debe incluir al menos una minúscula";
-    } else if (!/\d/.test(formData.password)) {
-      newErrors.password = "Debe incluir al menos un número";
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Las contraseñas no coinciden";
+    for (const field of fields) {
+      const error = getFieldError(field, formData);
+      if (error) newErrors[field] = error;
     }
 
     if (!acceptedTerms) {
@@ -135,6 +173,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
         password: formData.password,
+        accepted_terms: acceptedTerms,
       };
 
       if (formData.role === "artista") {
@@ -149,7 +188,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
       if (isModalMode) {
         closeModal();
       }
-      navigate("/dashboard", { replace: true });
+      navigate("/onboarding", { replace: true });
     } catch (err: any) {
       const message = err instanceof Error ? err.message : "Error al registrar usuario";
       
@@ -211,6 +250,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               icon={<User className="h-5 w-5" />}
               error={errors.first_name}
               onChange={handleChange}
+              onBlur={handleBlur}
             />
             <InputField
               label="Apellido"
@@ -222,6 +262,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               icon={<User className="h-5 w-5" />}
               error={errors.last_name}
               onChange={handleChange}
+              onBlur={handleBlur}
             />
           </div>
         ) : (
@@ -236,6 +277,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               icon={<Building2 className="h-5 w-5" />}
               error={errors.first_name}
               onChange={handleChange}
+              onBlur={handleBlur}
             />
             <InputField
               label="Sigla o complemento"
@@ -247,6 +289,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               icon={<Building2 className="h-5 w-5" />}
               error={errors.last_name}
               onChange={handleChange}
+              onBlur={handleBlur}
             />
           </div>
         )}
@@ -261,6 +304,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
           icon={<Mail className="h-5 w-5" />}
           error={errors.email}
           onChange={handleChange}
+          onBlur={handleBlur}
         />
 
         {formData.role === "artista" ? (
@@ -274,6 +318,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
               icon={<Calendar className="h-5 w-5" />}
               error={errors.birth_date}
               onChange={handleChange}
+              onBlur={handleBlur}
             />
     
             <div className="mb-3">
@@ -313,16 +358,43 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
             </div>
           </div>
         ) : (
-          <InputField
-            label="Sector de la industria"
-            name="sector"
-            type="text"
-            value={formData.sector}
-            placeholder="Audiovisual, Entretenimiento, Educación..."
-            icon={<Building2 className="h-5 w-5" />}
-            error={errors.sector}
-            onChange={handleChange}
-          />
+          <div className="mb-3">
+            <label htmlFor="sector" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Sector de la industria
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <select
+                id="sector"
+                name="sector"
+                value={formData.sector}
+                onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
+                onBlur={(e) => handleBlur(e as unknown as React.FocusEvent<HTMLInputElement>)}
+                className={`block w-full rounded-lg border pl-10 pr-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-gray-100 ${
+                  errors.sector
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-400 dark:focus:ring-red-400/20"
+                    : "border-gray-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-brand-purple/40 dark:focus:border-brand-blue dark:focus:ring-brand-blue/20"
+                } ${!formData.sector ? "text-gray-400 dark:text-gray-500" : ""}`}
+              >
+                <option value="" disabled>Selecciona un sector...</option>
+                <option value="Cultura y Artes">Cultura y Artes</option>
+                <option value="Educación">Educación</option>
+                <option value="Tecnología">Tecnología</option>
+                <option value="Medios de Comunicación">Medios de Comunicación</option>
+                <option value="Entretenimiento y Eventos">Entretenimiento y Eventos</option>
+                <option value="Publicidad y Marketing">Publicidad y Marketing</option>
+                <option value="Moda y Diseño">Moda y Diseño</option>
+                <option value="Fundación / ONG">Fundación / ONG</option>
+                <option value="Gobierno">Gobierno</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            {errors.sector && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.sector}</p>
+            )}
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -336,6 +408,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
             icon={<Lock className="h-5 w-5" />}
             error={errors.password}
             onChange={handleChange}
+            onBlur={handleBlur}
           />
 
           <InputField
@@ -348,6 +421,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
             icon={<KeyRound className="h-5 w-5" />}
             error={errors.confirmPassword}
             onChange={handleChange}
+            onBlur={handleBlur}
           />
         </div>
 

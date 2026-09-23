@@ -19,7 +19,7 @@ FROM node:20-alpine AS builder
 # ¿Para qué? El proyecto usa pnpm de forma obligatoria según las instrucciones del proyecto.
 # ¿Impacto? Sin pnpm, no se pueden instalar las dependencias correctamente.
 #           pnpm es más rápido y eficiente que npm gracias a su store de paquetes compartido.
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # ¿Qué? Define /app como el directorio de trabajo dentro del contenedor builder.
 # ¿Para qué? Organizar todos los archivos del frontend en un directorio predecible.

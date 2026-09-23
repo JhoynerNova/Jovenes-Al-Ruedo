@@ -33,6 +33,7 @@ email-validator>=2.0.0      # Validación de emails (requerido por Pydantic Emai
 python-jose[cryptography]>=3.3.0  # Creación y verificación de tokens JWT
 passlib[bcrypt]>=1.7.0            # Hashing seguro de contraseñas con bcrypt
 bcrypt>=4.0.0,<4.1.0              # Backend de bcrypt — fijado <4.1 por compatibilidad con passlib
+slowapi>=0.1.9                    # Rate limiting — bloquea fuerza bruta en login/register/reset
 
 # ────────────────────────────
 # 📧 Email

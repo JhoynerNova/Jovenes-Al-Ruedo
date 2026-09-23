@@ -8,6 +8,7 @@ Descripción: Utilidades de seguridad — hashing de contraseñas y manejo de to
           Si los JWT se generan mal, cualquiera podría suplantar usuarios.
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
@@ -77,16 +78,22 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         Token JWT como string codificado.
     """
     to_encode = data.copy()
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     # ¿Qué? "exp" es un claim estándar de JWT que indica cuándo expira el token.
     # ¿Para qué? El servidor rechaza automáticamente tokens expirados al decodificar.
     # ¿Impacto? Sin expiración, un token robado sería válido para siempre.
-    to_encode.update({"exp": expire, "type": "access"})
+    # ¿Qué? "jti" (JWT ID) — identificador único de este token específico.
+    # ¿Para qué? Permite revocarlo individualmente (logout) sin invalidar otros tokens
+    #            del mismo usuario. Ver app.utils.token_blacklist.
+    # ¿Qué? "iat" (issued at) — momento en que se emitió el token.
+    # ¿Para qué? Permite invalidar TODAS las sesiones de un usuario a la vez comparando
+    #            este valor contra User.sessions_invalidated_at ("cerrar sesión en
+    #            todos los dispositivos"), sin tener que conocer cada token individual.
+    to_encode.update({"exp": expire, "iat": now, "type": "access", "jti": str(uuid.uuid4())})
     encoded_jwt = jwt.encode(
         to_encode,
         settings.SECRET_KEY,
@@ -114,17 +121,16 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None) -> 
         Token JWT de refresco como string.
     """
     to_encode = data.copy()
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        )
+        expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     # ¿Qué? "type": "refresh" diferencia este token del access token.
     # ¿Para qué? Evitar que un refresh token sea usado como access token y viceversa.
     # ¿Impacto? Sin esta distinción, un refresh token podría usarse para acceder a endpoints
     #           protegidos, anulando el propósito de tener tokens de corta duración.
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update({"exp": expire, "iat": now, "type": "refresh", "jti": str(uuid.uuid4())})
     encoded_jwt = jwt.encode(
         to_encode,
         settings.SECRET_KEY,

@@ -26,12 +26,53 @@
   /* Fuentes — solo sans-serif, sin serifas nunca */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  /* Paleta Jóvenes al Ruedo */
+  /* Paleta Jóvenes al Ruedo por defecto */
   --color-brand-dark: #2E1F5B;
   --color-brand-purple: #5A3FA0;
   --color-brand-blue: #2F80ED;
   --color-brand-teal: #2EC4B6;
   --color-brand-orange: #F2994A;
+}
+
+/* ── PALETAS DINÁMICAS SELECCIONABLES EN EL ESTUDIO CREATIVO ── */
+[data-theme="sunset"] {
+  --color-brand-dark: #2A1706;
+  --color-brand-purple: #D97706;
+  --color-brand-blue: #F59E0B;
+  --color-brand-teal: #EF4444;
+  --color-brand-orange: #F97316;
+}
+
+[data-theme="cyberpunk"] {
+  --color-brand-dark: #1F082B;
+  --color-brand-purple: #EC4899;
+  --color-brand-blue: #8B5CF6;
+  --color-brand-teal: #06B6D4;
+  --color-brand-orange: #F43F5E;
+}
+
+[data-theme="emerald"] {
+  --color-brand-dark: #062C22;
+  --color-brand-purple: #059669;
+  --color-brand-blue: #10B981;
+  --color-brand-teal: #14B8A6;
+  --color-brand-orange: #34D399;
+}
+
+[data-theme="ocean"] {
+  --color-brand-dark: #081C38;
+  --color-brand-purple: #2563EB;
+  --color-brand-blue: #0284C7;
+  --color-brand-teal: #06B6D4;
+  --color-brand-orange: #38BDF8;
+}
+
+[data-theme="rose"] {
+  --color-brand-dark: #330B1C;
+  --color-brand-purple: #E11D48;
+  --color-brand-blue: #F43F5E;
+  --color-brand-teal: #FB7185;
+  --color-brand-orange: #FDA4AF;
 }
 
 /* ¿Qué? Estilos base aplicados al body y al root de la app. */

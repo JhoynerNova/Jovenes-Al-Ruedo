@@ -13,7 +13,7 @@ import re
 import uuid
 from datetime import datetime, date  # datetime usado en UserResponse
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -62,6 +62,21 @@ class UserCreate(BaseModel):
     # ¿Para qué? El backend la hashea con bcrypt antes de guardarla en la BD.
     # ¿Impacto? El validador exige mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número.
     password: str
+
+    # ¿Qué? Confirmación de que el usuario aceptó la Política de Privacidad y Términos.
+    # ¿Para qué? Ley 1581 de 2012 (Habeas Data) exige consentimiento informado explícito
+    #            para el tratamiento de datos personales — no basta con un checkbox visual
+    #            en el frontend si el backend no lo valida ni lo registra.
+    # ¿Impacto? El validador rechaza el registro si llega en False — el checkbox del
+    #           frontend ya bloquea el submit, pero esta es la garantía del lado del servidor.
+    accepted_terms: bool = False
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def validate_accepted_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Debes aceptar la Política de Privacidad y los Términos y Condiciones")
+        return v
 
     @field_validator("password")
     @classmethod
@@ -227,6 +242,31 @@ class ResetPasswordRequest(BaseModel):
         return v
 
 
+class DeleteAccountRequest(BaseModel):
+    """Schema para eliminar la propia cuenta (usuario autenticado).
+
+    ¿Qué? Requiere la contraseña actual como confirmación.
+    ¿Para qué? Es una acción irreversible desde la perspectiva del usuario — pedir la
+              contraseña evita que alguien con la sesión abierta (pero sin la contraseña)
+              elimine la cuenta por error o malicia.
+    """
+
+    password: str
+
+
+class LogoutRequest(BaseModel):
+    """Schema para cerrar sesión revocando el refresh token.
+
+    ¿Qué? Contiene opcionalmente el refresh_token para invalidarlo del lado del servidor.
+    ¿Para qué? El access token se revoca a partir del header Authorization; el refresh
+              token no viaja en headers, así que el cliente lo envía en el body.
+    ¿Impacto? Si no se envía, el logout solo revoca el access token actual (el refresh
+              token quedaría vigente hasta expirar, aunque las cookies ya se borraron).
+    """
+
+    refresh_token: Optional[str] = None
+
+
 class RefreshTokenRequest(BaseModel):
     """Schema para renovar el access token usando el refresh token.
 
@@ -260,6 +300,7 @@ class UserResponse(BaseModel):
     last_name: str
     full_name: str
     color_palette: Optional[str] = None
+    customization: Optional[dict] = None
     role: str
     sector: Optional[str] = None
     birth_date: Optional[date] = None
@@ -268,6 +309,14 @@ class UserResponse(BaseModel):
     location: Optional[str] = None
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
+    social_links: Optional[dict] = None
+    artistic_disciplines: Optional[List[str]] = None
+    looking_for_disciplines: Optional[List[str]] = None
+    company_legal_name: Optional[str] = None
+    company_nit: Optional[str] = None
+    company_size: Optional[str] = None
+    onboarding_completed: bool = False
+    profile_views: int = 0
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -330,6 +379,14 @@ class UserUpdate(BaseModel):
     profile_pic_url: Optional[str] = None
     cover_pic_url: Optional[str] = None
     color_palette: Optional[str] = None
+    customization: Optional[dict] = None
+    social_links: Optional[dict] = None
+    artistic_disciplines: Optional[List[str]] = None
+    looking_for_disciplines: Optional[List[str]] = None
+    company_legal_name: Optional[str] = None
+    company_nit: Optional[str] = None
+    company_size: Optional[str] = None
+    onboarding_completed: Optional[bool] = None
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -339,6 +396,16 @@ class UserUpdate(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre/apellido debe tener al menos 2 caracteres")
+        return v
+
+    @field_validator("company_size")
+    @classmethod
+    def validate_company_size(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        allowed = {"1-10", "11-50", "51-200", "200+"}
+        if v not in allowed:
+            raise ValueError(f"company_size debe ser uno de: {', '.join(sorted(allowed))}")
         return v
 
 
@@ -351,4 +418,16 @@ class UserRoleUpdate(BaseModel):
     def validate_role(cls, v: str) -> str:
         if v not in ("artista", "empresa", "admin"):
             raise ValueError("Rol inválido. Debe ser artista, empresa o admin")
+        return v
+
+
+class AdminResetPasswordRequest(BaseModel):
+    """Schema para que un administrador cambie la contraseña de un usuario."""
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("La nueva contraseña debe tener al menos 6 caracteres")
         return v

@@ -8,23 +8,47 @@ import { Button } from "@/components/ui/Button";
 import { convocatoriasApi, type ConvResponse, type Applicant } from "@/api/convocatorias";
 import { portafolioApi, type PortafolioResponse } from "@/api/portafolio";
 import { chatApi } from "@/api/chat";
+import api from "@/api/axios";
 import { RatingModal } from "@/components/RatingModal";
 import { CertificateModal } from "@/components/CertificateModal";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { toAbsoluteMediaUrl } from "@/lib/media";
+import { UserBadges } from "@/components/ui/UserBadges";
+import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
+import { analyticsApi, type UserStats } from "@/api/analytics";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { getUserProfileSlug } from "@/lib/user";
 
 type Tab = "resumen" | "convocatorias" | "postulaciones";
 
 export function CompanyDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("resumen");
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await analyticsApi.getMyStats();
+      setUserStats(stats);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    if (activeTab === "resumen") loadStats();
+  }, [activeTab, loadStats]);
   const navigate = useNavigate();
   const [startingChatId, setStartingChatId] = useState<string | null>(null);
 
   const handleStartChat = async (artistaId: string) => {
     setStartingChatId(artistaId);
     try {
-      await chatApi.crearConversacionDirecta(artistaId);
-      navigate("/mensajes");
+      const conv = await chatApi.crearConversacionDirecta(artistaId);
+      const convId = conv.id_conversacion || (conv as any).id;
+      navigate(`/mensajes?convId=${convId}`);
     } catch {
       alert("Error al iniciar chat con el artista.");
     } finally {
@@ -53,8 +77,23 @@ export function CompanyDashboard() {
   const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; convId?: number } | null>(null);
   const [certTarget, setCertTarget] = useState<{ artistaNombre: string; convNombre: string } | null>(null);
 
-  const handleExportCSV = () => {
-    window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/reports/convocatorias/csv`, '_blank');
+  const handleExportCSV = async () => {
+    try {
+      const response = await api.get("/api/v1/reports/convocatorias/csv", {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "reporte_convocatorias_jovenes_al_ruedo.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Error al exportar el reporte CSV.");
+    }
   };
 
   // States for viewing artist portfolio in modal
@@ -135,6 +174,7 @@ export function CompanyDashboard() {
       setNewConvUbicacion("");
       setShowNewConv(false);
       loadConvs();
+      loadStats();
     } catch (e: any) {
       setConvError(e.message || "Error al crear convocatoria");
     }
@@ -154,28 +194,54 @@ export function CompanyDashboard() {
       });
       setEditingConv(null);
       loadConvs();
+      loadStats();
     } catch (e: any) {
       setConvError(e.message || "Error al actualizar");
     }
   };
 
-  const handleDeleteConv = async (id: number) => {
-    if (!confirm("¿Eliminar esta convocatoria? Se perderán todas las postulaciones.")) return;
-    try {
-      await convocatoriasApi.delete(id);
-      loadConvs();
-    } catch (e: any) {
-      alert(e.message);
-    }
+  // Modal de Confirmación Elegante
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const handleDeleteConv = (id: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Convocatoria",
+      message: "¿Seguro que deseas eliminar esta convocatoria? Se perderán todas las postulaciones asociadas.",
+      confirmText: "Eliminar",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await convocatoriasApi.delete(id);
+          loadConvs();
+          loadStats();
+        } catch (e: any) {
+          setConvError(e.message || "Error al eliminar convocatoria");
+        }
+      },
+    });
   };
 
   const handleUpdateApplicantStatus = async (convId: number, inscId: number, nuevoEstado: string) => {
     try {
       await convocatoriasApi.updateApplicantStatus(convId, inscId, nuevoEstado);
-      // update local state
       setAllApplicants(prev => prev.map(a => a.id_i === inscId ? { ...a, estado: nuevoEstado } : a));
-    } catch (e: any) {
-      alert("Error al actualizar estado");
+      loadStats();
+    } catch {
+      // silent
     }
   };
 
@@ -185,18 +251,30 @@ export function CompanyDashboard() {
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: "Panel de Empresa" }]} />
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-blue p-6 text-white shadow-lg sm:p-8">
+      <div
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-dark via-brand-purple to-brand-blue p-6 text-white shadow-lg sm:p-8 bg-cover bg-center transition-all"
+        style={user?.cover_pic_url ? { backgroundImage: `linear-gradient(to right, rgba(15,10,30,0.85), rgba(30,15,60,0.75)), url(${toAbsoluteMediaUrl(user.cover_pic_url)})` } : undefined}
+      >
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold backdrop-blur-sm">
-              {user?.full_name?.charAt(0).toUpperCase()}
-            </div>
+            {user?.profile_pic_url ? (
+              <img
+                src={toAbsoluteMediaUrl(user.profile_pic_url)}
+                alt={user.full_name}
+                className="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/30 shadow-md bg-white"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold backdrop-blur-sm shadow-md">
+                {user?.full_name?.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <h1 className="text-xl font-bold sm:text-2xl">{user?.full_name}</h1>
               <p className="text-sm text-white/80">{user?.sector || "Empresa"} · {user?.email}</p>
-              {user?.location && <p className="text-xs text-white/60">{user.location}</p>}
+              {user?.location && <p className="text-xs text-white/60 mb-2">{user.location}</p>}
+              {userStats?.badges && <UserBadges badges={userStats.badges} size="sm" />}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -234,6 +312,7 @@ export function CompanyDashboard() {
       {/* ── TAB: RESUMEN ── */}
       {activeTab === "resumen" && (
         <div className="space-y-6">
+          {userStats && <AnalyticsCard stats={userStats} role="empresa" />}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: "Convocatorias activas", valor: String(convs.length), cambio: "Total publicadas", color: "border-l-brand-purple" },
@@ -492,7 +571,9 @@ export function CompanyDashboard() {
                         <div key={a.id_i} className="animate-scale-in rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-xs space-y-2.5">
                           <div className="flex items-start justify-between gap-1">
                             <div>
-                              <h5 className="font-bold text-gray-900 dark:text-white">{a.artista_nombre}</h5>
+                              <Link to={`/perfil/${getUserProfileSlug({ id: a.id_usr, full_name: a.artista_nombre })}`} className="font-bold text-gray-900 dark:text-white hover:text-brand-purple dark:hover:text-brand-teal transition-colors">
+                                {a.artista_nombre} 👤
+                              </Link>
                               <p className="text-[10px] text-gray-400">{a.artista_email}</p>
                               {a.artista_area && <span className="mt-1 inline-block text-[10px] text-brand-teal font-medium">✨ {a.artista_area}</span>}
                             </div>
@@ -527,20 +608,21 @@ export function CompanyDashboard() {
                             </select>
                           </div>
 
-                          {(a.id_portafolio_interno || a.cv_url) && (
-                            <div className="flex justify-between items-center pt-1 text-[10px] gap-2">
-                              {a.id_portafolio_interno && (
-                                <button onClick={() => handleViewPortfolio(a.id_portafolio_interno!)} className="text-brand-purple hover:underline font-semibold dark:text-brand-teal">
-                                  Ver Portafolio 🎨
-                                </button>
-                              )}
-                              {a.cv_url && (
-                                <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline font-semibold ml-auto">
-                                  Descargar CV 📄
-                                </a>
-                              )}
-                            </div>
-                          )}
+                          <div className="flex justify-between items-center pt-1 text-[10px] gap-2 flex-wrap">
+                            <Link to={`/perfil/${getUserProfileSlug({ id: a.id_usr, full_name: a.artista_nombre })}`} className="text-brand-blue hover:underline font-semibold dark:text-cyan-400">
+                              Ver Perfil 👤
+                            </Link>
+                            {a.id_portafolio_interno && (
+                              <button onClick={() => handleViewPortfolio(a.id_portafolio_interno!)} className="text-brand-purple hover:underline font-semibold dark:text-brand-teal">
+                                Ver Portafolio 🎨
+                              </button>
+                            )}
+                            {a.cv_url && (
+                              <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${a.cv_url}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline font-semibold ml-auto">
+                                Descargar CV 📄
+                              </a>
+                            )}
+                          </div>
 
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-850 space-y-1.5">
                             <div className="flex gap-1.5">
@@ -700,6 +782,17 @@ export function CompanyDashboard() {
           convocatoriaTitulo={certTarget.convNombre}
         />
       )}
+
+      {/* Modal de Confirmación Elegante */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }
