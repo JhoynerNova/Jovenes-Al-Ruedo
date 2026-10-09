@@ -41,7 +41,6 @@ Plataforma de conexión cultural y bolsa de empleo que conecta a jóvenes artist
 
 ## 🚀 Novedades Recientes (Backlog Completado)
 
-Hemos completado el backlog al 80%+ implementando:
 1. **Gestor de Dependencias Ultra Rápido (`uv`):** Reemplazamos la gestión clásica de `pip` en el backend por `uv` (desarrollado en Rust por Astral) para instalación y ejecución de tests instantánea.
 2. **Carga de Archivos Avanzada:** Soporte para carga de imágenes, audio y video con validación estricta de tamaños máximos (Videos max 50MB, Audios max 15MB, otros 10MB).
 3. **Grid Multimedia en Web:** Dashboard de artista con reproductores embebidos de audio/video y visores de PDF.
