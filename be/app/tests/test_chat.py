@@ -111,11 +111,11 @@ def test_websocket_chat(client: TestClient, db: Session, test_users):
     db.commit()
     db.refresh(conv)
     
-    # Conectar al WebSocket
-    with client.websocket_connect(f"/api/v1/chat/ws/{conv.id_conversacion}") as websocket:
-        # Enviar mensaje por WebSocket
+    # Conectar al WebSocket autenticado como la empresa participante
+    token = create_access_token(data={"sub": empresa.email, "type": "access"})
+    with client.websocket_connect(f"/api/v1/chat/ws/{conv.id_conversacion}?token={token}") as websocket:
+        # Enviar mensaje por WebSocket (el servidor garantiza que el remitente es la empresa autenticada)
         websocket.send_json({
-            "remitente_id": str(empresa.id),
             "contenido": "Mensaje en tiempo real!"
         })
         
@@ -124,6 +124,20 @@ def test_websocket_chat(client: TestClient, db: Session, test_users):
         assert broadcast_data["contenido"] == "Mensaje en tiempo real!"
         assert broadcast_data["id_conversacion"] == conv.id_conversacion
         assert broadcast_data["remitente_id"] == str(empresa.id)
+
+
+def test_websocket_chat_unauthenticated(client: TestClient, db: Session, test_users):
+    empresa = test_users["empresa"]
+    artista = test_users["artista"]
+    conv = Conversacion(tipo="directo", empresa_id=empresa.id, artista_id=artista.id)
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+
+    # Intento de conexión sin token debe ser rechazado
+    with pytest.raises(Exception):
+        with client.websocket_connect(f"/api/v1/chat/ws/{conv.id_conversacion}"):
+            pass
 
 
 def test_global_exception_handler(client: TestClient):

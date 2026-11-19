@@ -49,7 +49,7 @@ class Conversacion(Base):
     )
 
     # Relaciones
-    inscripcion = relationship("Inscripcion", foreign_keys=[id_i])
+    inscripcion = relationship("Inscripcion", foreign_keys=[id_i], overlaps="conversaciones")
     empresa = relationship("User", foreign_keys=[empresa_id])
     artista = relationship("User", foreign_keys=[artista_id])
     mensajes: Mapped[List["Mensaje"]] = relationship(

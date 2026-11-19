@@ -1,41 +1,26 @@
-"""Router de convocatorias: CRUD para empresas y postulaciones para artistas."""
+"""
+Módulo: routers/convocatorias.py
+Descripción: Router HTTP de convocatorias — CRUD para empresas y postulaciones para artistas.
+Arquitectura: Actúa como capa de entrada HTTP (Controller). Valida DTOs y delega a ConvocatoriaService.
+"""
 
-import math
-import uuid
-from datetime import date, datetime, time, timezone
-from typing import Optional
+from datetime import date
+from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db, require_admin
-from app.models.conv import Conv, Inscripcion
 from app.models.user import User
-from app.schemas.conv import ConvCreate, ConvResponse, InscripcionResponse, InscripcionCreate, InscripcionUpdateStatus
-from app.services import notification_service
+from app.schemas.conv import (
+    ConvCreate,
+    ConvResponse,
+    InscripcionCreate,
+    InscripcionUpdateStatus,
+)
+from app.services.convocatoria_service import convocatoria_service
 
 router = APIRouter(prefix="/api/v1/convocatorias", tags=["convocatorias"])
-
-
-def _conv_to_response(conv: Conv, db: Session) -> ConvResponse:
-    total = db.execute(
-        select(func.count()).where(Inscripcion.id_conv == conv.id_conv)
-    ).scalar() or 0
-    return ConvResponse(
-        id_conv=conv.id_conv,
-        nombre=conv.nombre,
-        glue=conv.glue,
-        nivel_experiencia=conv.nivel_experiencia,
-        tipo_jornada=conv.tipo_jornada,
-        rango_salarial=conv.rango_salarial,
-        ubicacion=conv.ubicacion,
-        id_usr=str(conv.id_usr),
-        empresa_nombre=conv.empresa.full_name if conv.empresa else None,
-        empresa_sector=conv.empresa.sector if conv.empresa else None,
-        created_at=conv.created_at,
-        total_inscritos=total,
-    )
 
 
 # ── Listar todas las convocatorias (público) ──
@@ -46,18 +31,8 @@ def list_convocatorias(
     search: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    stmt = select(Conv)
-    if search:
-        stmt = stmt.where(Conv.nombre.ilike(f"%{search}%"))
-    total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
-    convs = db.execute(stmt.order_by(Conv.created_at.desc()).offset(skip).limit(limit)).scalars().all()
-    return {
-        "items": [_conv_to_response(c, db) for c in convs],
-        "total": total,
-        "page": (skip // limit) + 1,
-        "size": limit,
-        "pages": math.ceil(total / limit) if limit > 0 else 0,
-    }
+    """Consulta pública de convocatorias con paginación delegada al servicio."""
+    return convocatoria_service.list_convocatorias(db=db, skip=skip, limit=limit, search=search)
 
 
 # ── Mis convocatorias (empresa autenticada) ──
@@ -66,12 +41,8 @@ def my_convocatorias(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "empresa":
-        raise HTTPException(status_code=403, detail="Solo las empresas pueden ver sus convocatorias")
-    convs = db.execute(
-        select(Conv).where(Conv.id_usr == current_user.id).order_by(Conv.created_at.desc())
-    ).scalars().all()
-    return [_conv_to_response(c, db) for c in convs]
+    """Retorna las convocatorias de la empresa actual."""
+    return convocatoria_service.get_my_convocatorias(db=db, current_user=current_user)
 
 
 # ── Mis postulaciones (artista autenticado) ──
@@ -80,89 +51,28 @@ def my_applications(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "artista":
-        raise HTTPException(status_code=403, detail="Solo los artistas pueden ver sus postulaciones")
-    inscripciones = db.execute(
-        select(Inscripcion).where(Inscripcion.id_usr == str(current_user.id)).order_by(Inscripcion.created_at.desc())
-    ).scalars().all()
-    result = []
-    for i in inscripciones:
-        conv = db.get(Conv, i.id_conv)
-        if conv:
-            result.append({
-                "id_i": i.id_i,
-                "id_conv": i.id_conv,
-                "conv_nombre": conv.nombre,
-                "empresa_nombre": conv.empresa.full_name if conv.empresa else None,
-                "estado": i.estado,
-                "created_at": i.created_at.isoformat(),
-            })
-    return result
+    """Retorna las postulaciones del artista autenticado."""
+    return convocatoria_service.get_my_applications(db=db, current_user=current_user)
 
 
 # ── Reporte parametrizado de postulaciones (admin) ──
 @router.get("/admin/reporte", summary="Reporte de postulaciones (admin)")
 def reporte_postulaciones(
-    fecha_desde: Optional[date] = Query(None, description="Filtra postulaciones creadas desde esta fecha (inclusive)"),
-    fecha_hasta: Optional[date] = Query(None, description="Filtra postulaciones creadas hasta esta fecha (inclusive)"),
+    fecha_desde: Optional[date] = Query(None, description="Filtra postulaciones creadas desde esta fecha"),
+    fecha_hasta: Optional[date] = Query(None, description="Filtra postulaciones creadas hasta esta fecha"),
     estado: Optional[str] = Query(None, description="Filtra por estado: Pendiente, Aceptada, Rechazada"),
-    conv_id: Optional[int] = Query(None, description="Filtra por una convocatoria específica"),
+    conv_id: Optional[int] = Query(None, description="Filtra por convocatoria"),
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Reporte parametrizado de postulaciones para el panel de administración.
-
-    ¿Qué? Filtra postulaciones por rango de fechas, estado y/o convocatoria, y retorna
-          tanto el detalle como un resumen agregado por estado.
-    ¿Para qué? Permitir a un admin auditar la actividad de la plataforma sin tener que
-              revisar convocatoria por convocatoria (ej: "¿cuántas postulaciones
-              rechazadas hubo en marzo?").
-    ¿Impacto? fecha_hasta se interpreta como fin del día (23:59:59) para que incluya
-              todas las postulaciones de esa fecha, no solo las de las 00:00.
-    """
-    stmt = select(Inscripcion)
-
-    if fecha_desde:
-        stmt = stmt.where(
-            Inscripcion.created_at >= datetime.combine(fecha_desde, time.min, tzinfo=timezone.utc)
-        )
-    if fecha_hasta:
-        stmt = stmt.where(
-            Inscripcion.created_at <= datetime.combine(fecha_hasta, time.max, tzinfo=timezone.utc)
-        )
-    if estado:
-        stmt = stmt.where(Inscripcion.estado == estado)
-    if conv_id:
-        stmt = stmt.where(Inscripcion.id_conv == conv_id)
-
-    inscripciones = db.execute(stmt.order_by(Inscripcion.created_at.desc())).scalars().all()
-
-    detalle = []
-    resumen_por_estado: dict[str, int] = {}
-    for i in inscripciones:
-        resumen_por_estado[i.estado] = resumen_por_estado.get(i.estado, 0) + 1
-        conv = db.get(Conv, i.id_conv)
-        artista = db.execute(select(User).where(User.id == uuid.UUID(str(i.id_usr)))).scalar_one_or_none()
-        detalle.append({
-            "id_i": i.id_i,
-            "id_conv": i.id_conv,
-            "conv_nombre": conv.nombre if conv else None,
-            "artista_nombre": artista.full_name if artista else None,
-            "estado": i.estado,
-            "created_at": i.created_at.isoformat(),
-        })
-
-    return {
-        "filtros_aplicados": {
-            "fecha_desde": fecha_desde.isoformat() if fecha_desde else None,
-            "fecha_hasta": fecha_hasta.isoformat() if fecha_hasta else None,
-            "estado": estado,
-            "conv_id": conv_id,
-        },
-        "total": len(detalle),
-        "resumen_por_estado": resumen_por_estado,
-        "detalle": detalle,
-    }
+    """Reporte administrativo parametrizado de postulaciones."""
+    return convocatoria_service.get_reporte(
+        db=db,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        estado=estado,
+        conv_id=conv_id,
+    )
 
 
 # ── Crear convocatoria (empresa) ──
@@ -172,30 +82,15 @@ def create_convocatoria(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "empresa":
-        raise HTTPException(status_code=403, detail="Solo las empresas pueden crear convocatorias")
-    conv = Conv(
-        nombre=body.nombre, 
-        glue=body.glue, 
-        nivel_experiencia=body.nivel_experiencia,
-        tipo_jornada=body.tipo_jornada,
-        rango_salarial=body.rango_salarial,
-        ubicacion=body.ubicacion,
-        id_usr=current_user.id
-    )
-    db.add(conv)
-    db.commit()
-    db.refresh(conv)
-    return _conv_to_response(conv, db)
+    """Crea una convocatoria a través del servicio."""
+    return convocatoria_service.create_convocatoria(db=db, body=body, current_user=current_user)
 
 
 # ── Ver detalle de una convocatoria ──
 @router.get("/{conv_id}", summary="Detalle de convocatoria")
 def get_convocatoria(conv_id: int, db: Session = Depends(get_db)):
-    conv = db.get(Conv, conv_id)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
-    return _conv_to_response(conv, db)
+    """Obtiene el detalle de una convocatoria."""
+    return convocatoria_service.get_convocatoria_detail(db=db, conv_id=conv_id)
 
 
 # ── Actualizar convocatoria (empresa dueña) ──
@@ -206,20 +101,10 @@ def update_convocatoria(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    conv = db.get(Conv, conv_id)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
-    if str(conv.id_usr) != str(current_user.id) and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permiso para editar esta convocatoria")
-    conv.nombre = body.nombre
-    conv.glue = body.glue
-    conv.nivel_experiencia = body.nivel_experiencia
-    conv.tipo_jornada = body.tipo_jornada
-    conv.rango_salarial = body.rango_salarial
-    conv.ubicacion = body.ubicacion
-    db.commit()
-    db.refresh(conv)
-    return _conv_to_response(conv, db)
+    """Actualiza una convocatoria delegando al servicio."""
+    return convocatoria_service.update_convocatoria(
+        db=db, conv_id=conv_id, body=body, current_user=current_user
+    )
 
 
 # ── Eliminar convocatoria ──
@@ -229,13 +114,8 @@ def delete_convocatoria(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    conv = db.get(Conv, conv_id)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
-    if str(conv.id_usr) != str(current_user.id) and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permiso para eliminar esta convocatoria")
-    db.delete(conv)
-    db.commit()
+    """Elimina una convocatoria a través del servicio."""
+    convocatoria_service.delete_convocatoria(db=db, conv_id=conv_id, current_user=current_user)
 
 
 # ── Postularse a una convocatoria (artista) ──
@@ -247,44 +127,10 @@ def apply_to_convocatoria(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "artista":
-        raise HTTPException(status_code=403, detail="Solo los artistas pueden postularse")
-    conv = db.get(Conv, conv_id)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
-    existing = db.execute(
-        select(Inscripcion).where(
-            Inscripcion.id_conv == conv_id,
-            Inscripcion.id_usr == str(current_user.id),
-        )
-    ).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=409, detail="Ya estás postulado a esta convocatoria")
-    insc = Inscripcion(
-        id_conv=conv_id, 
-        id_usr=str(current_user.id),
-        carta_presentacion=body.carta_presentacion,
-        id_portafolio_interno=body.id_portafolio_interno,
-        cv_url=body.cv_url
+    """Registra una postulación a través del servicio."""
+    return convocatoria_service.apply_to_convocatoria(
+        db=db, conv_id=conv_id, body=body, current_user=current_user
     )
-    db.add(insc)
-    db.commit()
-    db.refresh(insc)
-
-    try:
-        empresa_uuid = uuid.UUID(str(conv.id_usr))
-        notification_service.create_notification(
-            db,
-            id_usr=empresa_uuid,
-            titulo="Nueva postulación recibida",
-            mensaje=f"{current_user.full_name} se ha postulado a tu convocatoria '{conv.nombre}'",
-            tipo="postulacion",
-            enlace="/dashboard"
-        )
-    except Exception:
-        pass
-
-    return {"message": "Postulación registrada", "id_i": insc.id_i}
 
 
 # ── Retirar postulación ──
@@ -294,16 +140,8 @@ def withdraw_application(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    insc = db.execute(
-        select(Inscripcion).where(
-            Inscripcion.id_conv == conv_id,
-            Inscripcion.id_usr == str(current_user.id),
-        )
-    ).scalar_one_or_none()
-    if not insc:
-        raise HTTPException(status_code=404, detail="No tienes postulación en esta convocatoria")
-    db.delete(insc)
-    db.commit()
+    """Retira la postulación a través del servicio."""
+    convocatoria_service.withdraw_application(db=db, conv_id=conv_id, current_user=current_user)
 
 
 # ── Ver postulados a una convocatoria (empresa dueña) ──
@@ -313,37 +151,9 @@ def get_applicants(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    conv = db.get(Conv, conv_id)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Convocatoria no encontrada")
-    if str(conv.id_usr) != str(current_user.id) and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permiso para ver los postulados")
-    inscripciones = db.execute(
-        select(Inscripcion).where(Inscripcion.id_conv == conv_id).order_by(Inscripcion.created_at.desc())
-    ).scalars().all()
-    result = []
-    for i in inscripciones:
-        try:
-            uid = uuid.UUID(str(i.id_usr))
-        except Exception:
-            continue
-        artista = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
-        if artista:
-            result.append({
-                "id_i": i.id_i,
-                "id_usr": str(artista.id),
-                "artista_nombre": artista.full_name,
-                "artista_email": artista.email,
-                "artista_area": artista.artistic_area,
-                "artista_bio": artista.bio,
-                "artista_location": artista.location,
-                "estado": i.estado,
-                "carta_presentacion": i.carta_presentacion,
-                "id_portafolio_interno": i.id_portafolio_interno,
-                "cv_url": i.cv_url,
-                "created_at": i.created_at.isoformat(),
-            })
-    return result
+    """Retorna los postulantes al tablero Kanban de la empresa."""
+    return convocatoria_service.get_applicants(db=db, conv_id=conv_id, current_user=current_user)
+
 
 # ── Actualizar estado de postulación (empresa dueña) ──
 @router.put("/{conv_id}/applicants/{inscripcion_id}", summary="Actualizar estado de postulación")
@@ -354,45 +164,11 @@ def update_application_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    conv = db.get(Conv, conv_id)
-    if not conv or (str(conv.id_usr) != str(current_user.id) and current_user.role != "admin"):
-        raise HTTPException(status_code=403, detail="No tienes permiso")
-    
-    insc = db.get(Inscripcion, inscripcion_id)
-    if not insc or insc.id_conv != conv_id:
-        raise HTTPException(status_code=404, detail="Inscripción no encontrada")
-        
-    insc.estado = body.estado
-    db.commit()
-
-    try:
-        artista_uuid = uuid.UUID(str(insc.id_usr))
-        notification_service.create_notification(
-            db,
-            id_usr=artista_uuid,
-            titulo=f"Postulación {body.estado}",
-            mensaje=f"Tu postulación a la convocatoria '{conv.nombre}' ha sido actualizada a '{body.estado}'",
-            tipo="postulacion",
-            enlace="/dashboard"
-        )
-    except Exception:
-        pass
-
-    # Si se acepta la postulación, crear conversación automáticamente
-    if body.estado == "Aceptada":
-        from app.models.conversacion import Conversacion
-        existing = db.execute(
-            select(Conversacion).where(Conversacion.id_i == inscripcion_id)
-        ).scalar_one_or_none()
-        if not existing:
-            nueva_conv = Conversacion(
-                tipo="postulacion",
-                id_i=inscripcion_id,
-                empresa_id=conv.id_usr,
-                artista_id=insc.id_usr,
-            )
-            db.add(nueva_conv)
-            db.commit()
-
-    return {"message": "Estado actualizado", "estado": insc.estado}
-
+    """Actualiza el estado de la postulación a través del servicio."""
+    return convocatoria_service.update_applicant_status(
+        db=db,
+        conv_id=conv_id,
+        inscripcion_id=inscripcion_id,
+        body=body,
+        current_user=current_user,
+    )

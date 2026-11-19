@@ -134,7 +134,8 @@ export function Chat() {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const wsProtocol = apiUrl.startsWith("https") ? "wss" : "ws";
       const wsHost = apiUrl.replace(/^https?:\/\//, "");
-      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws/${currentConvId}`;
+      const token = sessionStorage.getItem("access_token");
+      const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws/${currentConvId}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
 
       setConnectionStatus("connecting");
       const ws = new WebSocket(wsUrl);

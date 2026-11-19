@@ -457,46 +457,81 @@ manager = ConnectionManager()
 async def websocket_endpoint(
     websocket: WebSocket,
     id_conversacion: int,
+    token: str = None,
     db: Session = Depends(get_db),
 ):
-    """Enlace bidireccional WebSocket para chat en tiempo real."""
+    """Enlace bidireccional WebSocket para chat en tiempo real con autenticación y autorización."""
+    # 1. Extraer y validar el token JWT (vía query param, header o cookie)
+    auth_token = token or websocket.query_params.get("token")
+    if not auth_token:
+        auth_header = websocket.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            auth_token = auth_header.split(" ")[1]
+        elif not auth_token:
+            auth_token = websocket.cookies.get("access_token")
+
+    if not auth_token:
+        await websocket.close(code=1008)  # Policy violation
+        return
+
+    from app.utils.security import decode_token
+    payload = decode_token(auth_token)
+    if not payload or payload.get("type") != "access":
+        await websocket.close(code=1008)
+        return
+
+    email = payload.get("sub")
+    if not email:
+        await websocket.close(code=1008)
+        return
+
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if not user or not user.is_active:
+        await websocket.close(code=1008)
+        return
+
+    # 2. Verificar que la conversación existe y que el usuario participa en ella (o es admin)
+    conv = db.get(Conversacion, id_conversacion)
+    if not conv or (not _user_participates(conv, user.id) and user.role != "admin"):
+        await websocket.close(code=1008)
+        return
+
+    # 3. Aceptar la conexión autorizada
     await manager.connect(websocket, id_conversacion)
     try:
         while True:
             data = await websocket.receive_json()
-            remitente_id = data.get("remitente_id")
             contenido = data.get("contenido")
 
-            if contenido and remitente_id:
-                remitente_uuid = uuid.UUID(remitente_id) if isinstance(remitente_id, str) else remitente_id
+            if contenido and contenido.strip():
+                # Seguridad: el remitente SIEMPRE es el usuario autenticado (previene spoofing)
+                remitente_uuid = user.id
 
                 nuevo_mensaje = Mensaje(
                     id_conversacion=id_conversacion,
                     remitente_id=remitente_uuid,
-                    contenido=contenido,
+                    contenido=contenido.strip(),
                 )
                 db.add(nuevo_mensaje)
                 db.commit()
                 db.refresh(nuevo_mensaje)
 
                 # Generar notificación para el destinatario
-                conv = db.get(Conversacion, id_conversacion)
-                if conv:
-                    rem_user = db.execute(select(User).where(User.id == remitente_uuid)).scalar_one_or_none()
-                    if rem_user:
-                        try:
-                            dest_uid = _get_destinatario_id(conv, rem_user, db)
-                            from app.services import notification_service
-                            notification_service.create_notification(
-                                db,
-                                id_usr=dest_uid,
-                                titulo=f"Nuevo mensaje de {rem_user.full_name}",
-                                mensaje=contenido[:150],
-                                tipo="mensaje",
-                                enlace=f"/mensajes?convId={id_conversacion}"
-                            )
-                        except Exception as e:
-                            print(f"[WS Chat] Error creando notificación: {e}")
+                conv_actual = db.get(Conversacion, id_conversacion)
+                if conv_actual:
+                    try:
+                        dest_uid = _get_destinatario_id(conv_actual, user, db)
+                        from app.services import notification_service
+                        notification_service.create_notification(
+                            db,
+                            id_usr=dest_uid,
+                            titulo=f"Nuevo mensaje de {user.full_name}",
+                            mensaje=contenido[:150],
+                            tipo="mensaje",
+                            enlace=f"/mensajes?convId={id_conversacion}"
+                        )
+                    except Exception as e:
+                        print(f"[WS Chat] Error creando notificación: {e}")
 
                 # Transmitir a todos los conectados
                 broadcast_data = {

@@ -142,20 +142,23 @@ app.add_middleware(
     allowed_hosts=["*"],
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+allowed_cors_origins = [
+    origin.strip()
+    for origin in [
         settings.FRONTEND_URL,
-        "http://204.48.26.96",
-        "http://204.48.26.96:8000",
-        "http://localhost",
-        "http://localhost:8000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-    ],
+        "http://localhost",
+    ]
+    if origin
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
-    allow_headers=["*"],  # Permitir todos los headers (incluyendo Authorization)
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 

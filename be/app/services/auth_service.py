@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
+from app.repositories.user_repository import user_repository
 from app.schemas.user import (
     ChangePasswordRequest,
     ResetPasswordRequest,
@@ -54,11 +55,8 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     Raises:
         HTTPException 400: Si el email ya está registrado.
     """
-    # ¿Qué? Buscar si ya existe un usuario con ese email.
-    # ¿Para qué? Evitar cuentas duplicadas — email es UNIQUE en la BD.
-    # ¿Impacto? Sin esta verificación, la BD lanzaría un IntegrityError poco descriptivo.
-    stmt = select(User).where(User.email == user_data.email)
-    existing_user = db.execute(stmt).scalar_one_or_none()
+    # Buscar si ya existe un usuario con ese email a través del repositorio
+    existing_user = user_repository.get_by_email(db, user_data.email)
 
     if existing_user:
         raise HTTPException(
@@ -99,10 +97,7 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         privacy_accepted_at=datetime.now(timezone.utc),
     )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    return user_repository.create(db, new_user)
 
 
 def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
@@ -124,12 +119,8 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
     Raises:
         HTTPException 401: Si las credenciales son inválidas.
     """
-    # ¿Qué? Buscar usuario por email.
-    # ¿Para qué? Obtener el hash almacenado para comparar con la contraseña ingresada.
-    # ¿Impacto? Si el usuario no existe, se retorna el MISMO error que si la contraseña
-    #           es incorrecta — esto previene la enumeración de emails.
-    stmt = select(User).where(User.email == login_data.email)
-    user = db.execute(stmt).scalar_one_or_none()
+    # Buscar usuario por email mediante UserRepository
+    user = user_repository.get_by_email(db, login_data.email)
 
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
@@ -208,12 +199,8 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             detail="Token sin identificador de usuario",
         )
 
-    # ¿Qué? Verificar que el usuario aún existe y está activo.
-    # ¿Para qué? Si la cuenta fue eliminada o desactivada después del login,
-    #            no debería poder renovar su sesión.
-    # ¿Impacto? Sin esto, usuarios eliminados mantendrían acceso hasta que expire el refresh.
-    stmt = select(User).where(User.email == email)
-    user = db.execute(stmt).scalar_one_or_none()
+    # Verificar que el usuario aún existe y está activo vía UserRepository
+    user = user_repository.get_by_email(db, email)
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -302,8 +289,7 @@ async def request_password_reset(db: Session, email: str) -> None:
         db: Sesión de base de datos.
         email: Email del usuario que solicita la recuperación.
     """
-    stmt = select(User).where(User.email == email)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = user_repository.get_by_email(db, email)
 
     # ¿Qué? Si el usuario no existe, retornar silenciosamente sin hacer nada.
     # ¿Para qué? Prevenir enumeración de usuarios — la API no debe revelar si el email existe.
@@ -388,8 +374,7 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     # ¿Qué? Obtener el usuario asociado al token.
     # ¿Para qué? Actualizar la contraseña del usuario correcto.
     # ¿Impacto? El user_id del token apunta al usuario que solicitó la recuperación.
-    stmt = select(User).where(User.id == token_record.user_id)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = user_repository.get_by_id(db, token_record.user_id)
 
     if not user:
         raise HTTPException(

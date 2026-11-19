@@ -56,12 +56,17 @@ fe/.vite/
 fe/coverage/
 
 # ────────────────────────────
-# 🔐 Variables de entorno
+# 🔐 Variables de entorno y datos sensibles
 # ────────────────────────────
-# NUNCA versionar archivos .env con credenciales reales
+# NUNCA versionar archivos .env con credenciales reales ni volcados de base de datos
 .env
+*.env
 *.env.local
 .env.*.local
+be/users_dump.txt
+users_dump.txt
+alembic_output.txt
+be/alembic_output.txt
 
 # Sí versionar los .env.example (plantillas sin datos reales)
 !.env.example
