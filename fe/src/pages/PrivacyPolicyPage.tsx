@@ -1,19 +1,9 @@
 /**
  * Archivo: pages/PrivacyPolicyPage.tsx
- * ¿Qué? Página pública con la Política de Privacidad de Jóvenes al Ruedo.
- * ¿Para qué? Cumplir con la Ley 1581 de 2012 y el Decreto 1377 de 2013,
- *            que obligan a informar al titular sobre el tratamiento de sus datos.
- * ¿Impacto? Sin esta página, el registro de usuarios sería ilegal en Colombia,
- *           ya que el titular debe conocer la política antes de dar su consentimiento.
  */
 
 import { Link } from "react-router-dom";
 
-/**
- * ¿Qué? Secciones de la política de privacidad.
- * ¿Para qué? Centralizar el contenido de la política para facilitar actualizaciones.
- * ¿Impacto? Actualizar una sección aquí se refleja automáticamente en toda la página.
- */
 const secciones = [
   {
     titulo: "1. Responsable del Tratamiento",
@@ -109,19 +99,10 @@ const secciones = [
   },
 ];
 
-/**
- * ¿Qué? Componente de página de Política de Privacidad.
- * ¿Para qué? Mostrar al usuario toda la información sobre el tratamiento de sus datos.
- * ¿Impacto? Permite que el usuario tome una decisión informada antes de registrarse,
- *           cumpliendo con el principio de consentimiento libre e informado (Ley 1581/2012).
- */
 export function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-brand-dark">
-      {/* ¿Qué? Navbar de la página de privacidad. */}
-      {/* ¿Para qué? Permitir al usuario navegar de regreso al login o al registro. */}
-      {/* ¿Impacto? Sin navbar, el usuario quedaría atrapado en la página sin poder salir. */}
-      <nav className="bg-brand-dark shadow-lg">
+                        <nav className="bg-brand-dark shadow-lg">
         <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <span className="text-xl font-bold text-white">Jóvenes al Ruedo</span>
@@ -135,10 +116,7 @@ export function PrivacyPolicyPage() {
         </div>
       </nav>
 
-      {/* ¿Qué? Encabezado de la política con fondo de color de marca. */}
-      {/* ¿Para qué? Identificar visualmente la sección y dar contexto legal. */}
-      {/* ¿Impacto? El fondo brand-purple indica una sección oficial e importante. */}
-      <header className="bg-brand-purple py-12 px-4">
+                        <header className="bg-brand-purple py-12 px-4">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-3xl font-bold text-white sm:text-4xl">
             Política de Privacidad
@@ -152,14 +130,8 @@ export function PrivacyPolicyPage() {
         </div>
       </header>
 
-      {/* ¿Qué? Contenido principal de la política de privacidad. */}
-      {/* ¿Para qué? Presentar cada sección de forma clara y legible. */}
-      {/* ¿Impacto? La lectura fácil garantiza que el consentimiento sea verdaderamente informado. */}
-      <main className="mx-auto max-w-5xl px-4 py-10">
-        {/* ¿Qué? Aviso legal introductorio. */}
-        {/* ¿Para qué? Contextualizar la política antes de las secciones detalladas. */}
-        {/* ¿Impacto? El usuario comprende de inmediato el propósito del documento. */}
-        <div className="mb-8 rounded-xl border-l-4 border-brand-teal bg-white p-6 shadow-sm dark:bg-gray-800">
+                        <main className="mx-auto max-w-5xl px-4 py-10">
+                                <div className="mb-8 rounded-xl border-l-4 border-brand-teal bg-white p-6 shadow-sm dark:bg-gray-800">
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
             En <strong className="text-brand-purple dark:text-brand-teal">Jóvenes al Ruedo</strong>,
             respetamos su privacidad y nos comprometemos a proteger sus datos personales conforme
@@ -168,19 +140,13 @@ export function PrivacyPolicyPage() {
           </p>
         </div>
 
-        {/* ¿Qué? Renderizado dinámico de cada sección de la política. */}
-        {/* ¿Para qué? Evitar JSX repetitivo — cada sección tiene el mismo formato. */}
-        {/* ¿Impacto? Agregar una nueva sección solo requiere añadir un objeto al array `secciones`. */}
-        <div className="space-y-6">
+                                <div className="space-y-6">
           {secciones.map((seccion, index) => (
             <section
               key={index}
               className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800"
             >
-              {/* ¿Qué? Título de la sección con color de marca. */}
-              {/* ¿Para qué? Separar visualmente cada tema de la política. */}
-              {/* ¿Impacto? brand-purple mantiene consistencia con la identidad visual. */}
-              <h2 className="mb-4 text-lg font-semibold text-brand-purple dark:text-brand-teal">
+                                                        <h2 className="mb-4 text-lg font-semibold text-brand-purple dark:text-brand-teal">
                 {seccion.titulo}
               </h2>
               <div className="space-y-2">
@@ -201,10 +167,7 @@ export function PrivacyPolicyPage() {
           ))}
         </div>
 
-        {/* ¿Qué? Sección de contacto para ejercer derechos ARCO. */}
-        {/* ¿Para qué? Facilitar al usuario el contacto para ejercer sus derechos. */}
-        {/* ¿Impacto? Art. 8 Ley 1581/2012 — el responsable debe facilitar el ejercicio de derechos. */}
-        <div className="mt-8 rounded-xl bg-brand-dark p-6 text-center">
+                                <div className="mt-8 rounded-xl bg-brand-dark p-6 text-center">
           <h3 className="text-lg font-semibold text-white mb-2">
             ¿Preguntas sobre su privacidad?
           </h3>
@@ -219,10 +182,7 @@ export function PrivacyPolicyPage() {
           </a>
         </div>
 
-        {/* ¿Qué? Footer con links de navegación. */}
-        {/* ¿Para qué? Facilitar la navegación desde la página de privacidad. */}
-        {/* ¿Impacto? Mejora la UX al no dejar al usuario "atrapado" en la página. */}
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <Link to="/register" className="text-brand-blue hover:underline">
             Crear cuenta
           </Link>

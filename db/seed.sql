@@ -1,6 +1,3 @@
--- ¿Qué? Datos de prueba para desarrollo local del proyecto Jóvenes al Ruedo.
--- ¿Para qué? Poblar la BD con datos realistas para probar la aplicación.
--- ¿Impacto? Sin seed, la BD estaría vacía y no se podría probar ninguna funcionalidad.
 -- ⚠️ SOLO para entornos de DESARROLLO — NUNCA ejecutar en producción.
 -- Proyecto: Jóvenes al Ruedo | SENA Ficha: 3171599
 

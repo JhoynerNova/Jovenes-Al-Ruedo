@@ -2,10 +2,7 @@
 Módulo: services/auth_service.py
 Descripción: Lógica de negocio para todas las operaciones de autenticación —
              registro, login, cambio de contraseña y recuperación.
-¿Para qué? Separar la lógica de negocio de los endpoints (routers). Los routers solo
            reciben requests y llaman al service; el service contiene TODA la lógica.
-¿Impacto? Este módulo es el cerebro del sistema de auth. Aquí se decide si un login
-          es válido, si un registro debe aceptarse, y cómo se maneja cada flujo.
           Separar esta lógica facilita testing (se puede testear sin HTTP) y reutilización.
 """
 
@@ -36,14 +33,8 @@ from app.utils.security import (
 )
 from app.utils.token_blacklist import exp_to_datetime, is_token_revoked, revoke_token
 
-
 def register_user(db: Session, user_data: UserCreate) -> User:
     """Registra un nuevo usuario en el sistema.
-
-    ¿Qué? Crea una nueva cuenta de usuario con email, nombre y contraseña hasheada.
-    ¿Para qué? Permitir que nuevos usuarios se registren en NN Auth System.
-    ¿Impacto? Flujo crítico: verifica email duplicado → hashea password → crea en BD.
-              Si el email ya existe, retorna 400. Si el hash falla, la cuenta no se crea.
 
     Args:
         db: Sesión de base de datos.
@@ -64,11 +55,6 @@ def register_user(db: Session, user_data: UserCreate) -> User:
             detail="El email ya está registrado",
         )
 
-    # ¿Qué? Crear el objeto User con la contraseña hasheada.
-    # ¿Para qué? Almacenar la contraseña de forma segura — NUNCA en texto plano.
-    # ¿Impacto? hash_password usa bcrypt, que es deliberadamente lento para dificultar
-    #           ataques de fuerza bruta contra hashes filtrados.
-    # Asignar un color por defecto dependiendo del área artística
     default_palette = "blue" # Color por defecto para empresas o sin área
     if user_data.role == "artista" and user_data.artistic_area:
         area_colors = {
@@ -92,20 +78,14 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         birth_date=user_data.birth_date,
         artistic_area=user_data.artistic_area,
         hashed_password=hash_password(user_data.password),
-        # ¿Qué? user_data.accepted_terms ya fue validado como True por el schema —
-        #        aquí queda registrado EL MOMENTO del consentimiento, no solo el hecho.
         privacy_accepted_at=datetime.now(timezone.utc),
     )
 
     return user_repository.create(db, new_user)
 
-
 def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
     """Autentica un usuario y retorna tokens JWT.
 
-    ¿Qué? Verifica credenciales (email + password) y genera access/refresh tokens.
-    ¿Para qué? Permitir al usuario iniciar sesión y obtener tokens para acceder a la API.
-    ¿Impacto? Flujo: buscar por email → verificar password → generar tokens.
               Los mensajes de error son GENÉRICOS ("credenciales inválidas") para no revelar
               si el email existe o no (previene enumeración de usuarios).
 
@@ -129,18 +109,12 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # ¿Qué? Verificar que la cuenta esté activa.
-    # ¿Para qué? Impedir login de cuentas desactivadas (ej: suspendidas por admin).
-    # ¿Impacto? Sin esta verificación, usuarios desactivados podrían seguir accediendo.
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta desactivada. Contacte al administrador.",
         )
 
-    # ¿Qué? Generar par de tokens JWT (access + refresh).
-    # ¿Para qué? El access token se usa en cada request; el refresh token para renovar.
-    # ¿Impacto? "sub" (subject) contiene el email — es lo que identifica al usuario en el token.
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
 
@@ -149,13 +123,9 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
         refresh_token=refresh_token,
     )
 
-
 def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
     """Genera un nuevo access token usando un refresh token válido.
 
-    ¿Qué? Decodifica el refresh token, verifica que el usuario existe y genera nuevos tokens.
-    ¿Para qué? Mantener la sesión del usuario sin pedirle credenciales cada 15 minutos.
-    ¿Impacto? Si el refresh token expiró (>7 días), el usuario debe hacer login de nuevo.
               Se genera un NUEVO refresh token (rotación) para mayor seguridad.
 
     Args:
@@ -170,9 +140,6 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
     """
     payload = decode_token(refresh_token)
 
-    # ¿Qué? Verificar que el token es válido y de tipo "refresh".
-    # ¿Para qué? Evitar que un access token sea usado como refresh token.
-    # ¿Impacto? Sin esta verificación, la distinción entre tipos de token sería inútil.
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -180,10 +147,6 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # ¿Qué? Verificar que este refresh token no haya sido revocado (logout o uso previo).
-    # ¿Para qué? Detectar reutilización de un refresh token ya rotado o invalidado por logout.
-    # ¿Impacto? Sin esto, un refresh token robado seguiría funcionando hasta expirar (7 días),
-    #           incluso después de que el dueño legítimo cerró sesión o ya lo usó para refrescar.
     old_jti = payload.get("jti")
     if old_jti and is_token_revoked(db, old_jti):
         raise HTTPException(
@@ -208,10 +171,6 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             detail="Usuario no encontrado o cuenta desactivada",
         )
 
-    # ¿Qué? Verificar que este refresh token no sea anterior a un "cerrar sesión en
-    #        todos los dispositivos". Ver la misma lógica en dependencies.get_current_user.
-    # ¿Impacto? Sin esto, un refresh token emitido antes del logout-all seguiría
-    #           pudiendo generar nuevos access tokens durante 7 días.
     iat = payload.get("iat")
     if user.sessions_invalidated_at and iat:
         issued_at = datetime.fromtimestamp(iat, tz=timezone.utc)
@@ -222,17 +181,9 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # ¿Qué? Rotación de tokens — generar NUEVOS access y refresh tokens.
-    # ¿Para qué? Si el refresh token anterior fue comprometido, el nuevo lo invalida
-    #            (el antiguo ya no se puede usar porque se regenera).
-    # ¿Impacto? Mejora la seguridad: cada refresh genera un nuevo par de tokens.
     new_access = create_access_token(data={"sub": user.email})
     new_refresh = create_refresh_token(data={"sub": user.email})
 
-    # ¿Qué? Revocar explícitamente el refresh token que se acaba de usar.
-    # ¿Para qué? Sin esto, "rotación" era solo cosmética — el refresh token viejo
-    #            seguía siendo válido (misma firma, misma expiración) y podía reutilizarse.
-    # ¿Impacto? Si alguien roba un refresh token ya usado, esta revocación lo detiene.
     if old_jti and (exp := payload.get("exp")):
         revoke_token(db, old_jti, exp_to_datetime(exp))
 
@@ -241,14 +192,8 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
         refresh_token=new_refresh,
     )
 
-
 def change_password(db: Session, user: User, password_data: ChangePasswordRequest) -> None:
     """Cambia la contraseña de un usuario autenticado.
-
-    ¿Qué? Verifica la contraseña actual y actualiza con la nueva (hasheada).
-    ¿Para qué? Permitir al usuario cambiar su contraseña desde su perfil (ya logueado).
-    ¿Impacto? Requiere la contraseña actual como verificación adicional — previene
-              cambios no autorizados si alguien tiene acceso temporal al token.
 
     Args:
         db: Sesión de base de datos.
@@ -258,30 +203,18 @@ def change_password(db: Session, user: User, password_data: ChangePasswordReques
     Raises:
         HTTPException 400: Si la contraseña actual es incorrecta.
     """
-    # ¿Qué? Verificar que el usuario conoce su contraseña actual.
-    # ¿Para qué? Capa de seguridad adicional — si alguien tiene el token pero no la contraseña,
-    #            no puede cambiarla.
-    # ¿Impacto? Sin esta verificación, cualquiera con un access token válido podría
-    #           cambiar la contraseña y apoderarse de la cuenta.
     if not verify_password(password_data.current_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña actual es incorrecta",
         )
 
-    # ¿Qué? Hashear la nueva contraseña y actualizar en la BD.
-    # ¿Para qué? Almacenar la nueva contraseña de forma segura.
-    # ¿Impacto? Después de este cambio, la contraseña anterior ya no funciona para login.
     user.hashed_password = hash_password(password_data.new_password)
     db.commit()
-
 
 async def request_password_reset(db: Session, email: str) -> None:
     """Solicita un email de recuperación de contraseña.
 
-    ¿Qué? Genera un token de reset, lo guarda en la BD y envía el email con el enlace.
-    ¿Para qué? Permitir al usuario restablecer su contraseña cuando la ha olvidado.
-    ¿Impacto? SIEMPRE retorna éxito, incluso si el email no existe en la BD.
               Esto previene la enumeración de usuarios (un atacante no puede saber
               si un email está registrado basándose en la respuesta).
 
@@ -291,21 +224,11 @@ async def request_password_reset(db: Session, email: str) -> None:
     """
     user = user_repository.get_by_email(db, email)
 
-    # ¿Qué? Si el usuario no existe, retornar silenciosamente sin hacer nada.
-    # ¿Para qué? Prevenir enumeración de usuarios — la API no debe revelar si el email existe.
-    # ¿Impacto? El cliente siempre ve "Si el email existe, recibirás un enlace..."
-    #           Sin importar si el email está registrado o no.
     if not user:
         return
 
-    # ¿Qué? Generar un token UUID único para el enlace de recuperación.
-    # ¿Para qué? Este token viaja en la URL del email y se valida al restablecer.
-    # ¿Impacto? UUID4 tiene 122 bits de entropía — prácticamente imposible de adivinar.
     reset_token = str(uuid.uuid4())
 
-    # ¿Qué? Crear el registro del token en la tabla password_reset_tokens.
-    # ¿Para qué? Almacenar el token con su expiración para validarlo después.
-    # ¿Impacto? Expiración de 1 hora — después de eso, el usuario debe solicitar otro.
     token_record = PasswordResetToken(
         user_id=user.id,
         token=reset_token,
@@ -315,19 +238,10 @@ async def request_password_reset(db: Session, email: str) -> None:
     db.add(token_record)
     db.commit()
 
-    # ¿Qué? Enviar el email con el enlace de recuperación.
-    # ¿Para qué? El usuario hace clic en el enlace, que lo lleva al frontend con el token.
-    # ¿Impacto? En desarrollo, el enlace se imprime en la consola del servidor.
     await send_password_reset_email(email=user.email, token=reset_token)
-
 
 def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     """Restablece la contraseña usando un token de recuperación.
-
-    ¿Qué? Valida el token de reset, hashea la nueva contraseña y actualiza la BD.
-    ¿Para qué? Completar el flujo de recuperación de contraseña.
-    ¿Impacto? El token se marca como "usado" después del reset exitoso,
-              evitando que se reutilice.
 
     Args:
         db: Sesión de base de datos.
@@ -336,9 +250,6 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     Raises:
         HTTPException 400: Si el token es inválido, expirado o ya fue usado.
     """
-    # ¿Qué? Buscar el token en la BD.
-    # ¿Para qué? Verificar que el token existe y obtener el usuario asociado.
-    # ¿Impacto? Si el token no existe, alguien intentó usar un token falso o manipulado.
     stmt = select(PasswordResetToken).where(
         PasswordResetToken.token == reset_data.token
     )
@@ -350,18 +261,12 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
             detail="Token de recuperación inválido",
         )
 
-    # ¿Qué? Verificar que el token no haya sido usado previamente.
-    # ¿Para qué? Evitar reutilización de tokens — un token solo sirve una vez.
-    # ¿Impacto? Sin esto, alguien podría cambiar la contraseña múltiples veces con el mismo token.
     if token_record.used:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Este token de recuperación ya fue utilizado",
         )
 
-    # ¿Qué? Verificar que el token no haya expirado.
-    # ¿Para qué? Limitar la ventana de tiempo en que un enlace de recuperación es válido.
-    # ¿Impacto? Tokens expiran en 1 hora — después de eso, el usuario debe solicitar otro.
     expires_at = token_record.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
@@ -371,9 +276,6 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
             detail="El token de recuperación ha expirado. Solicite uno nuevo.",
         )
 
-    # ¿Qué? Obtener el usuario asociado al token.
-    # ¿Para qué? Actualizar la contraseña del usuario correcto.
-    # ¿Impacto? El user_id del token apunta al usuario que solicitó la recuperación.
     user = user_repository.get_by_id(db, token_record.user_id)
 
     if not user:
@@ -382,9 +284,6 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
             detail="Usuario no encontrado",
         )
 
-    # ¿Qué? Actualizar la contraseña y marcar el token como usado.
-    # ¿Para qué? Completar el reset + invalidar el token para que no se reutilice.
-    # ¿Impacto? Después de esto, la contraseña anterior ya no funciona y el token es inválido.
     user.hashed_password = hash_password(reset_data.new_password)
     token_record.used = True
     db.commit()

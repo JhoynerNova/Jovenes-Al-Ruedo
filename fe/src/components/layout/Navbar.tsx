@@ -1,8 +1,6 @@
 /**
  * Archivo: components/layout/Navbar.tsx
  * Descripción: Barra de navegación superior con logo, toggle de tema y logout.
- * ¿Para qué? Proveer navegación consistente y acceso al toggle dark/light en toda la app.
- * ¿Impacto? Sin navbar, el usuario no tendría forma de cerrar sesión ni cambiar tema.
  */
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -12,35 +10,19 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import logo from "@/assets/logo.png";
 
-/**
- * ¿Qué? Barra de navegación con logo, nombre de usuario, toggle de tema y logout.
- * ¿Para qué? Presente en todas las páginas autenticadas (Dashboard, ChangePassword, etc.).
- * ¿Impacto? Diseño: fondo sólido (sin degradado), bordes sutiles, botones a la derecha.
- */
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  /**
-   * ¿Qué? Clases del link de navegación según si su ruta es la actual.
-   * ¿Para qué? Resaltar visualmente en qué sección está el usuario — regla de usabilidad
-   *           básica: el menú debe reflejar dónde estás, no solo a dónde puedes ir.
-   * ¿Impacto? Sin esto, todos los links se ven idénticos sin importar la página activa.
-   */
-  const navLinkClass = (path: string) =>
+    const navLinkClass = (path: string) =>
     `text-sm font-medium transition-colors ${
       location.pathname === path
         ? "text-white font-semibold border-b-2 border-brand-blue pb-0.5"
         : "text-purple-200 hover:text-white"
     }`;
 
-  /**
-   * ¿Qué? Handler de logout — cierra sesión y redirige al login.
-   * ¿Para qué? Limpiar tokens y enviar al usuario a la página de login.
-   * ¿Impacto? Sin la redirección, el usuario quedaría en una página protegida sin sesión.
-   */
-  const handleLogout = () => {
+    const handleLogout = () => {
     logout();
     navigate("/login");
   };
@@ -48,8 +30,7 @@ export function Navbar() {
   return (
     <nav className="border-b border-brand-purple/40 bg-brand-dark">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* ¿Qué? Logo/nombre de la app — enlace al dashboard o landing. */}
-        <Link
+                <Link
           to={isAuthenticated ? "/dashboard" : "/"}
           className="flex items-center gap-2"
         >
@@ -75,10 +56,7 @@ export function Navbar() {
           </div>
         )}
 
-        {/* ¿Qué? Acciones de la derecha: info del usuario, toggle de tema, logout. */}
-        {/* ¿Para qué? Agrupar acciones secundarias y el toggle de tema juntos. */}
-        {/* ¿Impacto? Botones alineados a la derecha según las reglas de diseño. */}
-        <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3">
           <ThemeToggle />
 
           {isAuthenticated && user && (
@@ -101,13 +79,11 @@ export function Navbar() {
 
               <NotificationBell />
 
-              {/* ¿Qué? Nombre del usuario autenticado. */}
-              <span className="hidden text-sm text-purple-200 sm:block">
+                            <span className="hidden text-sm text-purple-200 sm:block">
                 {user.full_name}
               </span>
 
-              {/* ¿Qué? Botón de cerrar sesión prominente y visible. */}
-              <button
+                            <button
                 onClick={handleLogout}
                 className="inline-flex items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm font-semibold text-red-400 transition-all hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/20"
               >

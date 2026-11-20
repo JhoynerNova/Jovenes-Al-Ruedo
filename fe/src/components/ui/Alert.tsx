@@ -1,30 +1,15 @@
 /**
  * Archivo: components/ui/Alert.tsx
  * Descripción: Componente de alerta para mostrar mensajes de éxito, error o información.
- * ¿Para qué? Dar feedback visual al usuario después de una acción (login exitoso, error, etc.).
- * ¿Impacto? Sin alertas, el usuario no sabría si una operación tuvo éxito o falló.
  */
 
-/**
- * ¿Qué? Props del componente Alert.
- * ¿Para qué? Configurar tipo de alerta (success, error, info) y contenido del mensaje.
- * ¿Impacto? El tipo determina el color y el ícono de la alerta.
- */
 interface AlertProps {
   type: "success" | "error" | "info";
   message: string;
   onClose?: () => void;
 }
 
-/**
- * ¿Qué? Componente de alerta con colores según tipo y botón de cierre opcional.
- * ¿Para qué? Mostrar mensajes de feedback en los formularios de auth.
- * ¿Impacto? Colores sólidos (sin degradados), bordes sutiles, transiciones suaves.
- */
 export function Alert({ type, message, onClose }: AlertProps) {
-  // ¿Qué? Mapeo de tipo → clases CSS para colores del contenedor.
-  // ¿Para qué? Cada tipo de alerta tiene colores que comunican su naturaleza.
-  // ¿Impacto? Verde = éxito, rojo = error, azul = información.
   const typeClasses = {
     success:
       "bg-brand-teal/10 text-teal-800 border-brand-teal/30 dark:bg-brand-teal/10 dark:text-brand-teal dark:border-brand-teal/30",
@@ -33,7 +18,6 @@ export function Alert({ type, message, onClose }: AlertProps) {
     info: "bg-brand-blue/10 text-blue-800 border-brand-blue/30 dark:bg-brand-blue/10 dark:text-brand-blue dark:border-brand-blue/30",
   };
 
-  // ¿Qué? Clases CSS para el botón de cierre según el tipo de alerta.
   const closeClasses = {
     success:
       "text-teal-600 hover:text-teal-800 dark:text-brand-teal dark:hover:text-brand-teal/70",
@@ -46,9 +30,7 @@ export function Alert({ type, message, onClose }: AlertProps) {
       className={`flex items-start gap-3 rounded-lg border p-4 text-sm ${typeClasses[type]}`}
       role="alert"
     >
-      {/* ¿Qué? Íconos SVG según el tipo de alerta. */}
-      {/* ¿Para qué? Reforzar visualmente el significado de la alerta. */}
-      <span className="mt-0.5 flex-shrink-0">
+                  <span className="mt-0.5 flex-shrink-0">
         {type === "success" && (
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
             <path
@@ -78,8 +60,7 @@ export function Alert({ type, message, onClose }: AlertProps) {
         )}
       </span>
 
-      {/* ¿Qué? Texto del mensaje y botón de cierre. */}
-      <span className="flex-1">{message}</span>
+            <span className="flex-1">{message}</span>
 
       {onClose && (
         <button

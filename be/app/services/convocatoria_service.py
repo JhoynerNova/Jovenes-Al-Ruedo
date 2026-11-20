@@ -1,8 +1,6 @@
 """
 Módulo: services/convocatoria_service.py
 Descripción: Capa de lógica de negocio para Convocatorias y Postulaciones.
-¿Para qué? Orquestar reglas de negocio, autorizaciones y flujos de convocatorias
-            desacoplando los routers HTTP de la persistencia de datos.
 """
 
 from datetime import date, datetime, time, timezone
@@ -25,7 +23,6 @@ from app.schemas.conv import (
     InscripcionUpdateStatus,
 )
 from app.services import notification_service
-
 
 class ConvocatoriaService:
     """Lógica de negocio para convocatorias y postulaciones."""
@@ -387,6 +384,5 @@ class ConvocatoriaService:
                 db.commit()
 
         return {"message": "Estado actualizado", "estado": insc.estado}
-
 
 convocatoria_service = ConvocatoriaService()

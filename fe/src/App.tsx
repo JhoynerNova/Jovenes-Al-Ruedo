@@ -1,8 +1,6 @@
 /**
  * Archivo: App.tsx
  * Descripción: Componente raíz de la aplicación — define el enrutamiento principal.
- * ¿Para qué? Centralizar la estructura de rutas y proveer los contexts globales (auth).
- * ¿Impacto? Sin este componente, la app no tendría navegación ni estructura de páginas.
  */
 
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
@@ -34,10 +32,6 @@ function RegisterRedirect() {
   return null;
 }
 
-// ¿Qué? Imports de todas las páginas de la aplicación.
-
-// ¿Para qué? Cada página se renderiza según la ruta activa.
-// ¿Impacto? Al agregar una nueva página, se importa aquí y se agrega una <Route>.
 import { LandingPage } from "@/pages/LandingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ChangePasswordPage } from "@/pages/ChangePasswordPage";
@@ -52,18 +46,10 @@ import { PublicProfile } from "@/pages/PublicProfile";
 import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 
-/**
- * ¿Qué? Componente raíz que configura el AuthProvider y las rutas de la aplicación.
- * ¿Para qué? Definir qué página se muestra según la URL del navegador.
- * ¿Impacto? Es el punto de entrada visual — toda la interfaz se renderiza dentro de este componente.
- */
 function App() {
   return (
     <BrowserRouter>
-      {/* ¿Qué? AuthProvider envuelve todas las rutas para que useAuth() funcione. */}
-      {/* ¿Para qué? Sin AuthProvider, ningún componente hijo puede acceder al contexto de auth. */}
-      {/* ¿Impacto? Debe ser el wrapper más externo después del BrowserRouter. */}
-      <ToastProvider>
+                        <ToastProvider>
         <AuthProvider>
           <AuthModalProvider>
             <Routes>
@@ -110,7 +96,6 @@ function App() {
           </AuthModalProvider>
         </AuthProvider>
       </ToastProvider>
-
 
     </BrowserRouter>
   );

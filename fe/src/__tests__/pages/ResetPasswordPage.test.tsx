@@ -1,8 +1,6 @@
 /**
  * Archivo: __tests__/pages/ResetPasswordPage.test.tsx
  * Descripción: Tests de la página de restablecimiento de contraseña con token.
- * ¿Para qué? Verificar que el flujo reset-password funciona con token válido y valida inputs.
- * ¿Impacto? Es el paso 2 (final) de la recuperación — si falla, el usuario queda bloqueado.
  */
 
 import { screen } from "@testing-library/react";
@@ -11,7 +9,6 @@ import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { renderWithProviders } from "../helpers";
 
 describe("ResetPasswordPage", () => {
-  // ¿Qué? Verifica que sin token muestra mensaje de enlace inválido.
   it("muestra error si no hay token en la URL", () => {
     renderWithProviders(<ResetPasswordPage />, {
       initialRoute: "/reset-password",
@@ -23,7 +20,6 @@ describe("ResetPasswordPage", () => {
     expect(screen.getByText("Solicitar nuevo enlace")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que con token se muestra el formulario completo.
   it("renderiza formulario si hay token en la URL", () => {
     renderWithProviders(<ResetPasswordPage />, {
       initialRoute: "/reset-password?token=valid-token-123",
@@ -35,7 +31,6 @@ describe("ResetPasswordPage", () => {
     expect(screen.getByRole("button", { name: "Restablecer contraseña" })).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica validación de contraseña débil.
   it("muestra error si la nueva contraseña es muy corta", async () => {
     const user = userEvent.setup();
     renderWithProviders(<ResetPasswordPage />, {
@@ -49,7 +44,6 @@ describe("ResetPasswordPage", () => {
     expect(screen.getByText("Mínimo 8 caracteres")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que las contraseñas deben coincidir.
   it("muestra error si las contraseñas no coinciden", async () => {
     const user = userEvent.setup();
     renderWithProviders(<ResetPasswordPage />, {
@@ -63,7 +57,6 @@ describe("ResetPasswordPage", () => {
     expect(screen.getByText("Las contraseñas no coinciden")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que resetPassword() se llama con token y nueva contraseña.
   it("ejecuta resetPassword con token y nueva contraseña", async () => {
     const resetPasswordMock = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -83,7 +76,6 @@ describe("ResetPasswordPage", () => {
     });
   });
 
-  // ¿Qué? Verifica que muestra éxito tras restablecer.
   it("muestra mensaje de éxito al restablecer contraseña", async () => {
     const resetPasswordMock = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -104,7 +96,6 @@ describe("ResetPasswordPage", () => {
     ).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que muestra error del backend (token expirado, etc.).
   it("muestra error si resetPassword falla", async () => {
     const resetPasswordMock = vi
       .fn()

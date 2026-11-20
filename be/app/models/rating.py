@@ -12,13 +12,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
-
 class Calificacion(Base):
     """Modelo ORM para la tabla `calificaciones`.
-    
-    ¿Qué? Almacena valoraciones de 1 a 5 estrellas y reseñas hechas por empresas a los artistas.
-    ¿Para qué? Calcular el promedio de reputación y mostrar opiniones comprobadas.
-    """
+        """
     __tablename__ = "calificaciones"
 
     id: Mapped[uuid.UUID] = mapped_column(

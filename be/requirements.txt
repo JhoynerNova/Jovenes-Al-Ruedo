@@ -1,10 +1,6 @@
 # ========================
 # NN Auth System — Dependencias del Backend
 # ========================
-# ¿Qué? Lista de todas las dependencias Python del backend.
-# ¿Para qué? Permitir la instalación reproducible del proyecto con `pip install -r requirements.txt`.
-# ¿Impacto? Sin este archivo, cada desarrollador tendría que adivinar qué paquetes instalar
-#           y en qué versiones, causando inconsistencias entre entornos.
 
 # ────────────────────────────
 # 🚀 Framework y servidor

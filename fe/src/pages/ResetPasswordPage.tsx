@@ -1,9 +1,6 @@
 /**
  * Archivo: pages/ResetPasswordPage.tsx
  * Descripción: Página para restablecer la contraseña usando el token recibido por email.
- * ¿Para qué? Completar el flujo de recuperación: el usuario ingresa la nueva contraseña
- *            junto con el token que recibió en el enlace del email.
- * ¿Impacto? Una vez restablecida, el token se marca como usado y el usuario puede hacer login.
  */
 
 import { useState } from "react";
@@ -15,16 +12,8 @@ import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-/**
- * ¿Qué? Formulario de restablecimiento de contraseña con token de email.
- * ¿Para qué? El token viene como query param: /reset-password?token=xxx.
- * ¿Impacto? Si el token es inválido, expirado o ya usado, el backend retorna error.
- */
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
-  // ¿Qué? Lee el token del query param de la URL.
-  // ¿Para qué? El enlace del email tiene formato: /reset-password?token=<uuid>.
-  // ¿Impacto? Sin el token, no se puede completar el reset.
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
 
@@ -92,7 +81,6 @@ export function ResetPasswordPage() {
     }
   };
 
-  // ¿Qué? Si no hay token en la URL, mostrar mensaje de error.
   if (!token) {
     return (
       <AuthLayout title="Enlace inválido">

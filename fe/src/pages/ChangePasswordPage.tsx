@@ -1,8 +1,6 @@
 /**
  * Archivo: pages/ChangePasswordPage.tsx
  * Descripción: Página para cambiar la contraseña del usuario autenticado.
- * ¿Para qué? Permitir al usuario actualizar su contraseña ingresando la actual y la nueva.
- * ¿Impacto? Requiere contraseña actual como verificación — previene cambios no autorizados.
  */
 
 import { useState } from "react";
@@ -13,11 +11,6 @@ import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-/**
- * ¿Qué? Formulario de cambio de contraseña con validación y feedback.
- * ¿Para qué? El usuario autenticado puede actualizar su contraseña.
- * ¿Impacto? Si la contraseña actual es incorrecta, el backend retorna 400.
- */
 export function ChangePasswordPage() {
   const { changePassword } = useAuth();
 
@@ -38,12 +31,7 @@ export function ChangePasswordPage() {
     setSuccess(null);
   };
 
-  /**
-   * ¿Qué? Validación del lado del cliente para la nueva contraseña.
-   * ¿Para qué? Verificar fortaleza y coincidencia antes de enviar al backend.
-   * ¿Impacto? Mismas reglas que el registro: 8+ chars, mayúscula, minúscula, número.
-   */
-  const validate = (): boolean => {
+    const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.current_password) {
@@ -151,10 +139,7 @@ export function ChangePasswordPage() {
             onChange={handleChange}
           />
 
-          {/* ¿Qué? Botones de acción: cancelar (volver) y guardar. */}
-          {/* ¿Para qué? Cancelar regresa al dashboard; guardar envía el formulario. */}
-          {/* ¿Impacto? Botones alineados a la derecha según reglas de diseño. */}
-          <div className="mt-2 flex justify-end gap-3">
+                                        <div className="mt-2 flex justify-end gap-3">
             <Link to="/dashboard">
               <Button variant="secondary">Cancelar</Button>
             </Link>

@@ -1,35 +1,18 @@
 /**
  * Archivo: components/ProtectedRoute.tsx
  * Descripción: Componente que protege rutas que requieren autenticación.
- * ¿Para qué? Redirigir automáticamente al login si el usuario no está autenticado.
- * ¿Impacto? Sin este componente, cualquier persona podría acceder al dashboard
- *           sin estar logueado, simplemente navegando a la URL directamente.
  */
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-/**
- * ¿Qué? Props de ProtectedRoute — solo acepta children.
- * ¿Para qué? Envolver componentes que requieren sesión activa.
- */
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-/**
- * ¿Qué? Componente que verifica autenticación antes de renderizar children.
- * ¿Para qué? Proteger rutas como /dashboard, /change-password, etc.
- * ¿Impacto? Si el usuario no está logueado, redirige a /login automáticamente.
- *           Muestra un spinner mientras se verifica la sesión (isLoading).
- */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // ¿Qué? Spinner de carga mientras se verifica la sesión.
-  // ¿Para qué? Al cargar la app, se hace GET /me para validar el token.
-  //           Mientras tanto, no sabemos si el usuario está logueado o no.
-  // ¿Impacto? Sin este loading, la app redirigiría al login brevemente antes de cargar.
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -60,13 +43,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // ¿Qué? Si no hay sesión activa, redirigir al login.
-  // ¿Para qué? Proteger la ruta — el usuario debe autenticarse primero.
-  // ¿Impacto? replace evita que el botón "atrás" vuelva a la ruta protegida.
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // ¿Qué? Si está autenticado, renderizar los children normalmente.
   return <>{children}</>;
 }

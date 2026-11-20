@@ -1,7 +1,6 @@
 """
 Módulo: repositories/convocatoria_repository.py
 Descripción: Capa de persistencia para Convocatorias e Inscripciones.
-¿Para qué? Encapsular todas las sentencias SQL y operaciones ORM sobre las tablas 'conv' e 'inscripcion'.
 """
 
 from datetime import datetime
@@ -11,7 +10,6 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.orm import Session
 from app.models.conv import Conv, Inscripcion
 from app.models.user import User
-
 
 class ConvocatoriaRepository:
     """Repositorio para gestionar el acceso a datos de Convocatorias e Inscripciones."""
@@ -143,6 +141,5 @@ class ConvocatoriaRepository:
             stmt = stmt.where(Inscripcion.id_conv == conv_id)
 
         return list(db.execute(stmt.order_by(Inscripcion.created_at.desc())).scalars().all())
-
 
 convocatoria_repository = ConvocatoriaRepository()

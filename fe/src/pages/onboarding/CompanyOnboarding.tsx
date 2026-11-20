@@ -1,9 +1,6 @@
 /**
  * Archivo: pages/onboarding/CompanyOnboarding.tsx
  * Descripción: Wizard de onboarding post-registro para empresas/gestores culturales.
- * ¿Para qué? Guiar a la empresa recién registrada a completar logo, datos legales
- *            y perfil de empresa.
- * ¿Impacto? Reutiliza usersApi.updateProfile y uploadApi — no agrega endpoints nuevos.
  */
 
 import { useState } from "react";

@@ -5,6 +5,8 @@ Incluye minimo 2 Casos de Uso (UC) por cada vista (Total: 30 casos de uso automa
 """
 
 import pytest
+
+selenium = pytest.importorskip("selenium")
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options

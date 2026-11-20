@@ -1,8 +1,6 @@
 /**
  * Archivo: pages/RegisterPage.tsx
  * Descripción: Página de registro — formulario para crear una nueva cuenta.
- * ¿Para qué? Permitir que nuevos usuarios se registren con email, nombre y contraseña.
- * ¿Impacto? Sin esta página, no habría forma de crear cuentas desde el frontend.
  */
 
 import { useState } from "react";
@@ -15,11 +13,6 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 
-/**
- * ¿Qué? Página de registro con validación de campos y feedback de errores.
- * ¿Para qué? Crear cuenta → login automático → redirección al dashboard.
- * ¿Impacto? Tras un registro exitoso, el usuario queda logueado automáticamente.
- */
 export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -48,13 +41,7 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
     setFormError(null);
   };
 
-  /**
-   * ¿Qué? Reglas de validación de un solo campo, dado el estado actual del formulario.
-   * ¿Para qué? Compartir las mismas reglas entre la validación en tiempo real (onBlur)
-   *           y la validación completa al enviar el formulario — una sola fuente de verdad.
-   * ¿Impacto? Retorna "" (sin error) o el mensaje a mostrar bajo el campo.
-   */
-  const getFieldError = (name: string, data: typeof formData): string => {
+    const getFieldError = (name: string, data: typeof formData): string => {
     switch (name) {
       case "email":
         if (!data.email) return "El correo es obligatorio";
@@ -118,23 +105,12 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
     }
   };
 
-  /**
-   * ¿Qué? Valida un campo individual al perder el foco (onBlur).
-   * ¿Para qué? Dar feedback inmediato mientras el usuario completa el formulario,
-   *           en vez de que todos los errores aparezcan recién al enviar.
-   * ¿Impacto? No bloquea el submit — solo actualiza el mensaje bajo ese campo.
-   */
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name } = e.target;
     setErrors((prev) => ({ ...prev, [name]: getFieldError(name, formData) }));
   };
 
-  /**
-   * ¿Qué? Validación completa del lado del cliente antes de enviar al backend.
-   * ¿Para qué? Dar feedback inmediato sin esperar la respuesta del servidor.
-   * ¿Impacto? Reduce peticiones innecesarias y mejora la UX.
-   */
-  const validate = (): boolean => {
+    const validate = (): boolean => {
     const fields = [
       "email",
       "first_name",
@@ -209,7 +185,6 @@ export function RegisterPage({ isModalMode = false }: { isModalMode?: boolean })
   return (
     <AuthLayout title="Crear cuenta" subtitle="Completa tus datos para registrarte" isModal={isModalMode}>
       <form onSubmit={handleSubmit} noValidate>
-
 
         {/* Selector de Rol */}
         <div className="mb-3 flex gap-4">

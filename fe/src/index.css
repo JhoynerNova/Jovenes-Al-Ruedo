@@ -1,25 +1,14 @@
 /**
  * Archivo: index.css
  * Descripción: Hoja de estilos global — importa TailwindCSS y define tema personalizado.
- * ¿Para qué? Cargar TailwindCSS y establecer variables CSS para el tema dark/light.
- * ¿Impacto? Sin este archivo, ninguna clase utilitaria de Tailwind funcionaría en la app.
  */
 
-/* ¿Qué? Importación de TailwindCSS v4 — carga todas las utilidades automáticamente. */
-/* ¿Para qué? Habilitar clases como bg-blue-600, flex, p-4, etc. en toda la aplicación. */
-/* ¿Impacto? Es la única línea necesaria para activar TailwindCSS 4 (detección automática). */
 @import "tailwindcss";
 
-/* ¿Qué? Configura el modo oscuro para activarse con la clase .dark en el HTML. */
-/* ¿Para qué? TailwindCSS v4 necesita esta directiva para que dark: funcione con clases. */
-/* ¿Impacto? Sin esto, todas las clases dark:bg-*, dark:text-*, etc. simplemente no se aplican. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================
    TEMA PERSONALIZADO — NN Auth System
-   ¿Qué? Variables CSS personalizadas para colores, tipografía y transiciones.
-   ¿Para qué? Mantener consistencia visual y permitir dark/light mode fácilmente.
-   ¿Impacto? Cambiar un valor aquí se refleja en toda la aplicación.
    ============================================================================ */
 
 @theme {
@@ -75,9 +64,6 @@
   --color-brand-orange: #FDA4AF;
 }
 
-/* ¿Qué? Estilos base aplicados al body y al root de la app. */
-/* ¿Para qué? Establecer tipografía sans-serif, colores de fondo/texto y transición smooth. */
-/* ¿Impacto? Garantiza que toda la app use sans-serif y soporte dark mode desde el inicio. */
 @layer base {
   *,
   *::before,
@@ -107,9 +93,6 @@
 
 /* ============================================================================
    ANIMACIONES — Micro-interacciones y transiciones profesionales
-   ¿Qué? Keyframes y clases utilitarias para animar tarjetas y elementos.
-   ¿Para qué? Dar una sensación profesional y moderna a la interfaz.
-   ¿Impacto? Sin estas animaciones, la UI se siente estática y amateur.
    ============================================================================ */
 
 @keyframes fadeInUp {

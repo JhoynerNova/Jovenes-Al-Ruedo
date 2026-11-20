@@ -1,9 +1,6 @@
 /**
  * Archivo: components/onboarding/OnboardingWizard.tsx
  * Descripción: Contenedor genérico de pasos (stepper) para los wizards de onboarding.
- * ¿Para qué? Artista y Empresa comparten la misma mecánica de navegación (barra de progreso,
- *            Atrás/Siguiente, Completar más tarde) pero con contenido de pasos distinto.
- * ¿Impacto? Evita duplicar la lógica de navegación entre ArtistOnboarding y CompanyOnboarding.
  */
 
 import { useState } from "react";

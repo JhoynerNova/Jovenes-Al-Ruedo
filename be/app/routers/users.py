@@ -1,42 +1,44 @@
 """
-Módulo: routers/users.py
-Descripción: Endpoints de usuario — perfil del usuario autenticado.
-¿Para qué? Proveer endpoints para que el usuario autenticado consulte y gestione su perfil.
-¿Impacto? Sin este router, el frontend no podría mostrar los datos del usuario logueado
-          (nombre, email, fecha de registro, etc.).
+Módulo de endpoints para gestión y consulta de perfiles de usuario.
+Soporta consultas del usuario autenticado, perfiles públicos, feed social y administración.
 """
 
+import math
+import re
+import uuid
 from typing import Optional
-from sqlalchemy import select, func, or_, cast, String
-from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, Query, HTTPException, Response, status
+from urllib.parse import unquote
 
+from fastapi import APIRouter, Depends, Query, HTTPException, Response, status
 from pydantic import BaseModel
+from sqlalchemy import select, func, or_
+from sqlalchemy.orm import Session
+
 from app.core.cookies import clear_auth_cookies
 from app.dependencies import get_current_user, require_admin, get_db
 from app.models.user import User
 from app.models.conv import Conv, Inscripcion
-from app.models.portafolio import Portafolio
-from app.schemas.user import DeleteAccountRequest, UserResponse, PaginatedUsersResponse, UserStatusUpdate, MessageResponse, UserUpdate, UserRoleUpdate, AdminResetPasswordRequest
-from app.utils.security import verify_password
+from app.models.portafolio import Portafolio, DetPortafolio
+from app.schemas.user import (
+    DeleteAccountRequest,
+    UserResponse,
+    PaginatedUsersResponse,
+    UserStatusUpdate,
+    MessageResponse,
+    UserUpdate,
+    UserRoleUpdate,
+    AdminResetPasswordRequest,
+)
+from app.utils.security import verify_password, hash_password
 
-# ¿Qué? Router de FastAPI para endpoints de usuario.
-# ¿Para qué? Agrupar endpoints relacionados con el perfil del usuario bajo /api/v1/users.
-# ¿Impacto? Separar los endpoints de usuario de los de auth mantiene el código organizado
-#           y facilita agregar más endpoints de usuario en el futuro (ej: update profile).
 router = APIRouter(
     prefix="/api/v1/users",
     tags=["users"],
 )
 
 
-# ¿Qué? Handler OPTIONS para preflight CORS.
-# ¿Para qué? Explícitamente permitir peticiones OPTIONS del navegador (preflight).
-# ¿Impacto? Sin esto, los navegadores rechazan peticiones por CORS.
-@router.options("/me")
-async def options_me():
-    """Maneja peticiones OPTIONS para preflight CORS."""
-    return {}
+class PaletteUpdate(BaseModel):
+    color_palette: str
 
 
 @router.get(
@@ -47,22 +49,9 @@ async def options_me():
 def get_current_user_profile(
     current_user: User = Depends(get_current_user),
 ) -> UserResponse:
-    """Retorna los datos del perfil del usuario autenticado.
-
-    ¿Qué? Endpoint que retorna los datos del usuario que está haciendo el request.
-    ¿Para qué? El frontend lo usa para mostrar el nombre, email y datos del usuario
-              en el dashboard, navbar, perfil, etc.
-    ¿Impacto? Depends(get_current_user) hace que este endpoint sea PROTEGIDO:
-              solo funciona con un access_token válido. Si el token es inválido o expiró,
-              FastAPI retorna 401 automáticamente (gracias a la dependencia).
-
-    Args:
-        current_user: Usuario autenticado (inyectado automáticamente por FastAPI).
-
-    Returns:
-        Datos del perfil del usuario (sin contraseña).
-    """
+    """Retorna los datos del perfil del usuario autenticado."""
     return UserResponse.model_validate(current_user)
+
 
 @router.get(
     "/",
@@ -81,8 +70,7 @@ def list_users(
 ):
     """Retorna una lista paginada de todos los usuarios con opciones de filtro."""
     stmt = select(User)
-    
-    # Filtros
+
     if search:
         search_term = f"%{search}%"
         stmt = stmt.where(
@@ -90,34 +78,29 @@ def list_users(
                 User.first_name.ilike(search_term),
                 User.last_name.ilike(search_term),
                 User.email.ilike(search_term),
-                User.sector.ilike(search_term)
+                User.sector.ilike(search_term),
             )
         )
     if role:
         stmt = stmt.where(User.role == role)
-        
-    # Total de registros (sin paginación)
-    total_stmt = select(func.count()).select_from(stmt.subquery())
-    total = db.execute(total_stmt).scalar() or 0
-    
-    # Ordenamiento
+
+    total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
+
     sort_column = getattr(User, sort_by)
     if sort_desc:
         sort_column = sort_column.desc()
-    
-    stmt = stmt.order_by(sort_column).offset(skip).limit(limit)
-    users = db.execute(stmt).scalars().all()
-    
-    import math
+
+    users = db.execute(stmt.order_by(sort_column).offset(skip).limit(limit)).scalars().all()
     pages = math.ceil(total / limit) if limit > 0 else 0
-    
+
     return PaginatedUsersResponse(
         items=[UserResponse.model_validate(u) for u in users],
         total=total,
         page=(skip // limit) + 1,
         size=limit,
-        pages=pages
+        pages=pages,
     )
+
 
 @router.patch(
     "/{user_id}/status",
@@ -132,21 +115,20 @@ def change_user_status(
 ):
     """Activa o desactiva un usuario. Solo accesible por administradores."""
     try:
-        import uuid
         uid = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de usuario inválido")
-        
+
     if uid == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No puedes desactivar tu propia cuenta"
+            detail="No puedes desactivar tu propia cuenta",
         )
-        
+
     user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
     user.is_active = status_update.is_active
     db.commit()
 
@@ -164,41 +146,19 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Permite al usuario actualizar su perfil (nombre, bio, área, sector, ubicación)."""
-    if body.first_name is not None:
-        current_user.first_name = body.first_name
-    if body.last_name is not None:
-        current_user.last_name = body.last_name
-    if body.artistic_area is not None:
-        current_user.artistic_area = body.artistic_area
-    if body.sector is not None:
-        current_user.sector = body.sector
-    if body.bio is not None:
-        current_user.bio = body.bio
-    if body.location is not None:
-        current_user.location = body.location
-    if body.color_palette is not None:
-        current_user.color_palette = body.color_palette
-    if body.customization is not None:
-        current_user.customization = body.customization
-    if body.profile_pic_url is not None:
-        current_user.profile_pic_url = body.profile_pic_url
-    if body.cover_pic_url is not None:
-        current_user.cover_pic_url = body.cover_pic_url
-    if body.social_links is not None:
-        current_user.social_links = body.social_links
-    if body.artistic_disciplines is not None:
-        current_user.artistic_disciplines = body.artistic_disciplines
-    if body.looking_for_disciplines is not None:
-        current_user.looking_for_disciplines = body.looking_for_disciplines
-    if body.company_legal_name is not None:
-        current_user.company_legal_name = body.company_legal_name
-    if body.company_nit is not None:
-        current_user.company_nit = body.company_nit
-    if body.company_size is not None:
-        current_user.company_size = body.company_size
-    if body.onboarding_completed is not None:
-        current_user.onboarding_completed = body.onboarding_completed
+    """Permite al usuario autenticado actualizar sus datos de perfil."""
+    fields = [
+        "first_name", "last_name", "artistic_area", "sector", "bio",
+        "location", "color_palette", "customization", "profile_pic_url",
+        "cover_pic_url", "social_links", "artistic_disciplines",
+        "looking_for_disciplines", "company_legal_name", "company_nit",
+        "company_size", "onboarding_completed"
+    ]
+    for field in fields:
+        val = getattr(body, field, None)
+        if val is not None:
+            setattr(current_user, field, val)
+
     db.commit()
     db.refresh(current_user)
     return UserResponse.model_validate(current_user)
@@ -215,20 +175,7 @@ def delete_own_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MessageResponse:
-    """Elimina (desactiva) la cuenta del usuario autenticado.
-
-    ¿Qué? Requiere la contraseña actual como confirmación y desactiva la cuenta
-          (is_active=False) — el mismo mecanismo de soft-delete que ya usa un admin
-          para desactivar usuarios (ver change_user_status).
-    ¿Para qué? Dar cumplimiento al "derecho al olvido" (Ley 1581/2012) permitiendo que
-              el usuario mismo elimine su cuenta, sin depender de un administrador.
-    ¿Impacto? Soft-delete, no borrado físico: se preservan datos relacionales
-              (postulaciones, convocatorias) por integridad histórica, pero la cuenta
-              queda inaccesible — get_current_user ya rechaza usuarios con is_active=False
-              en cualquier request futuro, incluyendo intentos de login.
-              La confirmación "doble" es: (1) contraseña + (2) diálogo de confirmación
-              en el frontend antes de llamar este endpoint.
-    """
+    """Desactiva la cuenta del usuario autenticado (soft-delete) previa validación de contraseña."""
     if not verify_password(body.password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -237,13 +184,9 @@ def delete_own_account(
 
     current_user.is_active = False
     db.commit()
-
     clear_auth_cookies(response)
     return MessageResponse(message="Tu cuenta ha sido eliminada")
 
-
-class PaletteUpdate(BaseModel):
-    color_palette: str
 
 @router.patch(
     "/palette",
@@ -255,6 +198,7 @@ def update_palette(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Actualiza la paleta de colores activa para la personalización de interfaz."""
     current_user.color_palette = body.color_palette
     db.commit()
     db.refresh(current_user)
@@ -272,17 +216,18 @@ def explore_artists(
     area: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """Retorna la lista pública de artistas activos para el feed social."""
+    """Retorna la lista pública de artistas activos para el explorador."""
     stmt = select(User).where(User.role == "artista", User.is_active == True)
     if search:
         term = f"%{search}%"
         stmt = stmt.where(or_(
-            User.first_name.ilike(term), 
-            User.last_name.ilike(term), 
-            User.artistic_area.ilike(term)
+            User.first_name.ilike(term),
+            User.last_name.ilike(term),
+            User.artistic_area.ilike(term),
         ))
     if area:
         stmt = stmt.where(User.artistic_area.ilike(f"%{area}%"))
+
     total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
     users = db.execute(stmt.order_by(User.created_at.desc()).offset(skip).limit(limit)).scalars().all()
     return {
@@ -303,15 +248,16 @@ def explore_companies(
     search: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """Retorna la lista pública de empresas activas para el feed social."""
+    """Retorna la lista pública de empresas activas para el explorador."""
     stmt = select(User).where(User.role == "empresa", User.is_active == True)
     if search:
         term = f"%{search}%"
         stmt = stmt.where(or_(
-            User.first_name.ilike(term), 
-            User.last_name.ilike(term), 
-            User.sector.ilike(term)
+            User.first_name.ilike(term),
+            User.last_name.ilike(term),
+            User.sector.ilike(term),
         ))
+
     total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar() or 0
     users = db.execute(stmt.order_by(User.created_at.desc()).offset(skip).limit(limit)).scalars().all()
     return {
@@ -330,7 +276,7 @@ def get_admin_stats(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Retorna estadísticas globales de la plataforma para el panel de admin."""
+    """Retorna estadísticas globales para el panel administrativo."""
     total_users = db.execute(select(func.count()).select_from(User)).scalar() or 0
     total_artistas = db.execute(select(func.count()).where(User.role == "artista")).scalar() or 0
     total_empresas = db.execute(select(func.count()).where(User.role == "empresa")).scalar() or 0
@@ -339,6 +285,7 @@ def get_admin_stats(
     total_convs = db.execute(select(func.count()).select_from(Conv)).scalar() or 0
     total_inscripciones = db.execute(select(func.count()).select_from(Inscripcion)).scalar() or 0
     total_portafolios = db.execute(select(func.count()).select_from(Portafolio)).scalar() or 0
+
     return {
         "total_users": total_users,
         "total_artistas": total_artistas,
@@ -352,9 +299,6 @@ def get_admin_stats(
     }
 
 
-from urllib.parse import unquote
-import re
-
 @router.get(
     "/profile/{user_id:path}",
     summary="Ver perfil público de un usuario",
@@ -363,29 +307,27 @@ def get_public_profile(
     user_id: str,
     db: Session = Depends(get_db),
 ):
-    """Retorna el perfil público de un usuario por UUID, slug o código corto."""
+    """Retorna el perfil público de un usuario por UUID, slug o coincidencia de nombre."""
     raw_str = unquote(user_id).strip().rstrip("/").split("/")[-1].lower()
     clean_str = raw_str.replace("jar-2026-", "").replace("jar-", "").strip()
 
     users = db.execute(select(User).where(User.is_active == True)).scalars().all()
     user = None
 
-    # 1. Coincidencia por UUID exacto, prefijo de UUID o 8 primeros hex
     for u in users:
         uid_full = str(u.id).lower()
         uid_short = uid_full[:8]
         uid_compact = uid_full.replace("-", "")
-        
-        if (uid_full in clean_str or 
-            clean_str in uid_full or 
-            clean_str.endswith(uid_short) or 
-            uid_short in clean_str or 
-            clean_str == uid_compact or 
+
+        if (uid_full in clean_str or
+            clean_str in uid_full or
+            clean_str.endswith(uid_short) or
+            uid_short in clean_str or
+            clean_str == uid_compact or
             clean_str.startswith(uid_compact[:8])):
             user = u
             break
 
-    # 2. Coincidencia por nombre o email si no coincidió por ID
     if not user:
         for u in users:
             name_str = f"{u.first_name or ''} {u.last_name or ''} {u.email or ''}".lower()
@@ -398,21 +340,17 @@ def get_public_profile(
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    # Incrementar contador real de vistas al perfil
     try:
         user.profile_views = (user.profile_views or 0) + 1
         db.commit()
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        print(f"[Users] Error incrementando vistas de perfil: {e}")
-    
+
     profile = UserResponse.model_validate(user)
-    
-    # Si es artista, incluir portafolios publicados
+
     portafolios_data = []
     if user.role == "artista":
-        from app.models.portafolio import DetPortafolio
         try:
             ports = db.execute(select(Portafolio).where(Portafolio.id_usr == user.id)).scalars().all()
         except Exception:
@@ -431,8 +369,7 @@ def get_public_profile(
                     for a in archivos
                 ],
             })
-    
-    # Convocatorias publicadas (si es empresa)
+
     convocatorias_data = []
     if user.role == "empresa":
         try:
@@ -452,7 +389,7 @@ def get_public_profile(
                 "total_inscritos": total_inscritos,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
             })
-    
+
     return {
         "user": profile,
         "portafolios": portafolios_data,
@@ -472,8 +409,7 @@ def get_user_by_id(
 ):
     """Retorna el perfil completo de un usuario específico (solo admin)."""
     try:
-        import uuid as _uuid
-        uid = _uuid.UUID(user_id)
+        uid = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de usuario inválido")
     user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
@@ -493,10 +429,9 @@ def change_user_role(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Cambia el rol de un usuario. Solo accesible por administradores."""
+    """Cambia el rol de un usuario en el sistema (solo admin)."""
     try:
-        import uuid as _uuid
-        uid = _uuid.UUID(user_id)
+        uid = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de usuario inválido")
     user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
@@ -520,15 +455,13 @@ def admin_reset_user_password(
 ):
     """Permite al administrador restablecer la contraseña de cualquier usuario."""
     try:
-        import uuid as _uuid
-        uid = _uuid.UUID(user_id)
+        uid = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de usuario inválido")
     user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    from app.utils.security import hash_password
+
     user.hashed_password = hash_password(body.new_password)
     db.commit()
     return MessageResponse(message=f"Contraseña de {user.full_name} restablecida con éxito")
@@ -585,7 +518,7 @@ def admin_delete_convocatoria(
 
 
 def _format_time_ago(dt) -> str:
-    """Formatea una fecha a tiempo relativo legible (hace X minutos/horas/días)."""
+    """Formatea una fecha a tiempo relativo legible."""
     if not dt:
         return "Hace un momento"
     from datetime import datetime, timezone
@@ -614,10 +547,9 @@ def get_audit_logs(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Retorna eventos de auditoría y seguridad reales en tiempo real."""
+    """Retorna eventos de auditoría y actividad del sistema en tiempo real."""
     logs = []
 
-    # 1. Notificaciones emitidas en la plataforma
     try:
         from app.models.notificacion import Notificacion
         nots = db.execute(select(Notificacion).order_by(Notificacion.created_at.desc()).limit(10)).scalars().all()
@@ -629,10 +561,9 @@ def get_audit_logs(
                 "time": _format_time_ago(n.created_at),
                 "created_at": n.created_at.isoformat() if n.created_at else "",
             })
-    except Exception as e:
-        print(f"[Audit] Error notificaciones: {e}")
+    except Exception:
+        pass
 
-    # 2. Postulaciones a convocatorias
     try:
         inscs = db.execute(select(Inscripcion).order_by(Inscripcion.created_at.desc()).limit(10)).scalars().all()
         for i in inscs:
@@ -645,10 +576,9 @@ def get_audit_logs(
                 "time": _format_time_ago(i.created_at),
                 "created_at": i.created_at.isoformat() if i.created_at else "",
             })
-    except Exception as e:
-        print(f"[Audit] Error postulaciones: {e}")
+    except Exception:
+        pass
 
-    # 3. Usuarios registrados recientemente
     try:
         users = db.execute(select(User).order_by(User.created_at.desc()).limit(10)).scalars().all()
         for u in users:
@@ -658,9 +588,8 @@ def get_audit_logs(
                 "time": _format_time_ago(u.created_at),
                 "created_at": u.created_at.isoformat() if u.created_at else "",
             })
-    except Exception as e:
-        print(f"[Audit] Error usuarios: {e}")
+    except Exception:
+        pass
 
-    # Ordenar eventos cronológicamente (más reciente primero)
     logs.sort(key=lambda x: x["created_at"] or "", reverse=True)
     return logs[:20]

@@ -6,7 +6,6 @@ from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
-
 class RelUsrHab(Base):
     __tablename__ = "rel_usr_hab"
     __table_args__ = (
@@ -19,9 +18,6 @@ class RelUsrHab(Base):
 
     habilidad: Mapped["Habilidad"] = relationship(back_populates="usuarios")
 
-    # ¿Qué? Relación hacia el usuario que tiene esta habilidad.
-    # ¿Para qué? Acceder al perfil del artista desde la relación usuario-habilidad.
-    # ¿Impacto? Permite navegar desde una habilidad hasta el artista que la posee.
     usuario: Mapped["User"] = relationship(back_populates="habilidades")
 
     def __repr__(self) -> str:

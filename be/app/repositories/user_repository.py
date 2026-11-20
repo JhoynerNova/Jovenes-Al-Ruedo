@@ -1,7 +1,6 @@
 """
 Módulo: repositories/user_repository.py
 Descripción: Repositorio para la entidad User — encapsula el acceso a datos y consultas SQLAlchemy.
-¿Para qué? Aislar las consultas SQL/ORM de la lógica de negocio (Services) y de los controladores (Routers).
 """
 
 from typing import Optional, List
@@ -9,7 +8,6 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.models.user import User
-
 
 class UserRepository:
     """Encapsula operaciones de persistencia para la entidad User."""
@@ -51,6 +49,5 @@ class UserRepository:
         """Retorna listado de usuarios con rol empresa."""
         stmt = select(User).where(User.role == "empresa").offset(skip).limit(limit)
         return list(db.execute(stmt).scalars().all())
-
 
 user_repository = UserRepository()

@@ -1,20 +1,11 @@
 /**
  * Archivo: pages/TermsPage.tsx
  * Descripción: Página pública con los Términos y Condiciones de Jóvenes al Ruedo.
- * ¿Para qué? Cumplir con la legislación colombiana que exige informar al usuario
- *            sobre las condiciones de uso antes de registrarse.
- * ¿Impacto? Sin esta página, el enlace "/terms" del footer estaría roto
- *           y el consentimiento del usuario no tendría sustento legal completo.
  */
 
 import { Link } from "react-router-dom";
 import { ArrowLeft, Scale, ShieldCheck, UserCheck, BookOpen, AlertTriangle, MapPin } from "lucide-react";
 
-/**
- * ¿Qué? Secciones de los Términos y Condiciones.
- * ¿Para qué? Centralizar el contenido legal para facilitar actualizaciones.
- * ¿Impacto? Actualizar una sección aquí se refleja automáticamente en toda la página.
- */
 const secciones = [
   {
     titulo: "1. Aceptación de los Términos",
@@ -125,11 +116,6 @@ const secciones = [
   },
 ];
 
-/**
- * ¿Qué? Componente de página de T&C.
- * ¿Para qué? Mostrar al usuario las condiciones de uso antes de registrarse.
- * ¿Impacto? Permite que el consentimiento del registro sea legalmente válido.
- */
 export function TermsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-brand-dark">

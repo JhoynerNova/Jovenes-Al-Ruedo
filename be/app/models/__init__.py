@@ -1,9 +1,6 @@
 """
 Módulo: models/__init__.py
 Descripción: Paquete de modelos ORM — exporta todos los modelos para facilitar imports.
-¿Para qué? Permitir importar todos los modelos desde un solo lugar (from app.models import User)
-           y asegurar que Alembic los detecte al generar migraciones.
-¿Impacto? Sin este archivo, Alembic no detectaría los modelos automáticamente y las migraciones
           generadas estarían vacías (uno de los errores más comunes al configurar Alembic).
 """
 

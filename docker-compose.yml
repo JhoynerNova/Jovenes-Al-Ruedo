@@ -1,11 +1,3 @@
-# ¿Qué? Archivo de Docker Compose para orquestar TODOS los servicios del stack.
-# ¿Para qué? Levantar PostgreSQL, el backend FastAPI y el frontend React con UN solo comando:
-#            `docker compose up --build`
-# ¿Impacto? Sin este archivo, cada servicio habría que arrancarlo manualmente por separado,
-#           configurando redes, variables de entorno y dependencias de forma manual.
-#           Con Docker Compose, el entorno completo se levanta con un solo comando y
-#           elimina el clásico "en mi máquina funciona" — funciona igual en todas partes.
-#
 # PUERTOS EXPUESTOS AL HOST:
 #   - http://localhost      → Frontend (React + Nginx)
 #   - http://localhost:8000 → Backend API (FastAPI + Uvicorn)  [también: /docs y /redoc]
@@ -16,9 +8,6 @@ services:
   # 🐘 PostgreSQL 17 — Base de datos principal
   # ────────────────────────────
   db:
-    # ¿Qué? Imagen oficial de PostgreSQL 17 basada en Alpine Linux (más liviana).
-    # ¿Para qué? Proveer la base de datos relacional del sistema de autenticación.
-    # ¿Impacto? Sin este servicio, el backend no puede persistir datos de usuarios ni tokens.
     image: postgres:17-alpine
     container_name: jovenes_al_ruedo_db
     restart: unless-stopped
@@ -30,24 +19,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-jovenes_al_ruedo}
 
     ports:
-      # ¿Qué? Mapea el puerto 5432 del contenedor al 5432 del host.
-      # ¿Para qué? Permitir que el backend (que corre fuera de Docker) se conecte a la BD.
-      # ¿Impacto? Si el puerto está ocupado, cambiar el lado izquierdo (ej: "5433:5432").
       - "5433:5432"
 
     volumes:
-      # ¿Qué? Volumen nombrado que persiste los datos de PostgreSQL.
-      # ¿Para qué? Que los datos sobrevivan al reinicio o recreación del contenedor.
-      # ¿Impacto? Sin volumen, cada `docker compose down` borraría todos los datos.
       - jovenes_al_ruedo_data:/var/lib/postgresql/data
 
     networks:
       - jovenes_al_ruedo_network
 
     healthcheck:
-      # ¿Qué? Comando que Docker ejecuta periódicamente para verificar que PostgreSQL responde.
-      # ¿Para qué? Saber si la BD está lista para aceptar conexiones antes de que el backend intente conectarse.
-      # ¿Impacto? Sin healthcheck, el backend podría intentar conectarse antes de que la BD esté lista.
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jar_user} -d ${POSTGRES_DB:-jovenes_al_ruedo}"]
       interval: 10s
       timeout: 5s
@@ -57,32 +37,16 @@ services:
   # 🐍 Backend — FastAPI + Uvicorn
   # ────────────────────────────
   backend:
-    # ¿Qué? Construye la imagen del backend usando be/Dockerfile.
-    # ¿Para qué? Crear el contenedor con Python, las dependencias y el código de la API.
-    # ¿Impacto? `context: ./be` indica que el contexto de build es la carpeta be/.
-    #           Docker solo verá los archivos de be/ (filtrados por be/.dockerignore).
     build:
       context: ./be
       dockerfile: Dockerfile
     container_name: jovenes_al_ruedo_backend
     restart: unless-stopped
 
-    # ¿Qué? Define la dependencia de orden de arranque con el servicio db.
-    # ¿Para qué? Garantizar que PostgreSQL esté listo ANTES de que el backend intente conectarse.
-    # ¿Impacto? `condition: service_healthy` espera a que el healthcheck de db pase
-    #           (pg_isready responda OK) antes de arrancar el backend. Sin esto,
-    #           el backend podría arrancar antes de que PostgreSQL acepte conexiones.
-    #           Nota: el entrypoint.sh tiene su propia espera como segunda capa de seguridad.
     depends_on:
       db:
         condition: service_healthy
 
-    # ¿Qué? Variables de entorno inyectadas al contenedor del backend en runtime.
-    # ¿Para qué? Configurar la aplicación sin hardcodear valores en el código.
-    # ¿Impacto? DIFERENCIA CRÍTICA con el desarrollo local:
-    #           DATABASE_URL usa "db" (nombre del servicio Docker) en vez de "localhost".
-    #           Dentro de la red Docker, los contenedores se comunican por nombre de servicio.
-    #           Cambiar "db" por "localhost" aquí haría que el backend no encuentre a PostgreSQL.
     env_file:
       - ./be/.env
     environment:
@@ -103,10 +67,6 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
 
     ports:
-      # ¿Qué? Mapea el puerto 8000 del contenedor al 8000 del host.
-      # ¿Para qué? Permitir que el navegador acceda a la API en http://localhost:8000.
-      # ¿Impacto? También expone Swagger UI en http://localhost:8000/docs — útil para probar
-      #           los endpoints directamente sin necesidad del frontend.
       - "8000:8000"
 
     volumes:
@@ -119,12 +79,6 @@ services:
   # ⚛️ Frontend — React + Nginx
   # ────────────────────────────
   frontend:
-    # ¿Qué? Construye la imagen del frontend usando fe/Dockerfile (multi-stage).
-    # ¿Para qué? Compilar la app React con Vite y servirla con Nginx.
-    # ¿Impacto? `args` pasa la URL del backend como argumento de build a Vite.
-    #           VITE_API_URL se "hornea" en el JavaScript compilado — no es configurable
-    #           en runtime. Debe ser la URL que el NAVEGADOR usa para llegar al backend
-    #           (no el nombre del servicio interno Docker).
     build:
       context: ./fe
       dockerfile: Dockerfile
@@ -134,19 +88,10 @@ services:
     container_name: jovenes_al_ruedo_frontend
     restart: unless-stopped
 
-    # ¿Qué? El frontend depende del backend para que la API esté disponible.
-    # ¿Para qué? Asegurar que el backend arranque antes que el frontend.
-    # ¿Impacto? El frontend (archivos estáticos) puede servirse sin el backend,
-    #           pero el usuario no podría hacer login hasta que el backend esté listo.
-    #           Esta dependencia garantiza el orden correcto de arranque.
     depends_on:
       - backend
 
     ports:
-      # ¿Qué? Mapea el puerto 80 del contenedor (Nginx) al puerto 80 del host.
-      # ¿Para qué? Servir el frontend en http://localhost (sin número de puerto).
-      # ¿Impacto? El puerto 80 es el estándar HTTP — el navegador lo usa por defecto
-      #           cuando no se especifica puerto en la URL.
       - "80:80"
 
     networks:
@@ -156,9 +101,6 @@ services:
 # 📦 Volúmenes nombrados
 # ────────────────────────────
 volumes:
-  # ¿Qué? Volumen Docker nombrado para persistencia de datos de PostgreSQL.
-  # ¿Para qué? Almacenar datos de la BD de forma durable entre reinicios del contenedor.
-  # ¿Impacto? Para borrar TODOS los datos: `docker compose down -v` (¡cuidado en producción!).
   jovenes_al_ruedo_data:
   # Volumen para conservar imagenes, audios y documentos subidos por los usuarios
   backend_uploads:
@@ -166,12 +108,6 @@ volumes:
 # ────────────────────────────
 # 🔌 Red interna
 # ────────────────────────────
-# ¿Qué? Red Docker personalizada que conecta todos los servicios.
-# ¿Para qué? Permitir que backend y db se comuniquen por nombre de servicio (ej: "db")
-#            sin exponer puertos internos al host innecesariamente.
-# ¿Impacto? Sin una red compartida, los contenedores no pueden comunicarse entre sí.
-#           Docker Compose crea una red por defecto, pero definirla explícitamente
-#           da más control y claridad sobre la topología de red del sistema.
 networks:
   jovenes_al_ruedo_network:
     driver: bridge

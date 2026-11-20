@@ -1,11 +1,6 @@
 /**
  * Archivo: pages/onboarding/ArtistOnboarding.tsx
  * Descripción: Wizard de onboarding post-registro para artistas.
- * ¿Para qué? Guiar al artista recién registrado a completar su foto, banner, bio,
- *            disciplinas, ubicación, redes sociales y un portafolio inicial, en vez de
- *            dejarlo caer directo en un dashboard vacío.
- * ¿Impacto? Reutiliza usersApi.updateProfile, uploadApi y portafolioApi — no agrega
- *           endpoints nuevos de backend.
  */
 
 import { useState } from "react";
@@ -31,8 +26,6 @@ const DISCIPLINAS = [
   "Otro",
 ];
 
-// ¿Qué? Localidades de Bogotá — la plataforma solo opera en Bogotá por ahora.
-// ¿Para qué? Restringir la ubicación a un desplegable en vez de texto libre.
 const LOCALIDADES_BOGOTA = [
   "Usaquén",
   "Chapinero",

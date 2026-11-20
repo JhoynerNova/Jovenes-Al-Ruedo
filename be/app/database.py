@@ -1,10 +1,7 @@
 """
 Módulo: database.py
 Descripción: Configuración de la conexión a PostgreSQL con SQLAlchemy 2.0.
-¿Para qué? Proveer el engine (motor de conexión), la sesión (SessionLocal) y la
            clase base (Base) que todos los modelos ORM heredan.
-¿Impacto? Este módulo es el puente entre Python y PostgreSQL. Sin él, ningún modelo
-          puede crear tablas ni hacer consultas a la base de datos.
 """
 
 from sqlalchemy import create_engine, text
@@ -41,7 +38,6 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
-
 
 class Base(DeclarativeBase):
     """Clase base para todos los modelos ORM del proyecto."""

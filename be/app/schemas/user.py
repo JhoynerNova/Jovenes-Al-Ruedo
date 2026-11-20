@@ -2,11 +2,6 @@
 Módulo: schemas/user.py
 Descripción: Schemas Pydantic para validación de datos de entrada (request) y salida (response)
              en los endpoints de autenticación y usuario.
-¿Para qué? Definir la "forma" exacta de los datos que la API acepta y retorna.
-           Pydantic valida automáticamente tipos, formatos y restricciones — si los datos
-           no cumplen el schema, FastAPI retorna un 422 con detalles del error.
-¿Impacto? Sin schemas, la API aceptaría cualquier dato sin validación, exponiendo el backend
-          a datos malformados, inyecciones y errores silenciosos.
 """
 
 import re
@@ -17,58 +12,29 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
-
 # 
 # Schemas de REQUEST (datos que envía el cliente)
 # 
 
-
 class UserCreate(BaseModel):
     """Schema para el registro de un nuevo usuario.
-
-    ¿Qué? Define los campos requeridos para crear una cuenta: email, nombre, edad,
-          área artística y contraseña.
-    ¿Para qué? Validar que el cliente envíe datos correctos antes de procesarlos.
-    ¿Impacto? Los validadores garantizan fortaleza mínima de contraseña y restricción
-              de edad mínima de 18 años.
     """
 
-    # ¿Qué? Email del usuario — Pydantic valida formato automáticamente con EmailStr.
-    # ¿Para qué? Identificador único y medio de contacto para recuperación de contraseña.
-    # ¿Impacto? EmailStr rechaza emails inválidos (sin @, sin dominio, etc.).
     email: EmailStr
 
-    # ¿Qué? Nombres y apellidos.
     first_name: str
     last_name: str
 
-    # ¿Qué? Rol del usuario.
-    # ¿Para qué? Diferenciar tipo de cuenta en registro.
     role: str = "artista"
 
-    # ¿Qué? Sector de la empresa.
-    # ¿Para qué? Las empresas deben ingresar esto.
     sector: Optional[str] = None
 
-    # ¿Qué? Edad del joven artista.
-    # ¿Para qué? Validar que sea mayor de 18 años al registrarse. Opcional para empresas.
     birth_date: Optional[date] = None
 
-    # ¿Qué? Área artística del joven.
-    # ¿Para qué? Categorizar al artista dentro de la plataforma. Opcional para empresas.
     artistic_area: Optional[str] = None
 
-    # ¿Qué? Contraseña en texto plano (solo viaja en el request, NUNCA se almacena así).
-    # ¿Para qué? El backend la hashea con bcrypt antes de guardarla en la BD.
-    # ¿Impacto? El validador exige mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número.
     password: str
 
-    # ¿Qué? Confirmación de que el usuario aceptó la Política de Privacidad y Términos.
-    # ¿Para qué? Ley 1581 de 2012 (Habeas Data) exige consentimiento informado explícito
-    #            para el tratamiento de datos personales — no basta con un checkbox visual
-    #            en el frontend si el backend no lo valida ni lo registra.
-    # ¿Impacto? El validador rechaza el registro si llega en False — el checkbox del
-    #           frontend ya bloquea el submit, pero esta es la garantía del lado del servidor.
     accepted_terms: bool = False
 
     @field_validator("accepted_terms")
@@ -82,10 +48,6 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
         """Valida que la contraseña cumpla requisitos mínimos de seguridad.
-
-        ¿Qué? Verifica longitud mínima y presencia de mayúsculas, minúsculas y números.
-        ¿Para qué? Prevenir contraseñas débiles que son fáciles de adivinar o crackear.
-        ¿Impacto? Sin esta validación, un usuario podría registrarse con "a" como contraseña.
 
         Args:
             v: Valor de la contraseña a validar.
@@ -110,7 +72,6 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_birth_date(cls, v: Optional[date]) -> Optional[date]:
         """
-        # ¿Qué? Valida que el usuario tenga entre 18 y 28 años exactos (solo si se provee).
         """
         if v is None:
             return v
@@ -137,7 +98,6 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_artistic_area(cls, v: Optional[str]) -> Optional[str]:
         """
-        # ¿Qué? Valida que el área artística tenga contenido significativo.
         """
         if v is None:
             return v
@@ -161,28 +121,17 @@ class UserCreate(BaseModel):
                 raise ValueError("El sector es requerido para empresas")
         return self
 
-
 class UserLogin(BaseModel):
     """Schema para el login de un usuario.
-
-    ¿Qué? Define los campos necesarios para autenticarse: email y contraseña.
-    ¿Para qué? Validar las credenciales antes de buscar en la BD.
-    ¿Impacto? Estructura simple — la validación real (¿existe el email? ¿coincide la password?)
-              se hace en el service, no aquí.
     """
 
     email: EmailStr
     password: str
 
-
 class ChangePasswordRequest(BaseModel):
     """Schema para cambiar la contraseña (usuario autenticado).
 
-    ¿Qué? Requiere la contraseña actual y la nueva contraseña.
-    ¿Para qué? Verificar que el usuario conoce su contraseña actual antes de cambiarla
               (previene cambios si alguien toma el dispositivo desbloqueado).
-    ¿Impacto? Sin current_password, cualquier persona con acceso al token podría cambiar
-              la contraseña sin conocer la original.
     """
 
     current_password: str
@@ -202,26 +151,14 @@ class ChangePasswordRequest(BaseModel):
             raise ValueError("La contraseña debe contener al menos un número")
         return v
 
-
 class ForgotPasswordRequest(BaseModel):
     """Schema para solicitar recuperación de contraseña.
-
-    ¿Qué? Solo requiere el email del usuario.
-    ¿Para qué? Iniciar el flujo de recuperación: generar token + enviar email.
-    ¿Impacto? La API siempre retorna el mismo mensaje (éxito), sin importar si el email
-              existe o no — esto previene la enumeración de usuarios.
     """
 
     email: EmailStr
 
-
 class ResetPasswordRequest(BaseModel):
     """Schema para restablecer la contraseña con un token de recuperación.
-
-    ¿Qué? Requiere el token de reset (recibido por email) y la nueva contraseña.
-    ¿Para qué? Completar el flujo de recuperación: validar token + actualizar contraseña.
-    ¿Impacto? El token se marca como usado después de un reset exitoso,
-              evitando que se reutilice.
     """
 
     token: str
@@ -241,55 +178,36 @@ class ResetPasswordRequest(BaseModel):
             raise ValueError("La contraseña debe contener al menos un número")
         return v
 
-
 class DeleteAccountRequest(BaseModel):
     """Schema para eliminar la propia cuenta (usuario autenticado).
 
-    ¿Qué? Requiere la contraseña actual como confirmación.
-    ¿Para qué? Es una acción irreversible desde la perspectiva del usuario — pedir la
               contraseña evita que alguien con la sesión abierta (pero sin la contraseña)
               elimine la cuenta por error o malicia.
     """
 
     password: str
 
-
 class LogoutRequest(BaseModel):
     """Schema para cerrar sesión revocando el refresh token.
 
-    ¿Qué? Contiene opcionalmente el refresh_token para invalidarlo del lado del servidor.
-    ¿Para qué? El access token se revoca a partir del header Authorization; el refresh
-              token no viaja en headers, así que el cliente lo envía en el body.
-    ¿Impacto? Si no se envía, el logout solo revoca el access token actual (el refresh
               token quedaría vigente hasta expirar, aunque las cookies ya se borraron).
     """
 
     refresh_token: Optional[str] = None
 
-
 class RefreshTokenRequest(BaseModel):
     """Schema para renovar el access token usando el refresh token.
-
-    ¿Qué? Contiene el refresh token que el cliente recibió durante el login.
-    ¿Para qué? Obtener un nuevo access token sin re-ingresar credenciales.
-    ¿Impacto? Es el mecanismo que mantiene la sesión del usuario viva sin pedirle
-              email/password continuamente.
     """
 
     refresh_token: str
-
 
 # ════════════════════════════════════════
 # 📤 Schemas de RESPONSE (datos que retorna la API)
 # ════════════════════════════════════════
 
-
 class UserResponse(BaseModel):
     """Schema de respuesta con datos del usuario (sin password).
 
-    ¿Qué? Define qué campos del usuario se retornan al cliente.
-    ¿Para qué? Controlar exactamente qué datos se exponen — NUNCA incluir hashed_password.
-    ¿Impacto? Sin response_model, FastAPI podría serializar el objeto User completo,
               exponiendo el hash de la contraseña. model_config from_attributes=True
               permite convertir directamente desde el modelo ORM.
     """
@@ -321,18 +239,11 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    # ¿Qué? Configuración que permite crear este schema desde un objeto SQLAlchemy.
-    # ¿Para qué? Convertir User (ORM) → UserResponse (Pydantic) automáticamente.
-    # ¿Impacto? Sin esto, habría que construir el dict manualmente campo por campo.
     model_config = ConfigDict(from_attributes=True)
-
 
 class TokenResponse(BaseModel):
     """Schema de respuesta con los tokens de autenticación.
 
-    ¿Qué? Retorna access_token, refresh_token y el tipo de token ("bearer").
-    ¿Para qué? El frontend almacena estos tokens para enviarlos en peticiones futuras.
-    ¿Impacto? token_type="bearer" indica al cliente cómo enviar el token:
               header Authorization: Bearer <access_token>.
     """
 
@@ -340,15 +251,10 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
 
-
 class MessageResponse(BaseModel):
     """Schema de respuesta genérico con un mensaje.
 
-    ¿Qué? Respuesta simple con un campo "message".
-    ¿Para qué? Retornar confirmaciones de operaciones (cambio de contraseña,
               envío de email de recuperación, etc.).
-    ¿Impacto? Estandariza las respuestas de la API — el frontend siempre
-              puede esperar un campo "message" en operaciones sin datos de retorno.
     """
 
     message: str
@@ -366,7 +272,6 @@ class PaginatedUsersResponse(BaseModel):
 class UserStatusUpdate(BaseModel):
     """Schema para activar o desactivar un usuario."""
     is_active: bool
-
 
 class UserUpdate(BaseModel):
     """Schema para actualizar el perfil del usuario autenticado."""
@@ -408,7 +313,6 @@ class UserUpdate(BaseModel):
             raise ValueError(f"company_size debe ser uno de: {', '.join(sorted(allowed))}")
         return v
 
-
 class UserRoleUpdate(BaseModel):
     """Schema para cambiar el rol de un usuario (solo admin)."""
     role: str
@@ -419,7 +323,6 @@ class UserRoleUpdate(BaseModel):
         if v not in ("artista", "empresa", "admin"):
             raise ValueError("Rol inválido. Debe ser artista, empresa o admin")
         return v
-
 
 class AdminResetPasswordRequest(BaseModel):
     """Schema para que un administrador cambie la contraseña de un usuario."""

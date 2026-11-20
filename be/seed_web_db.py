@@ -6,8 +6,10 @@ from datetime import datetime, date
 # Add the current directory to python path
 sys.path.append(os.getcwd())
 
-from app.database import SessionLocal
-from app.models import User, Habilidad, RelUsrHab, Portafolio, DetPortafolio, Conv, DetConv, Inscripcion, Conversacion, Mensaje
+from sqlalchemy import text
+
+from app.database import SessionLocal, engine
+from app.models import User, Habilidad, RelUsrHab, Portafolio, DetPortafolio, Conv, DetConv, Inscripcion, Conversacion, Mensaje, Calificacion
 from app.models.password_reset_token import PasswordResetToken
 
 from app.utils.security import hash_password
@@ -15,14 +17,14 @@ from app.utils.security import hash_password
 # Contraseña para las cuentas de demo
 PASSWORD_HASH = hash_password("Test1234")
 
-
-
 print("--- INICIANDO SEMBRADO DE BASE DE DATOS WEB ---")
+print(f"   Destino: {engine.url.render_as_string(hide_password=True)}")
 
 try:
     with SessionLocal() as db:
         # 1. Limpieza de tablas existentes en orden de restricciones
         print("1. Limpiando tablas existentes...")
+        db.query(Calificacion).delete()
         db.query(Mensaje).delete()
         db.query(Conversacion).delete()
         db.query(Inscripcion).delete()
@@ -176,6 +178,10 @@ try:
 
         user_objs = {}
         for u_data in users_data:
+            u_data = dict(u_data)
+            first, _, last = u_data.pop("full_name").partition(" ")
+            u_data["first_name"] = first
+            u_data["last_name"] = last
             u = User(**u_data)
             db.add(u)
             db.flush()
@@ -523,6 +529,22 @@ try:
                 db.add(msg)
         db.commit()
         print("   ¡Chats y mensajes creados exitosamente!")
+
+        # 10. Reajuste de secuencias SERIAL
+        print("10. Reajustando secuencias...")
+        serial_cols = [
+            ("habilidades", "id_hab"), ("rel_usr_hab", "id_rel"),
+            ("portafolio", "id_port"), ("det_portafolio", "id_det_p"),
+            ("conv", "id_conv"), ("det_conv", "id_dc"), ("inscripcion", "id_i"),
+            ("conversacion", "id_conversacion"), ("mensaje", "id_msg"),
+        ]
+        for table, col in serial_cols:
+            db.execute(text(
+                f"SELECT setval(pg_get_serial_sequence('{table}', '{col}'), "
+                f"COALESCE((SELECT MAX({col}) FROM {table}), 0) + 1, false)"
+            ))
+        db.commit()
+        print("   ¡Secuencias sincronizadas!")
 
     print("\n--- SEMBRADO COMPLETADO EXITOSAMENTE ---")
     print("Las cuentas de demo creadas con contraseña 'Test1234' son:")

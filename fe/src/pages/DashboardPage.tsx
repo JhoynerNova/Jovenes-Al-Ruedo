@@ -1,8 +1,6 @@
 /**
  * Archivo: pages/DashboardPage.tsx
  * Descripción: Página principal del usuario autenticado — muestra su perfil e información.
- * ¿Para qué? Ser el destino después del login — el usuario ve su info y accede a acciones.
- * ¿Impacto? Sin esta página, el usuario logueado no tendría a dónde ir después del login.
  */
 
 import { useAuth } from "@/hooks/useAuth";

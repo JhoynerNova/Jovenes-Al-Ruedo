@@ -1,16 +1,8 @@
 /**
  * Archivo: components/ui/Button.tsx
  * Descripción: Botón reutilizable con variantes de estilo y estado de carga.
- * ¿Para qué? Estandarizar la apariencia y comportamiento de todos los botones de la app.
- * ¿Impacto? Sin este componente, cada botón tendría estilos diferentes,
- *           rompiendo la consistencia visual del diseño.
  */
 
-/**
- * ¿Qué? Props del componente Button.
- * ¿Para qué? Configurar variante (primary, secondary, danger), tamaño, loading, etc.
- * ¿Impacto? TypeScript garantiza que solo se usen variantes válidas.
- */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "danger";
@@ -19,12 +11,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-/**
- * ¿Qué? Componente de botón con variantes de color, tamaño y estado de carga.
- * ¿Para qué? Reutilizar en formularios, modales, acciones del dashboard, etc.
- * ¿Impacto? Diseño: colores sólidos (sin degradados), transiciones suaves, sans-serif.
- *           El spinner aparece automáticamente cuando isLoading=true.
- */
 export function Button({
   children,
   type = "button",
@@ -37,10 +23,6 @@ export function Button({
   className = "",
   ...props
 }: ButtonProps) {
-  // ¿Qué? Clases CSS según la variante elegida (primary, secondary, danger).
-  // ¿Para qué? Cada variante tiene colores distintos para comunicar intención.
-  // ¿Impacto? primary = acción principal (azul), secondary = acción secundaria (gris),
-  //           danger = acción destructiva (rojo).
   const variantClasses = {
     primary:
       "bg-brand-purple text-white hover:bg-brand-dark focus:ring-brand-purple/20",
@@ -50,8 +32,6 @@ export function Button({
       "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 focus:ring-red-500/20",
   };
 
-  // ¿Qué? Clases CSS según el tamaño elegido.
-  // ¿Para qué? Permitir botones de diferentes tamaños según el contexto.
   const sizeClasses = {
     sm: "px-3 py-1.5 text-xs",
     md: "px-4 py-2.5 text-sm",
@@ -66,10 +46,7 @@ export function Button({
       className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""} ${className}`}
       {...props}
     >
-      {/* ¿Qué? Spinner SVG animado que aparece durante la carga. */}
-      {/* ¿Para qué? Feedback visual de que la acción está procesándose. */}
-      {/* ¿Impacto? Sin loading state, el usuario podría hacer clic varias veces. */}
-      {isLoading && (
+                        {isLoading && (
         <svg
           className="-ml-1 mr-2 h-4 w-4 animate-spin"
           xmlns="http://www.w3.org/2000/svg"

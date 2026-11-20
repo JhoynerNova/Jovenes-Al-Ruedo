@@ -1,8 +1,6 @@
 /**
  * Archivo: pages/LoginPage.tsx
  * Descripción: Página de inicio de sesión — formulario de email y contraseña.
- * ¿Para qué? Permitir que usuarios registrados se autentiquen en el sistema.
- * ¿Impacto? Es la puerta de entrada a la app — sin login, no se puede acceder a nada protegido.
  */
 
 import { useState } from "react";
@@ -15,42 +13,24 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 
-/**
- * ¿Qué? Página de login con formulario, manejo de errores y redirección post-login.
- * ¿Para qué? Autenticar al usuario con email + password y obtener tokens JWT.
- * ¿Impacto? Una vez autenticado, se redirige al dashboard automáticamente.
- */
 export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { showToast } = useToast();
   const { openRegister, closeModal } = useAuthModal();
 
-  // ¿Qué? Estado del formulario — email y password.
   const [formData, setFormData] = useState({ email: "", password: "" });
-  // ¿Qué? Errores específicos de validación por campo.
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // ¿Qué? Error general (credenciales incorrectas, error de red, etc.)
   const [formError, setFormError] = useState<string | null>(null);
-  // ¿Qué? Flag de carga — deshabilita el botón mientras se procesa el login.
   const [isLoading, setIsLoading] = useState(false);
 
-
-  /**
-   * ¿Qué? Actualiza el campo correspondiente cuando el usuario escribe.
-   * ¿Para qué? Mantener el estado sincronizado con los inputs del formulario.
-   * ¿Impacto? Patrón controlled component — React controla el valor de cada input.
-   */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
     setFormError(null); // Limpiar error general al escribir
   };
 
-  /**
-   * ¿Qué? Valida los campos de entrada antes de hacer la petición.
-   */
-  const validate = (): boolean => {
+    const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
@@ -67,12 +47,7 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * ¿Qué? Envía las credenciales al backend y maneja la respuesta.
-   * ¿Para qué? Autenticar al usuario y navegar al dashboard si es exitoso.
-   * ¿Impacto? Si falla, muestra el mensaje de error. Si tiene éxito, redirige.
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -121,8 +96,7 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
           onChange={handleChange}
         />
 
-        {/* ¿Qué? Enlace a recuperación de contraseña. */}
-        <div className="mb-6 flex justify-end">
+                <div className="mb-6 flex justify-end">
           <Link
             to="/forgot-password"
             onClick={() => isModalMode && closeModal()}
@@ -139,17 +113,14 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
           </div>
         )}
 
-        {/* ¿Qué? Botón de submit con estado de carga. */}
-        {/* ¿Para qué? Enviar el formulario y deshabilitarse mientras se procesa. */}
-        <div className="flex justify-end">
+                        <div className="flex justify-end">
           <Button type="submit" fullWidth isLoading={isLoading}>
             Iniciar sesión
           </Button>
         </div>
       </form>
 
-      {/* ¿Qué? Enlace a la página de registro o botón para abrir modal de registro. */}
-      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         ¿No tienes cuenta?{" "}
         {isModalMode ? (
           <button
@@ -170,5 +141,4 @@ export function LoginPage({ isModalMode = false }: { isModalMode?: boolean }) {
     </AuthLayout>
   );
 }
-
 

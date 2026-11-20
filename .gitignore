@@ -1,10 +1,6 @@
 # ========================
 # NN Auth System — .gitignore
 # ========================
-# ¿Qué? Archivo que define qué archivos y carpetas NO deben ser rastreados por Git.
-# ¿Para qué? Evitar subir archivos sensibles, temporales o generados al repositorio.
-# ¿Impacto? Sin este archivo, se podrían versionar contraseñas, dependencias pesadas
-#           o archivos de compilación, comprometiendo seguridad y rendimiento del repo.
 
 # ────────────────────────────
 # 🐍 Python / Backend

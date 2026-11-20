@@ -1,9 +1,6 @@
 /**
  * Archivo: pages/ForgotPasswordPage.tsx
  * Descripción: Página para solicitar recuperación de contraseña por email.
- * ¿Para qué? Iniciar el flujo de recuperación: el usuario ingresa su email
- *            y el backend envía un enlace de reset si el email existe.
- * ¿Impacto? La respuesta siempre es la misma — no revela si el email está registrado.
  */
 
 import { useState } from "react";
@@ -15,11 +12,6 @@ import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-/**
- * ¿Qué? Formulario de solicitud de recuperación de contraseña.
- * ¿Para qué? El usuario ingresa su email y el backend envía un enlace de reset.
- * ¿Impacto? Siempre muestra mensaje de éxito (por seguridad, sin revelar si el email existe).
- */
 export function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
 

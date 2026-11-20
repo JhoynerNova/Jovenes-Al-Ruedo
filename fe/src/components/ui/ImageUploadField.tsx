@@ -1,11 +1,6 @@
 /**
  * Archivo: components/ui/ImageUploadField.tsx
  * Descripción: Input de imagen reutilizable con previsualización y subida automática.
- * ¿Para qué? Foto de perfil, banner y logo se suben todos igual (elegir archivo → preview
- *            instantáneo → subir a /api/v1/upload → devolver la URL al formulario padre).
- * ¿Impacto? Único punto de subida de imágenes en todo el frontend — cualquier pantalla que
- *           necesite este flujo (onboarding, Settings) reutiliza este componente en vez de
- *           reimplementar el manejo de archivo + FormData + preview.
  */
 
 import { useRef, useState, useEffect } from "react";

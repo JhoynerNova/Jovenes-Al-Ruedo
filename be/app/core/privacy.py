@@ -1,19 +1,12 @@
 """
 Módulo: core/privacy.py
 Descripción: Política de privacidad y tratamiento de datos personales del proyecto Jóvenes al Ruedo.
-¿Qué? Define las constantes y textos de la política de privacidad conforme a la legislación colombiana.
-¿Para qué? Centralizar la política de privacidad permite actualizarla en un solo lugar
-           y referenciarla desde la API y el frontend.
-¿Impacto? Cumple con:
           - Ley 1581 de 2012 (Habeas Data — Protección de Datos Personales)
           - Decreto 1377 de 2013 (Reglamentación parcial de la Ley 1581)
           - Ley 1273 de 2009 (Delitos Informáticos en Colombia)
           - OWASP Top 10 A05 (Mala Configuración de Seguridad)
 """
 
-# ¿Qué? Información del responsable del tratamiento de datos personales.
-# ¿Para qué? Identificar a la organización responsable del tratamiento de datos.
-# ¿Impacto? Art. 17 Ley 1581/2012 — el responsable debe estar claramente identificado.
 RESPONSABLE = {
     "nombre": "Jóvenes al Ruedo",
     "ficha_sena": "3171599",
@@ -21,9 +14,6 @@ RESPONSABLE = {
     "ciudad": "Colombia",
 }
 
-# ¿Qué? Listado de datos personales recolectados por la plataforma.
-# ¿Para qué? Informar al titular exactamente qué datos se recopilan (principio de transparencia).
-# ¿Impacto? Art. 15 Ley 1581/2012 — el titular tiene derecho a conocer los datos que se tratan.
 DATOS_RECOLECTADOS = [
     "Nombre completo",
     "Dirección de correo electrónico",
@@ -36,9 +26,6 @@ DATOS_RECOLECTADOS = [
     "Cookies de sesión (access_token y refresh_token — HTTPOnly)",
 ]
 
-# ¿Qué? Finalidades del tratamiento de datos personales.
-# ¿Para qué? Informar al titular para qué se usan sus datos (principio de finalidad).
-# ¿Impacto? Art. 4 Ley 1581/2012 — los datos solo pueden usarse para las finalidades declaradas.
 FINALIDADES = [
     "Autenticación y control de acceso a la plataforma",
     "Gestión del perfil artístico del usuario",
@@ -49,10 +36,6 @@ FINALIDADES = [
     "Cumplimiento de obligaciones legales aplicables",
 ]
 
-# ¿Qué? Derechos del titular de los datos personales.
-# ¿Para qué? Informar al usuario de sus derechos legales sobre sus datos.
-# ¿Impacto? Art. 8 Ley 1581/2012 — los titulares tienen derechos ARCO
-#           (Acceso, Rectificación, Cancelación, Oposición).
 DERECHOS_TITULAR = [
     "Conocer, actualizar y rectificar sus datos personales",
     "Solicitar prueba de la autorización otorgada para el tratamiento",
@@ -62,10 +45,6 @@ DERECHOS_TITULAR = [
     "Acceder gratuitamente a sus datos personales tratados",
 ]
 
-# ¿Qué? Política de uso de cookies de la plataforma.
-# ¿Para qué? Informar al usuario sobre las cookies utilizadas y su propósito.
-# ¿Impacto? OWASP A02 — las cookies HTTPOnly protegen los tokens contra XSS.
-#           Ley 1581/2012 — las cookies de sesión son datos de uso del titular.
 COOKIE_POLICY = {
     "access_token": {
         "descripcion": "Token JWT de acceso para autenticación",
@@ -81,10 +60,6 @@ COOKIE_POLICY = {
     },
 }
 
-# ¿Qué? Texto completo de la política de privacidad.
-# ¿Para qué? Proveer el texto legal completo que se muestra en el frontend.
-# ¿Impacto? Sin este texto, la plataforma incumple la Ley 1581/2012 que exige
-#           informar al titular antes de recolectar sus datos.
 POLITICA_PRIVACIDAD = """
 POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS PERSONALES
 Jóvenes al Ruedo — SENA Ficha 3171599

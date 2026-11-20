@@ -1,8 +1,6 @@
 /**
  * Archivo: __tests__/pages/RegisterPage.test.tsx
  * Descripción: Tests de la página de registro — campos, validación cliente, envío, errores.
- * ¿Para qué? Asegurar que el flujo de registro funciona correctamente y valida inputs.
- * ¿Impacto? Si el registro falla silenciosamente, los usuarios no podrían crear cuentas.
  */
 
 import { screen } from "@testing-library/react";
@@ -12,7 +10,6 @@ import { RegisterPage } from "@/pages/RegisterPage";
 import { renderWithProviders } from "../helpers";
 
 describe("RegisterPage", () => {
-  // ¿Qué? Verifica que todos los campos del formulario están presentes.
   it("renderiza el formulario completo de registro", () => {
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
 
@@ -26,13 +23,11 @@ describe("RegisterPage", () => {
     expect(screen.getByRole("button", { name: "Crear cuenta" })).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que existe enlace a login.
   it("muestra enlace a iniciar sesión", () => {
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
     expect(screen.getByText("Iniciar sesión")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica validación de nombre corto.
   it("muestra error si el nombre tiene menos de 2 caracteres", async () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
@@ -48,7 +43,6 @@ describe("RegisterPage", () => {
     expect(screen.getByText("El nombre debe tener al menos 2 caracteres")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica validación de contraseña débil.
   it("muestra error si la contraseña es muy corta", async () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
@@ -64,7 +58,6 @@ describe("RegisterPage", () => {
     expect(screen.getByText("Mínimo 8 caracteres")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica validación de contraseñas que no coinciden.
   it("muestra error si las contraseñas no coinciden", async () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
@@ -80,7 +73,6 @@ describe("RegisterPage", () => {
     expect(screen.getByText("Las contraseñas no coinciden")).toBeInTheDocument();
   });
 
-  // ¿Qué? Verifica que register() se llama con datos correctos.
   it("ejecuta register al enviar formulario válido", async () => {
     const registerMock = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -107,7 +99,6 @@ describe("RegisterPage", () => {
     });
   });
 
-  // ¿Qué? Verifica que muestra error del backend.
   it("muestra alerta de error cuando register falla", async () => {
     const registerMock = vi.fn().mockRejectedValue(new Error("El email ya está registrado"));
     const user = userEvent.setup();

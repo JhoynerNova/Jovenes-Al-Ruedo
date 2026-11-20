@@ -1,8 +1,6 @@
 """
 Módulo: utils/email.py
 Descripción: Utilidades para envío de emails — recuperación de contraseña y notificaciones.
-¿Para qué? Proveer funciones para enviar emails reales por SMTP (Gmail, Outlook, SendGrid, etc.)
-           o registrar en consola en modo desarrollo.
 """
 
 import asyncio
@@ -14,7 +12,6 @@ from email.mime.text import MIMEText
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-
 
 def _send_smtp_sync(email: str, reset_url: str, token: str) -> bool:
     """Función síncrona interna para enviar email por SMTP usando smtplib (Estándar de Python)."""
@@ -82,7 +79,6 @@ def _send_smtp_sync(email: str, reset_url: str, token: str) -> bool:
     except Exception as e:
         logger.error(f"[Email Error] Error al enviar email vía SMTP a {email}: {e}")
         return False
-
 
 async def send_password_reset_email(email: str, token: str) -> None:
     """Envía un email con el enlace de recuperación de contraseña.

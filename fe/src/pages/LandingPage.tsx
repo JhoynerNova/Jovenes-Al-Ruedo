@@ -1,9 +1,6 @@
 /**
  * Archivo: pages/LandingPage.tsx
  * Descripción: Página de inicio pública de Jóvenes al Ruedo.
- * ¿Qué? Página de presentación que explica la plataforma a visitantes nuevos.
- * ¿Para qué? Convertir visitantes en usuarios registrados (artistas o empresas).
- * ¿Impacto? Es la primera impresión del producto — define si el usuario se queda o se va.
  */
 
 import { Link } from "react-router-dom";
@@ -18,11 +15,6 @@ import { useState } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 
-/**
- * ¿Qué? Datos de las categorías artísticas soportadas por la plataforma.
- * ¿Para qué? Mostrar al visitante qué tipos de talento puede encontrar o publicar.
- * ¿Impacto? Centralizar aquí los datos evita repetir JSX y facilita agregar categorías futuras.
- */
 const categorias = [
   { Icono: Drama, nombre: "Actuación", descripcion: "Teatro, cine, televisión y más" },
   { Icono: Mic, nombre: "Canto", descripcion: "Solistas, coristas y bandas" },
@@ -34,34 +26,18 @@ const categorias = [
   { Icono: Film, nombre: "Cine", descripcion: "Dirección, producción y edición" },
 ];
 
-/**
- * ¿Qué? Pasos del proceso para artistas jóvenes.
- * ¿Para qué? Explicar de forma simple cómo funciona la plataforma para quien busca trabajo.
- * ¿Impacto? Reduce la fricción de registro al mostrar que el proceso es fácil y rápido.
- */
 const pasosArtista = [
   { numero: "01", titulo: "Crea tu perfil", descripcion: "Regístrate gratis y muestra tu talento con tu portafolio artístico.", Icono: UserPlus },
   { numero: "02", titulo: "Explora ofertas", descripcion: "Encuentra oportunidades de empresas que buscan tu talento creativo.", Icono: Search },
   { numero: "03", titulo: "Conecta y trabaja", descripcion: "Postúlate y empieza tu carrera artística profesional.", Icono: Zap },
 ];
 
-/**
- * ¿Qué? Pasos del proceso para empresas que contratan talento.
- * ¿Para qué? Mostrar a las empresas cómo publicar ofertas y encontrar artistas.
- * ¿Impacto? Atrae al otro lado del mercado — sin empresas no hay ofertas para los artistas.
- */
 const pasosEmpresa = [
   { numero: "01", titulo: "Regístrate como empresa", descripcion: "Crea tu cuenta empresarial de forma gratuita en minutos.", Icono: Building2 },
   { numero: "02", titulo: "Publica tu oferta", descripcion: "Describe el perfil artístico que necesitas para tu proyecto.", Icono: FileText },
   { numero: "03", titulo: "Encuentra tu talento", descripcion: "Recibe postulaciones de jóvenes artistas calificados.", Icono: Users },
 ];
 
-/**
- * ¿Qué? Componente principal de la Landing Page.
- * ¿Para qué? Presentar la plataforma a visitantes no registrados y motivarlos a unirse.
- * ¿Impacto? Sin esta página, los nuevos usuarios no tendrían contexto de qué es la app
- *           y llegarían directo al login sin entender el valor del producto.
- */
 export function LandingPage() {
   const { openLogin, openRegister } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
