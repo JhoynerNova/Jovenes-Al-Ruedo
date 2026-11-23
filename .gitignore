@@ -88,13 +88,15 @@ Thumbs.db
 docker-volumes/
 
 # ────────────────────────────
-# 📄 Otros
+# 📄 Otros y Archivos Subidos
 # ────────────────────────────
 *.log
 *.tmp
 *.bak
 *.db
 *.sqlite
+be/uploads/*
+!be/uploads/.gitkeep
 
 # ────────────────────────────
 # 🎓 Estándar taller SENA
