@@ -1,87 +1,63 @@
-"""Router de portafolios: CRUD para artistas."""
+"""
+Módulo: routers/portafolio.py
+Descripción: Router de portafolios — delega lógica de negocio a portafolio_service.
+"""
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
-from app.models.portafolio import Portafolio, DetPortafolio
 from app.models.user import User
-from app.schemas.portafolio import PortafolioCreate, PortafolioResponse, DetPortafolioCreate, DetPortafolioResponse
+from app.schemas.portafolio import (
+    PortafolioCreate,
+    PortafolioResponse,
+    DetPortafolioCreate,
+    DetPortafolioResponse,
+)
+from app.services.portafolio_service import portafolio_service
 
 router = APIRouter(prefix="/api/v1/portafolio", tags=["portafolio"])
 
 
-def _require_artista(user: User):
-    if user.role != "artista":
-        raise HTTPException(status_code=403, detail="Solo los artistas tienen portafolio")
-
-
-# ── Listar mis portafolios ──
 @router.get("/", response_model=list[PortafolioResponse], summary="Mis portafolios")
 def list_portafolios(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    _require_artista(current_user)
-    portafolios = db.execute(
-        select(Portafolio).where(Portafolio.id_usr == current_user.id).order_by(Portafolio.created_at.desc())
-    ).scalars().all()
-    return portafolios
+    """Listar todos los portafolios del artista autenticado."""
+    return portafolio_service.list_portafolios(db, current_user)
 
 
-# ── Crear portafolio ──
 @router.post("/", response_model=PortafolioResponse, status_code=201, summary="Crear portafolio")
 def create_portafolio(
     body: PortafolioCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    _require_artista(current_user)
-    port = Portafolio(
-        nombre=body.nombre,
-        descripcion=body.descripcion,
-        visibilidad=body.visibilidad,
-        id_usr=current_user.id
-    )
-    db.add(port)
-    db.commit()
-    db.refresh(port)
-    return port
+    """Crear un nuevo portafolio para el artista autenticado."""
+    return portafolio_service.create_portafolio(db, current_user, body)
 
 
-# ── Ver portafolio por ID ──
 @router.get("/{port_id}", response_model=PortafolioResponse, summary="Ver portafolio")
 def get_portafolio(
     port_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    port = db.get(Portafolio, port_id)
-    if not port:
-        raise HTTPException(status_code=404, detail="Portafolio no encontrado")
-    if str(port.id_usr) != str(current_user.id) and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes acceso a este portafolio")
-    return port
+    """Obtener detalle de un portafolio por su identificador."""
+    return portafolio_service.get_portafolio(db, current_user, port_id)
 
 
-# ── Eliminar portafolio ──
 @router.delete("/{port_id}", status_code=204, summary="Eliminar portafolio")
 def delete_portafolio(
     port_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    port = db.get(Portafolio, port_id)
-    if not port:
-        raise HTTPException(status_code=404, detail="Portafolio no encontrado")
-    if str(port.id_usr) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este portafolio")
-    db.delete(port)
-    db.commit()
+    """Eliminar un portafolio propio."""
+    portafolio_service.delete_portafolio(db, current_user, port_id)
 
 
-# ── Agregar ítem a portafolio ──
 @router.post("/{port_id}/items", response_model=DetPortafolioResponse, status_code=201, summary="Agregar ítem")
 def add_item(
     port_id: int,
@@ -89,28 +65,10 @@ def add_item(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    _require_artista(current_user)
-    port = db.get(Portafolio, port_id)
-    if not port:
-        raise HTTPException(status_code=404, detail="Portafolio no encontrado")
-    if str(port.id_usr) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="No tienes permiso para editar este portafolio")
-    item = DetPortafolio(
-        id_port=port_id,
-        archivo=body.archivo,
-        titulo=body.titulo,
-        descripcion=body.descripcion,
-        portada_url=body.portada_url,
-        etiquetas=body.etiquetas,
-        estado=body.estado
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
+    """Agregar un ítem multimedia (imagen, audio, video, documento) al portafolio."""
+    return portafolio_service.add_item(db, current_user, port_id, body)
 
 
-# ── Eliminar ítem de portafolio ──
 @router.delete("/{port_id}/items/{item_id}", status_code=204, summary="Eliminar ítem")
 def delete_item(
     port_id: int,
@@ -118,11 +76,5 @@ def delete_item(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    port = db.get(Portafolio, port_id)
-    if not port or str(port.id_usr) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="No tienes permiso")
-    item = db.get(DetPortafolio, item_id)
-    if not item or item.id_port != port_id:
-        raise HTTPException(status_code=404, detail="Ítem no encontrado")
-    db.delete(item)
-    db.commit()
+    """Eliminar un ítem de un portafolio propio."""
+    portafolio_service.delete_item(db, current_user, port_id, item_id)
