@@ -14,12 +14,13 @@ describe("RegisterPage", () => {
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
 
     expect(screen.getByRole("heading", { name: "Crear cuenta" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Nombre completo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Nombre")).toBeInTheDocument();
+    expect(screen.getByLabelText("Apellido")).toBeInTheDocument();
     expect(screen.getByLabelText("Correo electrónico")).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha de nacimiento")).toBeInTheDocument();
     expect(screen.getByLabelText("Área artística")).toBeInTheDocument();
     expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
-    expect(screen.getByLabelText("Confirmar contraseña")).toBeInTheDocument();
+    expect(screen.getByLabelText("Confirmar")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Crear cuenta" })).toBeInTheDocument();
   });
 
@@ -32,12 +33,14 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
 
-    await user.type(screen.getByLabelText("Nombre completo"), "A");
+    await user.type(screen.getByLabelText("Nombre"), "A");
+    await user.type(screen.getByLabelText("Apellido"), "Pérez");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
     await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
-    await user.type(screen.getByLabelText("Área artística"), "Música");
+    await user.selectOptions(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
-    await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
+    await user.type(screen.getByLabelText("Confirmar"), "Password1");
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(screen.getByText("El nombre debe tener al menos 2 caracteres")).toBeInTheDocument();
@@ -47,12 +50,14 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
 
-    await user.type(screen.getByLabelText("Nombre completo"), "Test User");
+    await user.type(screen.getByLabelText("Nombre"), "Test");
+    await user.type(screen.getByLabelText("Apellido"), "User");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
     await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
-    await user.type(screen.getByLabelText("Área artística"), "Música");
+    await user.selectOptions(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Ab1");
-    await user.type(screen.getByLabelText("Confirmar contraseña"), "Ab1");
+    await user.type(screen.getByLabelText("Confirmar"), "Ab1");
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(screen.getByText("Mínimo 8 caracteres")).toBeInTheDocument();
@@ -62,12 +67,14 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderWithProviders(<RegisterPage />, { initialRoute: "/register" });
 
-    await user.type(screen.getByLabelText("Nombre completo"), "Test User");
+    await user.type(screen.getByLabelText("Nombre"), "Test");
+    await user.type(screen.getByLabelText("Apellido"), "User");
     await user.type(screen.getByLabelText("Correo electrónico"), "a@b.com");
     await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
-    await user.type(screen.getByLabelText("Área artística"), "Música");
+    await user.selectOptions(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
-    await user.type(screen.getByLabelText("Confirmar contraseña"), "Password2");
+    await user.type(screen.getByLabelText("Confirmar"), "Password2");
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(screen.getByText("Las contraseñas no coinciden")).toBeInTheDocument();
@@ -82,20 +89,25 @@ describe("RegisterPage", () => {
       authContext: { register: registerMock },
     });
 
-    await user.type(screen.getByLabelText("Nombre completo"), "Juan Pérez");
+    await user.type(screen.getByLabelText("Nombre"), "Juan");
+    await user.type(screen.getByLabelText("Apellido"), "Pérez");
     await user.type(screen.getByLabelText("Correo electrónico"), "juan@nn.com");
     await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
-    await user.type(screen.getByLabelText("Área artística"), "Música");
+    await user.selectOptions(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
-    await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
+    await user.type(screen.getByLabelText("Confirmar"), "Password1");
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(registerMock).toHaveBeenCalledWith({
+      role: "artista",
+      first_name: "Juan",
+      last_name: "Pérez",
       email: "juan@nn.com",
-      full_name: "Juan Pérez",
       birth_date: "2000-01-01",
       artistic_area: "Música",
       password: "Password1",
+      accepted_terms: true,
     });
   });
 
@@ -108,12 +120,14 @@ describe("RegisterPage", () => {
       authContext: { register: registerMock },
     });
 
-    await user.type(screen.getByLabelText("Nombre completo"), "Test User");
+    await user.type(screen.getByLabelText("Nombre"), "Test");
+    await user.type(screen.getByLabelText("Apellido"), "User");
     await user.type(screen.getByLabelText("Correo electrónico"), "dup@nn.com");
     await user.type(screen.getByLabelText("Fecha de nacimiento"), "2000-01-01");
-    await user.type(screen.getByLabelText("Área artística"), "Música");
+    await user.selectOptions(screen.getByLabelText("Área artística"), "Música");
     await user.type(screen.getByLabelText("Contraseña"), "Password1");
-    await user.type(screen.getByLabelText("Confirmar contraseña"), "Password1");
+    await user.type(screen.getByLabelText("Confirmar"), "Password1");
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(await screen.findByText("El email ya está registrado")).toBeInTheDocument();

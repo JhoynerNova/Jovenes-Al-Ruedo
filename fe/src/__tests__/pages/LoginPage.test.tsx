@@ -87,13 +87,13 @@ describe("LoginPage", () => {
       authContext: { login: loginMock },
     });
 
-    await user.type(screen.getByLabelText("Correo electrónico"), "x");
+    await user.type(screen.getByLabelText("Correo electrónico"), "valid@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "x");
     await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
     expect(await screen.findByText("Error")).toBeInTheDocument();
 
-    // Al escribir de nuevo, el error debe desaparecer.
+    // Al escribir de nuevo, el error general debe desaparecer.
     await user.type(screen.getByLabelText("Correo electrónico"), "a");
     expect(screen.queryByText("Error")).not.toBeInTheDocument();
   });

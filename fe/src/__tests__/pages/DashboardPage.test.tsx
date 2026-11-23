@@ -8,20 +8,22 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { renderWithProviders, mockUser } from "../helpers";
 
 describe("DashboardPage", () => {
-  it("muestra el nombre del usuario en el saludo", () => {
+  it("muestra el nombre del usuario en el saludo o encabezado", () => {
     renderWithProviders(<DashboardPage />, {
       authContext: { user: mockUser, isAuthenticated: true },
     });
 
-    expect(screen.getByText(`Bienvenido, ${mockUser.full_name}`)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: mockUser.full_name })).toBeInTheDocument();
   });
 
-  it("muestra el correo del usuario", () => {
+  it("muestra el correo o área artística del usuario", () => {
     renderWithProviders(<DashboardPage />, {
       authContext: { user: mockUser, isAuthenticated: true },
     });
 
-    expect(screen.getByText(mockUser.email)).toBeInTheDocument();
+    const elements = screen.getAllByText(mockUser.artistic_area!);
+    expect(elements.length).toBeGreaterThan(0);
+    expect(elements[0]).toBeInTheDocument();
   });
 
   it("muestra el estado activo del usuario", () => {
@@ -33,24 +35,22 @@ describe("DashboardPage", () => {
   });
 
   it("muestra la fecha de registro formateada", () => {
-    // Usar una fecha que no cambie de día por diferencia horaria UTC
     const userWithSafeDate = { ...mockUser, created_at: "2026-06-15T12:00:00Z" };
     renderWithProviders(<DashboardPage />, {
       authContext: { user: userWithSafeDate, isAuthenticated: true },
     });
 
-    // Esperamos el mes junio y el año 2026 en el texto
     const dateCell = screen.getByText(/junio/i);
     expect(dateCell).toBeInTheDocument();
     expect(dateCell.textContent).toContain("2026");
   });
 
-  it("tiene enlace a cambiar contraseña", () => {
+  it("tiene enlace o botón a ver perfil público", () => {
     renderWithProviders(<DashboardPage />, {
       authContext: { user: mockUser, isAuthenticated: true },
     });
 
-    expect(screen.getByText("Cambiar contraseña")).toBeInTheDocument();
+    expect(screen.getByText(/Ver mi perfil público/i)).toBeInTheDocument();
   });
 
   it("muestra Inactivo si el usuario no está activo", () => {
