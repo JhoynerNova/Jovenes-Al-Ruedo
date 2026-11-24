@@ -20,7 +20,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const verificationHash = `JAR-${Math.random().toString(36).substring(2, 9).toUpperCase()}-2026`;
+  const randomBytes = new Uint8Array(4);
+  crypto.getRandomValues(randomBytes);
+  const randomHex = Array.from(randomBytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const verificationHash = `JAR-${randomHex}-2026`;
 
   const handlePrint = () => {
     window.print();

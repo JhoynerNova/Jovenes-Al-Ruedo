@@ -21,7 +21,7 @@ class HabilidadCreate(BaseModel):
             raise ValueError("El nombre de la habilidad debe tener al menos 2 caracteres")
         if len(v) > 100:
             raise ValueError("El nombre de la habilidad no puede exceder 100 caracteres")
-        return v
+        return 
 
 class HabilidadResponse(BaseModel):
     """Schema de respuesta con datos de una habilidad.
